@@ -1,0 +1,84 @@
+name: CI - native snapshot apps
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  # BUILD COMMUNS
+  build-communs:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout sources
+        uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          distribution: 'temurin'
+          cache: 'maven'
+      # Runs the Build with Maven
+      - name: Build Communs with Maven
+        run: mvn clean install -B --file communs/pom.xml
+
+      - name: Publish to GitHub Packages Apache Maven
+        run: mvn --batch-mode deploy -DskipTests=true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # SONAR
+  sonar-scan:
+      # The type of runner that the job will run on
+      runs-on: ubuntu-latest
+
+      # Steps represent a sequence of tasks that will be executed as part of the job
+      steps:
+        # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+        - uses: actions/checkout@v3
+        - name: Set up JDK 17
+          uses: actions/setup-java@v3
+          with:
+            java-version: 17
+            distribution: 'temurin'
+            cache: 'maven'
+        # Runs a single command using the runners shell
+        - name: Build with Maven
+          run: mvn clean compile sonar:sonar -B -P sonar -Dsonar.host.url=${{ secrets.SONAR_HOST }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.organization=${{ secrets.SONAR_ORG }} -Dsonar.projectKey=gestion-budget-serverless --file pom.xml
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # BUILD
+  build-quarkus-parametrages:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    needs: build-communs
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # Runs a single command using the runners shell
+      - name: Build Parametrage Native App with Maven
+        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 --file parametrages/pom.xml -s settings.xml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Upload Releases Snapshot
+      - uses: actions/upload-artifact@v3
+        name: Upload Service Paramétrages
+        with:
+          name: parametrages-runner
+          path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/parametrages/target/parametrages-runner
