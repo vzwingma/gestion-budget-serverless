@@ -51,7 +51,7 @@ jobs:
             cache: 'maven'
         # Runs a single command using the runners shell
         - name: Build with Maven
-          run: mvn clean compile sonar:sonar -B -P sonar -Dsonar.host.url=${{ secrets.SONAR_HOST }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.organization=${{ secrets.SONAR_ORG }} -Dsonar.projectKey=gestion-budget-serverless --file pom.xml
+          run: mvn clean compile sonar:sonar -B -P sonar -Dsonar.host.url=${{ env.SONAR_HOST }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.organization=${{ env.SONAR_ORG }} -Dsonar.projectKey=gestion-budget-serverless --file pom.xml
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
