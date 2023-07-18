@@ -49,9 +49,21 @@ jobs:
             java-version: 17
             distribution: 'temurin'
             cache: 'maven'
+        - name: Cache SonarCloud packages
+          uses: actions/cache@v3
+          with:
+            path: ~/.sonar/cache
+            key: ${{ runner.os }}-sonar
+            restore-keys: ${{ runner.os }}-sonar
+        - name: Cache Maven packages
+          uses: actions/cache@v3
+          with:
+            path: ~/.m2
+            key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+            restore-keys: ${{ runner.os }}-m2
         # Runs a single command using the runners shell
         - name: Build with Maven
-          run: mvn clean compile sonar:sonar -B -P sonar -Dsonar.host.url=${{ vars.SONAR_HOST }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.organization=${{ vars.SONAR_ORG }} -Dsonar.projectKey=gestion-budget-serverless --file pom.xml
+          run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -P sonar -Dsonar.host.url=${{ vars.SONAR_HOST }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.organization=${{ vars.SONAR_ORG }} -Dsonar.projectKey=vzwingma_gestion-budget-serverless --file pom.xml
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
