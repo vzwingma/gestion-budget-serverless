@@ -71,8 +71,6 @@
   </build>
 
   <!-- Profiles -->
-
-  <!-- Profiles -->
   <profiles>
     <profile>
       <id>native</id>
@@ -207,7 +205,7 @@
   <distributionManagement>
     <repository>
       <id>github</id>
-      <name>GitHub vzwingma Github Maven Packages</name>
+      <name>GitHub vzwingma Maven Packages</name>
       <url>https://maven.pkg.github.com/vzwingma/gestion-budget-serverless</url>
     </repository>
   </distributionManagement>
