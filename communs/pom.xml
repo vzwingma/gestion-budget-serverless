@@ -17,7 +17,7 @@
         <repository>
             <id>github</id>
             <name>GitHub vzwingma Github Maven Packages</name>
-            <url>https://maven.pkg.github.com/vzwingma/gestion-budget-services</url>
+            <url>https://maven.pkg.github.com/vzwingma/gestion-budget-serverless</url>
         </repository>
     </distributionManagement>
 </project>
