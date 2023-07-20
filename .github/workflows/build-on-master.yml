@@ -4,7 +4,7 @@ name: CI - native snapshot apps
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ]
+    branches: [ master, feat/init ]
   pull_request:
     branches: [ master ]
 
@@ -37,7 +37,7 @@ jobs:
         run: mvn clean install -B --file communs/pom.xml
 
       - name: Publish to GitHub Packages Apache Maven
-        run: mvn --batch-mode deploy -DskipTests=true -s settings.xml
+        run: mvn --batch-mode deploy -DskipTests=true --file communs/pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     # SONAR
