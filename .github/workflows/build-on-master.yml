@@ -100,7 +100,7 @@ jobs:
             ${{ runner.os }}-maven-
       # Runs a single command using the runners shell
       - name: Build Parametrage Native App with Maven
-        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 --file parametrages/pom.xml -s settings.xml
+        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 --file parametrages/pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
@@ -109,3 +109,5 @@ jobs:
         with:
           name: parametrages-runner
           path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/parametrages/target/parametrages-runner
+      - name: Liste
+        run: ls /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/parametrages/target/
