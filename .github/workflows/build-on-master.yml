@@ -143,12 +143,12 @@ jobs:
         with:
           name: parametrages-function
       - uses: actions/download-artifact@v3
-        id: downloadService
+        id: downloadSAMFunction
         name: Download SAM Function Paramétrages
         with:
           name: parametrages-function-sam
       - uses: actions/download-artifact@v3
-        id: downloadService
+        id: downloadSAM
         name: Download SAM Paramétrages
         with:
           name: parametrages-sam
