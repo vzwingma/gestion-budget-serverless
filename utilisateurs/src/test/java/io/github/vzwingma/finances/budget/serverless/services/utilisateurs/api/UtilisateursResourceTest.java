@@ -9,7 +9,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthPay
 import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
 import io.github.vzwingma.finances.budget.services.communs.data.model.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
-import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.UserAccessForbiddenException;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -47,11 +47,11 @@ class UtilisateursResourceTest {
         QuarkusMock.installMockForType(Mockito.mock(UtilisateursService.class), UtilisateursService.class);
     }
     @Test
-    void testGetLastAccessDate() {
+    void testGetLastAccessDate() throws UserAccessForbiddenException {
         // Init des données
         Utilisateur utilisateurExpected = MockDataUtilisateur.getTestUtilisateurWithDate();
-        Mockito.when(utilisateurService.getUtilisateur(Mockito.anyString()))
-                .thenReturn(Uni.createFrom().item(utilisateurExpected));
+        Mockito.when(utilisateurService.getLastAccessDate(Mockito.anyString()))
+                .thenReturn(Uni.createFrom().item(utilisateurExpected.getDernierAcces()));
         // Test
         given()
             .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
@@ -81,14 +81,13 @@ class UtilisateursResourceTest {
 
 
     @Test
-    void testForUtilisateurUnkown() {
+    void testForUtilisateurUnkown() throws UserAccessForbiddenException {
         // Init des données
-        Utilisateur utilisateurExpected = MockDataUtilisateur.getTestUtilisateurWithDate();
-        Mockito.when(utilisateurService.getUtilisateur(Mockito.anyString()))
-                .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Utilisateur introuvable")));
+        Mockito.when(utilisateurService.getLastAccessDate(Mockito.anyString()))
+                .thenReturn(Uni.createFrom().nullItem());
         // Test
         given()
-     //       .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
         .when()
             .get(UtilisateursAPIEnum.USERS_BASE + UtilisateursAPIEnum.USERS_ACCESS_DATE)
         .then()
