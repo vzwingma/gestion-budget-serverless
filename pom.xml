@@ -11,6 +11,7 @@
   <modules>
     <module>communs</module>
     <module>parametrages</module>
+    <module>utilisateurs</module>
   </modules>
 
   <properties>
