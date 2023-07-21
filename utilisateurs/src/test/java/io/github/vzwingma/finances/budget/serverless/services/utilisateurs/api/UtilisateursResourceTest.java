@@ -88,7 +88,7 @@ class UtilisateursResourceTest {
                 .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Utilisateur introuvable")));
         // Test
         given()
-            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+     //       .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
         .when()
             .get(UtilisateursAPIEnum.USERS_BASE + UtilisateursAPIEnum.USERS_ACCESS_DATE)
         .then()

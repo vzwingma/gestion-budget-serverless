@@ -65,11 +65,11 @@ public class UtilisateursResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Session introuvable")
     })
     @GET
-    @RolesAllowed({ UtilisateursAPIEnum.UTILISATEURS_ROLE })
+    //RolesAllowed({ UtilisateursAPIEnum.UTILISATEURS_ROLE })
     @Path(UtilisateursAPIEnum.USERS_ACCESS_DATE)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<UtilisateurPrefsAPIObject> getLastAccessDateUtilisateur() throws UserAccessForbiddenException {
-        String idProprietaire = securityContext.getUserPrincipal().getName();
+        String idProprietaire = "unknown"; // securityContext.getUserPrincipal().getName();
         BusinessTraceContext.get().clear().put(BusinessTraceContextKeyEnum.USER, idProprietaire);
         if(idProprietaire != null) {
             return service.getLastAccessDate(idProprietaire)
@@ -101,10 +101,10 @@ public class UtilisateursResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Session introuvable")
     })
     @GET
-    @RolesAllowed({ UtilisateursAPIEnum.UTILISATEURS_ROLE })
+    //RolesAllowed({ UtilisateursAPIEnum.UTILISATEURS_ROLE })
     @Path(UtilisateursAPIEnum.USERS_PREFS)
     public Uni<UtilisateurPrefsAPIObject> getPreferencesUtilisateur() {
-        String idProprietaire = securityContext.getUserPrincipal().getName();
+        String idProprietaire = "unknown"; //  securityContext.getUserPrincipal().getName();
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.USER, idProprietaire);
         if(idProprietaire != null){
             return service.getUtilisateur(idProprietaire)
