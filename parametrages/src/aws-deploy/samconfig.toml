@@ -1,6 +1,6 @@
 version = 0.1
 [default.deploy.parameters]
-stack_name = "budget-parametrage"
+stack_name = "budget-app"
 resolve_s3 = true
 s3_prefix = "budget-parametrage"
 region = "eu-west-3"

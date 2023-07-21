@@ -24,12 +24,12 @@
           GetResource:
             Type: Api
             Properties:
-              Path: /{proxy+}
+              Path: /{uri+}
               Method: any
 
   Outputs:
     ParametragesNativeApi:
       Description: URL for application
-      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Qua/'
       Export:
         Name: ParametragesNativeApi
