@@ -1,6 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 
 @QuarkusTest
 class OperationsServiceTest {
@@ -63,6 +65,7 @@ class OperationsServiceTest {
         // When
         Mockito.when(budgetAppProvider.getBudgetMensuel(Mockito.anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et3operationsRealisees()));
+        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
         // Test
         assertTrue(operationsAppProvider.setLigneAsDerniereOperation("Test", "C1B2_L3").await().indefinitely());
         Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(Mockito.any());

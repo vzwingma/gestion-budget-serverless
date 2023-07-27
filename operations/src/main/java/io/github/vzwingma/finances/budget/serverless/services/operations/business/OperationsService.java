@@ -159,12 +159,15 @@ public class OperationsService implements IOperationsAppProvider {
 
 	@Override
 	public Uni<Boolean> setLigneAsDerniereOperation(String idBudget, String ligneId) {
-		LOGGER.info("Tag de la ligne comme dernière opération");
+		LOGGER.info("Tag de la ligne comme dernière opération {} sur {}", ligneId, idBudget);
 		final AtomicBoolean operationUpdate = new AtomicBoolean(false);
 		return this.budgetService.getBudgetMensuel(idBudget)
 				.onItem()
 				.invoke(budget -> {
-					if(budget.getListeOperations() != null && !budget.getListeOperations().isEmpty()) {
+					if( budget == null){
+						LOGGER.warn("Budget NULL");
+					}
+					else if(budget.getListeOperations() != null && !budget.getListeOperations().isEmpty()) {
 						budget.getListeOperations()
 							.forEach(op -> {
 								op.setTagDerniereOperation(ligneId.equals(op.getId()));
@@ -183,8 +186,10 @@ public class OperationsService implements IOperationsAppProvider {
 					else{
 						return Uni.createFrom().failure(new DataNotFoundException("L'opération "+ligneId+" n'a pas été trouvée dans le budget "+idBudget));
 					}
-				}).onItem().transform(Objects::nonNull);
-			}
+				})
+				.onItem()
+					.transform(Objects::nonNull);
+	}
 
 
 	@Override
