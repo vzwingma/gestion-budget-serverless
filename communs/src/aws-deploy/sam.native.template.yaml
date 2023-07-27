@@ -8,7 +8,7 @@
         - "*/*"
 
   Resources:
-    ParametragesNative:
+    ParametragesNative___ENV__:
       Type: AWS::Serverless::Function
       Properties:
         Handler: not.used.in.provided.runtimei
@@ -27,7 +27,7 @@
               Path: /parametres/v2/{uri+}
               Method: any
 
-    UtilisateursNative:
+    UtilisateursNative___ENV__:
       Type: AWS::Serverless::Function
       Properties:
         Handler: not.used.in.provided.runtimei
@@ -47,7 +47,7 @@
               Method: any
 
 
-    ComptesNative:
+    ComptesNative___ENV__:
       Type: AWS::Serverless::Function
       Properties:
         Handler: not.used.in.provided.runtimei
@@ -67,7 +67,7 @@
               Method: any
 
 
-    OperationsNative:
+    OperationsNative___ENV__:
       Type: AWS::Serverless::Function
       Properties:
         Handler: not.used.in.provided.runtimei
@@ -87,23 +87,23 @@
               Method: any
 
   Outputs:
-    ParametragesNativeApi:
-      Description: URL for Parametrages API
+    ParametragesNativeApi___ENV__:
+      Description: URL __ENV__ for Parametrages API
       Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__parametres'
       Export:
-        Name: ParametragesNative
-    UtilisateursNativeApi:
-      Description: URL for Utilisateurs API
+        Name: ParametragesNative___ENV__
+    UtilisateursNativeApi___ENV__:
+      Description: URL __ENV__ for Utilisateurs API
       Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__utilisateurs'
       Export:
-        Name: UtilisateursNative
-    ComptesNativeApi:
-      Description: URL for Parametrages API
+        Name: UtilisateursNative___ENV__
+    ComptesNativeApi___ENV__:
+      Description: URL __ENV__ for Parametrages API
       Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__comptes'
       Export:
-        Name: ComptesNative
-    OperationsNativeApi:
-      Description: URL for Budgets & Opérations API
+        Name: ComptesNative___ENV__
+    OperationsNativeApi___ENV__:
+      Description: URL __ENV__ for Budgets & Opérations API
       Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__budgets'
       Export:
-        Name: OperationsNative
+        Name: OperationsNative___ENV__
