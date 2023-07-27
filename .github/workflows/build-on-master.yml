@@ -196,7 +196,7 @@ jobs:
         id: downloadSAMFunction
         name: Download SAM Function
         with:
-          name: sam-function
+          name: function-sam
 
       - uses: actions/download-artifact@v3
         id: downloadSAM
