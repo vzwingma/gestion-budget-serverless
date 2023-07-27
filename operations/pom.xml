@@ -58,11 +58,12 @@
         </profile>
     </profiles>
 
+
     <dependencies>
         <dependency>
-            <groupId>io.github.vzwingma.finances.budget.services</groupId>
+            <groupId>io.github.vzwingma.finances.budget.serverless</groupId>
             <artifactId>communs</artifactId>
-            <version>17.7.0-SNAPSHOT</version>
+            <version>19.0.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>
