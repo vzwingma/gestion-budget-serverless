@@ -50,7 +50,7 @@ jobs:
       - name: Find and Replace in Sam
         run: sed "s/__ENV__/QUA\//g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template2.yaml
       - name: Find and Replace in Sam 2
-        run: sed "s/__VERSION__/SNAPSHOT\//g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template2.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
+        run: sed "s/__VERSION__/SNAPSHOT/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template2.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
 
       - uses: actions/upload-artifact@v3
         name: Upload SAM Function Configuration
