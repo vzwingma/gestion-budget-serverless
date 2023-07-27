@@ -30,7 +30,7 @@ class ParametragesResourceTest {
     @Test
     void testInfoEndpoint() {
         given()
-          .when().get("/_info")
+          .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
           .then()
              .statusCode(200)
              .body(containsStringIgnoringCase("param"));

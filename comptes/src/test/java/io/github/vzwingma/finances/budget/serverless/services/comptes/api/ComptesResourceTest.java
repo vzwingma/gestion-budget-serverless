@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.comptes.api;
 
+import io.github.vzwingma.finances.budget.serverless.services.comptes.api.enums.ComptesAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.comptes.business.ComptesService;
 import io.github.vzwingma.finances.budget.serverless.services.comptes.business.ports.IComptesAppProvider;
 import io.quarkus.test.junit.QuarkusMock;
@@ -20,7 +21,7 @@ class ComptesResourceTest {
     @Test
     void testInfoEndpoint() {
         given()
-          .when().get("/_info")
+          .when().get(ComptesAPIEnum.COMPTES_BASE + "/_info")
           .then()
              .statusCode(200)
                 .body(containsStringIgnoringCase("comptes"));
