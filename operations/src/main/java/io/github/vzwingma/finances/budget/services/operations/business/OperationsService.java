@@ -208,7 +208,6 @@ public class OperationsService implements IOperationsAppProvider {
 		} else {
 			LOGGER.info("Suppression d'une opération : {}", ligneOperation);
 		}
-		return operations;
 	}
 
 
