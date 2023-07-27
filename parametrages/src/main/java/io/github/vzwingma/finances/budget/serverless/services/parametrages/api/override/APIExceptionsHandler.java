@@ -1,4 +1,4 @@
-package io.github.vzwingma.finances.budget.serverless.services.parametrages.override;
+package io.github.vzwingma.finances.budget.serverless.services.parametrages.api.override;
 
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIExceptionsHandler;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.AbstractBusinessException;

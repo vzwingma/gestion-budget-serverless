@@ -2,6 +2,7 @@ package io.github.vzwingma.finances.budget.services.operations.api.override;
 
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIResource;
 import io.github.vzwingma.finances.budget.services.communs.data.model.Info;
+import io.github.vzwingma.finances.budget.services.operations.api.enums.OperationsAPIEnum;
 import io.smallrye.mutiny.Uni;
 
 import jakarta.ws.rs.GET;
@@ -12,7 +13,7 @@ import jakarta.ws.rs.core.MediaType;
 /**
  * Resource de base pour les API REST de l'application
  */
-@Path("/")
+@Path(OperationsAPIEnum.BUDGET_BASE)
 public class RootAPIResource extends AbstractAPIResource {
     @GET
     @Path("_info")

@@ -1,5 +1,6 @@
-package io.github.vzwingma.finances.budget.serverless.services.parametrages.override;
+package io.github.vzwingma.finances.budget.serverless.services.parametrages.api.override;
 
+import io.github.vzwingma.finances.budget.serverless.services.parametrages.api.enums.ParametragesAPIEnum;
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIResource;
 import io.github.vzwingma.finances.budget.services.communs.data.model.Info;
 import io.smallrye.mutiny.Uni;
@@ -11,7 +12,7 @@ import jakarta.ws.rs.core.MediaType;
 /**
  * Resource de base pour les API REST de l'application
  */
-@Path("/")
+@Path(ParametragesAPIEnum.PARAMS_BASE)
 public class RootAPIResource extends AbstractAPIResource {
     @GET
     @Path("_info")
