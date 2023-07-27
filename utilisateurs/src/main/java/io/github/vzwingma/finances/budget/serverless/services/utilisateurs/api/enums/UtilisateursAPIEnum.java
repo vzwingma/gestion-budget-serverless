@@ -16,7 +16,7 @@ public class UtilisateursAPIEnum {
 	/**
 	 * Utilisateurs
 	 */
-	public static final String USERS_BASE = "/utilisateurs/v1";
+	public static final String USERS_BASE = "/utilisateurs/v2";
 	public static final String USERS_ACCESS_DATE = "/lastaccessdate";
 	public static final String USERS_PREFS = "/preferences";
 
