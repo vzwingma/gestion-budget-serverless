@@ -32,7 +32,7 @@ class UtilisateursResourceTest {
     @Test
     void testInfoEndpoint() {
         given()
-          .when().get("/_info")
+          .when().get(UtilisateursAPIEnum.USERS_BASE+"/_info")
           .then()
              .statusCode(200)
                 .body(containsStringIgnoringCase("utilisateurs"));
