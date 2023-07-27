@@ -1,6 +1,6 @@
   AWSTemplateFormatVersion: '2010-09-09'
   Transform: AWS::Serverless-2016-10-31
-  Description: Application Budget - SNAPSHOT - AWS Serverless Quarkus backends
+  Description: Application Budget - __VERSION__ - AWS Serverless Quarkus backends
   Globals:
     Api:
       EndpointConfiguration: REGIONAL
@@ -89,21 +89,21 @@
   Outputs:
     ParametragesNativeApi:
       Description: URL for Parametrages API
-      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Qua/parametres'
+      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__parametres'
       Export:
         Name: ParametragesNative
     UtilisateursNativeApi:
       Description: URL for Utilisateurs API
-      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Qua/utilisateurs'
+      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__utilisateurs'
       Export:
         Name: UtilisateursNative
     ComptesNativeApi:
       Description: URL for Parametrages API
-      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Qua/parametres'
+      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__comptes'
       Export:
         Name: ComptesNative
     OperationsNativeApi:
       Description: URL for Budgets & Opérations API
-      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Qua/budgets'
+      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__budgets'
       Export:
         Name: OperationsNative
