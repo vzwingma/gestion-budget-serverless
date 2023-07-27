@@ -1,6 +1,6 @@
   AWSTemplateFormatVersion: '2010-09-09'
   Transform: AWS::Serverless-2016-10-31
-  Description: AWS Serverless Quarkus HTTP - parametrages-18.0.0-SNAPSHOT
+  Description: AWS Serverless Quarkus MicroServices - parametrages-18.0.0-SNAPSHOT
   Globals:
     Api:
       EndpointConfiguration: REGIONAL

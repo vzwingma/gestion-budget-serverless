@@ -39,11 +39,22 @@ jobs:
       # Runs the Build with Maven
       - name: Build Communs with Maven
         run: mvn clean install -B --file communs/pom.xml
-
+      # Publish
       - name: Publish to GitHub Packages Apache Maven
         run: mvn --batch-mode deploy -DskipTests=true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Upload SAM configurations
+      - uses: actions/upload-artifact@v3
+        name: Upload SAM Function Configuration
+        with:
+          name: function-sam
+          path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
+      - uses: actions/upload-artifact@v3
+        name: Upload SAM Configuration
+        with:
+          name: sam
+          path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
     # SONAR
   sonar-scan:
       name: Scan Sonar
@@ -80,6 +91,7 @@ jobs:
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   # BUILD
+  # Paramétrages
   build-quarkus-parametrages:
     name: Build µS Paramétrages
     # The type of runner that the job will run on
@@ -112,24 +124,49 @@ jobs:
         with:
           name: parametrages-function
           path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/parametrages/target/function.zip
-      - uses: actions/upload-artifact@v3
-        name: Upload SAM Function Configuration
-        with:
-          name: parametrages-function-sam
-          path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/parametrages/src/aws-deploy/sam.native.yaml
-      - uses: actions/upload-artifact@v3
-        name: Upload SAM Configuration
-        with:
-          name: parametrages-sam
-          path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/parametrages/src/aws-deploy/samconfig.toml
-      - name: Liste
-        run: ls /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/parametrages/target/
-  # Deploy
-  deploy-lambda-parametrages:
-    name: Deploy Lambda Paramétrages
+
+  # Utilisateurs
+  build-quarkus-utilisateurs:
+    name: Build µS Utilisateurs
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    needs: build-quarkus-parametrages
+    needs: build-communs
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          distribution: 'temurin'
+          cache: 'maven'
+      # Step that does that actual cache save and restore
+      - uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      # Runs a single command using the runners shell
+      - name: Build Utilisateurs Native App with Maven
+        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 --file utilisateurs/pom.xml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Upload Releases Snapshot
+      - uses: actions/upload-artifact@v3
+        name: Upload Fonction serverless Utilisateurs
+        with:
+          name: utilisateurs-function
+          path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/utilisateurs/target/function.zip
+
+  # DEPLOY
+  deploy-lambdas-apps:
+    name: Deploy Lambda Functions
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    needs:
+      - build-quarkus-parametrages
+      - build-quarkus-utilisateurs
     steps:
       - uses: aws-actions/setup-sam@v2
         name: Configure SAM
@@ -141,21 +178,34 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-3
+
       - uses: actions/download-artifact@v3
-        id: downloadService
+        id: downloadServiceParametrage
         name: Download Service Paramétrages
         with:
           name: parametrages-function
+          path: ~/parametrages-function.zip
+      - uses: actions/download-artifact@v3
+        id: downloadServiceUtilisateurs
+        name: Download Service Utilisateurs
+        with:
+          name: utilisateurs-function
+          path: ~/utilisateurs-function.zip
+
       - uses: actions/download-artifact@v3
         id: downloadSAMFunction
-        name: Download SAM Function Paramétrages
+        name: Download SAM Function
         with:
-          name: parametrages-function-sam
+          name: sam-function
+
       - uses: actions/download-artifact@v3
         id: downloadSAM
-        name: Download SAM Paramétrages
+        name: Download SAM Config
         with:
-          name: parametrages-sam
+          name: sam
+
+      - name: Display structure of downloaded files
+        run: ls -R
         # Build inside Docker containers
       - run: sam build --use-container -t sam.native.yaml --config-file samconfig.toml
         name: SAM Build
