@@ -240,6 +240,8 @@ jobs:
     needs:
       - build-quarkus-parametrages
       - build-quarkus-utilisateurs
+      - build-quarkus-comptes
+      - build-quarkus-operations
     steps:
       - uses: aws-actions/setup-sam@v2
         name: Configure SAM
