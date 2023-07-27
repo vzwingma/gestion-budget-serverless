@@ -2,7 +2,7 @@ version = 0.1
 [default.deploy.parameters]
 stack_name = "budget-app__ENV__"
 resolve_s3 = true
-s3_prefix = "budget-app__ENV__"
+s3_prefix = "budget-app"
 region = "eu-west-3"
 confirm_changeset = false
 capabilities = "CAPABILITY_IAM"

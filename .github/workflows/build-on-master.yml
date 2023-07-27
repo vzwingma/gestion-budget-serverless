@@ -49,19 +49,12 @@ jobs:
         id: get_version
         run: echo VERSION=$(echo $GITHUB_REF | cut -d / -f 3 | cut -b 2- ) >> $GITHUB_OUTPUT
       - name: Find and Replace
-        uses: jacobtomlinson/gha-find-replace@v3
-        with:
-          find: "__VERSION__"
-          replace: ${{ steps.get_version.outputs.VERSION }}
-          include: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/**
-          regex: false
-      - name: Find and Replace
-        uses: jacobtomlinson/gha-find-replace@v3
-        with:
-          find: "__ENV__"
-          replace: "QUA/"
-          include: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/**
-          regex: false
+        run: sed "s/__VERSION__/${{ steps.get_version.outputs.VERSION }}/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml; sed "s/__ENV__/QUA/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml; sed "s/__ENV__/QUA/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
+      - name: CAT SAM Native
+        run: cat /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
+      - name: CAT SAM Config
+        run: cat /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
+
       - uses: actions/upload-artifact@v3
         name: Upload SAM Function Configuration
         with:

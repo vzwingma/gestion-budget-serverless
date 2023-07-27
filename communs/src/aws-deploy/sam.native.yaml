@@ -1,6 +1,6 @@
   AWSTemplateFormatVersion: '2010-09-09'
   Transform: AWS::Serverless-2016-10-31
-  Description: Application Budget - __VERSION__ - AWS Serverless Quarkus backends
+  Description: Application Budget - __VERSION__ - __ENV__ - AWS Serverless Quarkus backends
   Globals:
     Api:
       EndpointConfiguration: REGIONAL
