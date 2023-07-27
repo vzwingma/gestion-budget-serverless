@@ -37,13 +37,20 @@ jobs:
            key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
            restore-keys: ${{ runner.os }}-m2
       # Runs the Build with Maven
-
+      - name: Build Communs with Maven
+        run: mvn clean install -B --file communs/pom.xml
+      # Publish
+      - name: Publish to GitHub Packages Apache Maven
+        run: mvn --batch-mode deploy -DskipTests=true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload SAM configurations
       - name: Get tag Version
         id: get_version
         run: echo VERSION=$(echo $GITHUB_REF | cut -d / -f 3 | cut -b 2- ) >> $GITHUB_OUTPUT
       - name: Find and Replace
-        run: sed "s/__VERSION__/${{ steps.get_version.outputs.VERSION }}/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml; sed "s/__ENV__/QUA\//g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml; sed "s/__ENV__/QUA/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
+        run: sed "s/__ENV__/QUA\//g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml; \n
+             sed "s/__ENV__/QUA/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml;
       - name: CAT SAM Native
         run: cat /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
       - name: CAT SAM Config
