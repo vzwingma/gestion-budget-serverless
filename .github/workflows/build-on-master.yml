@@ -36,14 +36,14 @@ jobs:
            path: ~/.m2
            key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
            restore-keys: ${{ runner.os }}-m2
-
       # Upload SAM configurations
       - name: Get tag Version
         id: get_version
         run: echo VERSION=$(echo $GITHUB_REF | cut -d / -f 3 | cut -b 2- ) >> $GITHUB_OUTPUT
-      - name: Find and Replace
-        run: sed "s/__ENV__/QUA\//g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml; \n
-             sed "s/__ENV__/QUA/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml;
+      - name: Find and Replace in SalmConfig
+        run: sed "s/__ENV__/QUA/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml;
+      - name: Find and Replace in Sam
+        run: sed "s/__ENV__/QUA\//g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml;
       - name: CAT SAM Native
         run: cat /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
       - name: CAT SAM Config
