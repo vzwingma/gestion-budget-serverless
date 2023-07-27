@@ -13,7 +13,7 @@
       Properties:
         Handler: not.used.in.provided.runtimei
         Runtime: provided
-        CodeUri: parametrages-function.zip
+        CodeUri: parametrages/function.zip
         MemorySize: 128
         Policies: AWSLambdaBasicExecutionRole
         Timeout: 15
@@ -24,7 +24,7 @@
           GetResource:
             Type: Api
             Properties:
-              Path: /{uri+}
+              Path: /parametrages/{uri+}
               Method: any
 
     UtilisateursNative:
@@ -32,7 +32,7 @@
       Properties:
         Handler: not.used.in.provided.runtimei
         Runtime: provided
-        CodeUri: utilisateurs-function.zip
+        CodeUri: utilisateurs/function.zip
         MemorySize: 128
         Policies: AWSLambdaBasicExecutionRole
         Timeout: 15
@@ -43,7 +43,7 @@
           GetResource:
             Type: Api
             Properties:
-              Path: /{uri+}
+              Path: /utilisateurs/{uri+}
               Method: any
   Outputs:
     ParametragesNativeApi:

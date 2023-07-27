@@ -184,13 +184,13 @@ jobs:
         name: Download Service Paramétrages
         with:
           name: parametrages-function
-          path: parametrages-function.zip
+          path: parametrages
       - uses: actions/download-artifact@v3
         id: downloadServiceUtilisateurs
         name: Download Service Utilisateurs
         with:
           name: utilisateurs-function
-          path: utilisateurs-function.zip
+          path: utilisateurs
 
       - uses: actions/download-artifact@v3
         id: downloadSAMFunction
