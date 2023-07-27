@@ -4,13 +4,16 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.vzwingma.finances.budget.serverless</groupId>
   <artifactId>services</artifactId>
-  <version>18.0.0-SNAPSHOT</version>
+  <version>19.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Services</name>
 
   <modules>
     <module>communs</module>
     <module>parametrages</module>
+    <module>utilisateurs</module>
+    <module>comptes</module>
+    <module>operations</module>
   </modules>
 
   <properties>
@@ -25,13 +28,14 @@
 
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-    <quarkus.platform.version>3.2.0.Final</quarkus.platform.version>
+    <quarkus.platform.version>3.2.2.Final</quarkus.platform.version>
     <lombok.version>1.18.28</lombok.version>
     <surefire-plugin.version>3.1.0</surefire-plugin.version>
     <jacoco.version>0.8.10</jacoco.version>
   </properties>
 
   <build>
+    <finalName>${project.artifactId}</finalName>
     <plugins>
       <plugin>
         <groupId>${quarkus.platform.group-id}</groupId>
@@ -69,7 +73,6 @@
       </plugin>
     </plugins>
   </build>
-
   <!-- Profiles -->
   <profiles>
     <profile>
@@ -81,6 +84,32 @@
       </activation>
       <build>
         <plugins>
+          <plugin>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <version>${quarkus.platform.version}</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>${compiler-plugin.version}</version>
+          </plugin>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>${surefire-plugin.version}</version>
+            <configuration>
+              <systemPropertyVariables>
+                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                <maven.home>${maven.home}</maven.home>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
           <plugin>
             <artifactId>maven-failsafe-plugin</artifactId>
             <version>${surefire-plugin.version}</version>
@@ -147,6 +176,14 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
       <artifactId>quarkus-mongodb-panache</artifactId>
     </dependency>
     <dependency>
@@ -170,6 +207,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.4.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <version>${lombok.version}</version>
@@ -187,6 +231,7 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
   <repositories>
     <repository>
       <id>github</id>
@@ -200,7 +245,6 @@
       </releases>
     </repository>
   </repositories>
-
 
   <distributionManagement>
     <repository>

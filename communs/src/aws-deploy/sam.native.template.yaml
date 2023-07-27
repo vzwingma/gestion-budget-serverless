@@ -1,0 +1,109 @@
+  AWSTemplateFormatVersion: '2010-09-09'
+  Transform: AWS::Serverless-2016-10-31
+  Description: Application Budget - __VERSION__ - __ENV__ - AWS Serverless Quarkus backends
+  Globals:
+    Api:
+      EndpointConfiguration: REGIONAL
+      BinaryMediaTypes:
+        - "*/*"
+
+  Resources:
+    ParametragesNative__ENV__:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: not.used.in.provided.runtimei
+        Runtime: provided
+        CodeUri: parametrages/function.zip
+        MemorySize: 128
+        Policies: AWSLambdaBasicExecutionRole
+        Timeout: 15
+        Environment:
+          Variables:
+            DISABLE_SIGNAL_HANDLERS: true
+        Events:
+          GetResource:
+            Type: Api
+            Properties:
+              Path: /parametres/v2/{uri+}
+              Method: any
+
+    UtilisateursNative__ENV__:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: not.used.in.provided.runtimei
+        Runtime: provided
+        CodeUri: utilisateurs/function.zip
+        MemorySize: 128
+        Policies: AWSLambdaBasicExecutionRole
+        Timeout: 15
+        Environment:
+          Variables:
+            DISABLE_SIGNAL_HANDLERS: true
+        Events:
+          GetResource:
+            Type: Api
+            Properties:
+              Path: /utilisateurs/v2/{uri+}
+              Method: any
+
+
+    ComptesNative__ENV__:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: not.used.in.provided.runtimei
+        Runtime: provided
+        CodeUri: comptes/function.zip
+        MemorySize: 128
+        Policies: AWSLambdaBasicExecutionRole
+        Timeout: 15
+        Environment:
+          Variables:
+            DISABLE_SIGNAL_HANDLERS: true
+        Events:
+          GetResource:
+            Type: Api
+            Properties:
+              Path: /comptes/v2/{uri+}
+              Method: any
+
+
+    OperationsNative__ENV__:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: not.used.in.provided.runtimei
+        Runtime: provided
+        CodeUri: operations/function.zip
+        MemorySize: 128
+        Policies: AWSLambdaBasicExecutionRole
+        Timeout: 15
+        Environment:
+          Variables:
+            DISABLE_SIGNAL_HANDLERS: true
+        Events:
+          GetResource:
+            Type: Api
+            Properties:
+              Path: /budgets/v2/{uri+}
+              Method: any
+
+  Outputs:
+    ParametragesNativeApi__ENV__:
+      Description: URL __ENV__ for Parametrages API
+      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__parametres'
+      Export:
+        Name: ParametragesNative__ENV__
+    UtilisateursNativeApi__ENV__:
+      Description: URL __ENV__ for Utilisateurs API
+      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__utilisateurs'
+      Export:
+        Name: UtilisateursNative__ENV__
+    ComptesNativeApi__ENV__:
+      Description: URL __ENV__ for Parametrages API
+      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__comptes'
+      Export:
+        Name: ComptesNative__ENV__
+    OperationsNativeApi__ENV__:
+      Description: URL __ENV__ for Budgets & Opérations API
+      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__budgets'
+      Export:
+        Name: OperationsNative__ENV__

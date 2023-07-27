@@ -50,7 +50,7 @@ public class ParametragesResource extends AbstractAPIInterceptors {
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<List<CategorieOperations>> getCategories() {
 
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal() != null ? securityContext.getUserPrincipal().getName(): "unknown");
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         return paramsServices.getCategories()
                 .invoke(listeCategories -> LOG.info("Chargement des {} Categories", listeCategories != null ? listeCategories.size() : "-1"))
                 .invoke(l -> BusinessTraceContext.get().remove(BusinessTraceContextKeyEnum.USER));
@@ -67,7 +67,7 @@ public class ParametragesResource extends AbstractAPIInterceptors {
     @Path(ParametragesAPIEnum.PARAMS_CATEGORIES + ParametragesAPIEnum.PARAMS_CATEGORIE_ID)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<CategorieOperations> getCategorieById(@RestPath String idCategorie) {
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
 
         return paramsServices.getCategorieById(idCategorie)
                 .invoke(categorie -> LOG.info("[idCategorie={}] Chargement de la {}catégorie : {}", idCategorie, categorie != null && categorie.isCategorie() ? "" : "sous-", categorie))

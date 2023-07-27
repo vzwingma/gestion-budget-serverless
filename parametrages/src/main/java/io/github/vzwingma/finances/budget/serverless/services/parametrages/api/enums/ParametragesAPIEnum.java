@@ -15,7 +15,7 @@ public class ParametragesAPIEnum {
 	/**
 	 * Paramétrages
 	 */
-	public static final String PARAMS_BASE = "/parametres/v1";
+	public static final String PARAMS_BASE = "/parametres/v2";
 	public static final String PARAMS_CATEGORIES = "/categories";
 
 	public static final String PARAMS_CATEGORIE_ID = "/{"+PARAM_ID_CATEGORIE + "}";

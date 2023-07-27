@@ -1,6 +1,8 @@
 package io.github.vzwingma.finances.budget.services.communs.api;
 
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +16,8 @@ public abstract class AbstractAPIInterceptors {
 
 
     private final Logger LOG = LoggerFactory.getLogger(AbstractAPIInterceptors.class);
-
+    @Context
+    SecurityContext securityContext;
     /**
      * Logger requête
      * @param requestContext context de la requête
@@ -33,5 +36,14 @@ public abstract class AbstractAPIInterceptors {
 
         BusinessTraceContext.getclear();
         LOG.debug("[HTTP][{}] {}", responseContext.getStatus(), responseContext.getStatusInfo().getReasonPhrase());
+    }
+
+    public String getAuthenticatedUser(){
+        if(securityContext != null && securityContext.getUserPrincipal() != null){
+            return securityContext.getUserPrincipal().getName();
+        }
+        else{
+            return "unknown";
+        }
     }
 }
