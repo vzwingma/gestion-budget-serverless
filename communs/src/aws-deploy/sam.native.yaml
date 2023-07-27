@@ -24,7 +24,7 @@
           GetResource:
             Type: Api
             Properties:
-              Path: /parametrages/{uri+}
+              Path: /parametres/{uri+}
               Method: any
 
     UtilisateursNative:
@@ -48,7 +48,7 @@
   Outputs:
     ParametragesNativeApi:
       Description: URL for Parametrages API
-      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Qua/parametrages'
+      Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Qua/parametres'
       Export:
         Name: ParametragesNativeApi
     UtilisateursNativeApi:
