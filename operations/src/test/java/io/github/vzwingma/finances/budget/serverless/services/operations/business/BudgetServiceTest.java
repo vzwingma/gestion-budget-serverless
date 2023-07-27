@@ -357,7 +357,6 @@ class BudgetServiceTest {
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
         Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
         // Test
-        LigneOperation ligneOperation = MockDataOperations.getOperationPrelevement();
         BudgetMensuel budgetMensuelAJour = budgetAppProvider.deleteOperationInBudget("C1_2022_01", "TEST1").await().indefinitely();
         assertEquals(0, budgetMensuelAJour.getListeOperations().size());
 
@@ -377,7 +376,6 @@ class BudgetServiceTest {
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
         Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
         // Test
-        LigneOperation ligneOperation = MockDataOperations.getOperationPrelevement();
         BudgetMensuel budgetMensuelAJour = budgetAppProvider.deleteOperationInBudget("C1_2022_01", "noId").await().indefinitely();
         assertEquals(1, budgetMensuelAJour.getListeOperations().size());
 
