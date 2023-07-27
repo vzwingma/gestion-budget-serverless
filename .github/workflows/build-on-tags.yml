@@ -52,20 +52,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload SAM configurations
-      - name: Find and Replace
-        uses: jacobtomlinson/gha-find-replace@v3
-        with:
-          find: "__VERSION__"
-          replace: ${{ steps.get_version.outputs.VERSION }}
-          include: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/**
-          regex: false
-      - name: Find and Replace
-        uses: jacobtomlinson/gha-find-replace@v3
-        with:
-          find: "__ENV__"
-          replace: ""
-          include: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/**
-          regex: false
+      - name: Find and Replace in SamConfig
+        run: sed "s/__ENV__/QUA/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.template.toml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
+      - name: Find and Replace in Sam
+        run: sed "s/__ENV__/QUA\//g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template2.yaml
+      - name: Find and Replace in Sam 2
+        run: sed "s/__VERSION__/${{ steps.get_version.outputs.VERSION }}\//g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template2.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
+
       - uses: actions/upload-artifact@v3
         name: Upload SAM Function Configuration
         with:

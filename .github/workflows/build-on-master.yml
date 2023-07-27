@@ -36,6 +36,14 @@ jobs:
            path: ~/.m2
            key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
            restore-keys: ${{ runner.os }}-m2
+      # Runs the Build with Maven
+      - name: Build Communs with Maven
+        run: mvn clean install -B --file communs/pom.xml
+      # Publish
+      - name: Publish to GitHub Packages Apache Maven
+        run: mvn --batch-mode deploy -DskipTests=true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find and Replace in SamConfig
         run: sed "s/__ENV__/QUA/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.template.toml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
@@ -43,10 +51,6 @@ jobs:
         run: sed "s/__ENV__/QUA\//g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template2.yaml
       - name: Find and Replace in Sam 2
         run: sed "s/__VERSION__/SNAPSHOT\//g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template2.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
-      - name: CAT SAM Native
-        run: cat /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
-      - name: CAT SAM Config
-        run: cat /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
 
       - uses: actions/upload-artifact@v3
         name: Upload SAM Function Configuration
