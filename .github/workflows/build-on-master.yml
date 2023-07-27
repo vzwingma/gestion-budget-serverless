@@ -37,13 +37,7 @@ jobs:
            key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
            restore-keys: ${{ runner.os }}-m2
       # Runs the Build with Maven
-      - name: Build Communs with Maven
-        run: mvn clean install -B --file communs/pom.xml
-      # Publish
-      - name: Publish to GitHub Packages Apache Maven
-        run: mvn --batch-mode deploy -DskipTests=true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       # Upload SAM configurations
       - name: Get tag Version
         id: get_version
