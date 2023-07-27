@@ -76,7 +76,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Données introuvables")
     })
     @GET
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_QUERY)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> getBudget(
@@ -84,7 +84,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @RestQuery("mois") Integer mois,
             @RestQuery("annee") Integer annee) {
 
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("getBudget {}/{}", mois, annee);
 
         if(mois != null && annee != null){
@@ -116,12 +116,12 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Données introuvables")
     })
     @GET
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_ID)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> getBudget(@RestPath("idBudget") String idBudget) {
 
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("chargeBudget");
         if(idBudget != null){
             return budgetService.getBudgetMensuel(idBudget);
@@ -147,12 +147,12 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "405", description = "Compte clos. Impossible de réinitialiser le budget")
     })
     @DELETE
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_ID)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> reinitializeBudget(@RestPath("idBudget") String idBudget){
 
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("Réinitialisation du budget");
         if(idBudget != null){
             return budgetService.reinitialiserBudgetMensuel(idBudget);
@@ -176,14 +176,14 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Données introuvables")
     })
     @GET
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_ETAT)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<Boolean> isBudgetActif(
             @RestPath("idBudget") String idBudget,
             @RestQuery(value = "actif") Boolean actif) {
 
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("actif ? : {}", actif);
 
         if(Boolean.TRUE.equals(actif)){
@@ -208,14 +208,14 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "500", description = "Opération en échec")
     })
     @POST
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_ETAT)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> setBudgetActif(
             @RestPath("idBudget") String idBudget,
             @RestQuery(value="actif") Boolean actif) {
 
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("[idBudget={}] set Actif : {}", idBudget, actif );
         return budgetService.setBudgetActif(idBudget, actif);
     }
@@ -239,7 +239,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Données introuvables")
     })
     @POST
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_OPERATION_DERNIERE)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -247,7 +247,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @RestPath("idBudget") String idBudget,
             @RestPath("idOperation") String idOperation)  {
 
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, idOperation).put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, idOperation).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("setAsDerniereOperation");
         return operationsService.setLigneAsDerniereOperation(idBudget, idOperation);
     }
@@ -270,17 +270,17 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "423", description = "Compte clos")
     })
     @POST
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_OPERATION)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> createOperation( @RestPath("idBudget") String idBudget, LigneOperation operation) {
 
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("createOperation");
         if(operation != null && idBudget != null){
             operation.setId(UUID.randomUUID().toString());
-            return budgetService.addOperationInBudget(idBudget, operation, securityContext.getUserPrincipal().getName());
+            return budgetService.addOperationInBudget(idBudget, operation, super.getAuthenticatedUser());
         }
         else {
             return Uni.createFrom().failure(new BadParametersException("Les paramètres idBudget et operation sont obligatoires"));
@@ -306,7 +306,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
     })
     @POST
     @Path(value= OperationsAPIEnum.BUDGET_OPERATION_BY_ID)
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> updateOperation(
@@ -315,13 +315,12 @@ public class OperationsResource extends AbstractAPIInterceptors {
             LigneOperation operation) {
 
 
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, idOperation).put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
-        LOG.info("UpdateOperation");
-        LOG.info("{}", securityContext.getUserPrincipal().getName());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, idOperation).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
+        LOG.trace("UpdateOperation");
 
         if(operation != null && idBudget != null){
             operation.setId(idOperation);
-            return budgetService.addOperationInBudget(idBudget, operation, securityContext.getUserPrincipal().getName());
+            return budgetService.addOperationInBudget(idBudget, operation, super.getAuthenticatedUser());
         }
         else {
             return Uni.createFrom().failure(new BadParametersException("Les paramètres idBudget et idOperation sont obligatoires"));
@@ -347,7 +346,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "423", description = "Compte clos")
     })
     @POST
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_OPERATION_INTERCOMPTE)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -357,11 +356,11 @@ public class OperationsResource extends AbstractAPIInterceptors {
             LigneOperation operation) {
 
         String uuidOperation = UUID.randomUUID().toString();
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, uuidOperation).put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
-        LOG.info("Create Operation InterCompte [->{}]", idCompte);
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, uuidOperation).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
+        LOG.trace("Create Operation InterCompte [->{}]", idCompte);
         if(operation != null && idBudget != null){
             operation.setId(uuidOperation);
-            return budgetService.createOperationsIntercomptes(idBudget, operation, idCompte, securityContext.getUserPrincipal().getName());
+            return budgetService.createOperationsIntercomptes(idBudget, operation, idCompte, super.getAuthenticatedUser());
         }
         else{
             return Uni.createFrom().failure(new BadParametersException("Les paramètres idBudget, idOperation et idCompte sont obligatoires"));
@@ -386,14 +385,14 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "405", description = "Compte clos")
     })
     @DELETE
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_OPERATION_BY_ID)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> deleteOperation(
             @RestPath("idBudget") String idBudget,
             @RestPath("idOperation") String idOperation) {
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, idOperation).put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, idOperation).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         if(idOperation != null && idBudget != null){
             LOG.trace("Delete Operation");
             return budgetService.deleteOperationInBudget(idBudget, idOperation);
@@ -418,14 +417,14 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Données introuvables")
     })
     @GET
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_COMPTE_INTERVALLES)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<IntervallesCompteAPIObject> getIntervallesBudgetsCompte(@RestPath("idCompte") String idCompte) {
         if(idCompte == null){
             return Uni.createFrom().failure(new BadParametersException("Le paramètre idCompte est obligatoire"));
         }
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("getIntervallesBudgetsCompte");
 
         return this.budgetService.getIntervallesBudgets(idCompte)
@@ -459,12 +458,12 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Données introuvables")
     })
     @GET
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_COMPTE_OPERATIONS_LIBELLES)
     @Produces(MediaType.APPLICATION_JSON)
     public  Uni<LibellesOperationsAPIObject> getLibellesOperations(@RestPath("idCompte") String idCompte, @RestQuery("annee") Integer annee) {
 
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, securityContext.getUserPrincipal().getName());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
 
         LOG.trace("Libellés Opérations de l'année {}", annee);
         return this.operationsService.getLibellesOperations(idCompte, annee)
@@ -492,6 +491,5 @@ public class OperationsResource extends AbstractAPIInterceptors {
     @Override
     @ServerResponseFilter
     public void postMatchingFilter(ContainerResponseContext responseContext) { super.postMatchingFilter(responseContext); }
-
 
 }

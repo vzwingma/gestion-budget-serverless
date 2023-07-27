@@ -65,10 +65,9 @@ public class ComptesResource extends AbstractAPIInterceptors {
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<List<CompteBancaire>> getComptesUtilisateur() {
 
-        String proprietaire = securityContext.getUserPrincipal().getName();
-        BusinessTraceContext.getclear().remove(BusinessTraceContextKeyEnum.COMPTE).put(BusinessTraceContextKeyEnum.USER, proprietaire);
+        BusinessTraceContext.getclear().remove(BusinessTraceContextKeyEnum.COMPTE).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("getComptesUtilisateur");
-        return this.services.getComptesUtilisateur(proprietaire)
+        return this.services.getComptesUtilisateur(super.getAuthenticatedUser())
                 .invoke(listeComptes -> LOG.info("{} comptes chargés", listeComptes != null ? listeComptes.size() : "-1"));
     }
 
@@ -91,11 +90,10 @@ public class ComptesResource extends AbstractAPIInterceptors {
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<CompteBancaire> getCompteUtilisateur(@RestPath String idCompte) {
 
-        String proprietaire = securityContext.getUserPrincipal().getName();
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.USER, proprietaire).put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser()).put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
 
         LOG.trace("getCompteUtilisateur");
-        return this.services.getCompteById(idCompte, proprietaire)
+        return this.services.getCompteById(idCompte, super.getAuthenticatedUser())
                 .invoke(compte -> LOG.info("Compte chargé : [{}]", compte != null ? compte.getLibelle() : "-1"));
     }
 
