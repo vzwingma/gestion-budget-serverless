@@ -6,7 +6,7 @@
   <artifactId>services</artifactId>
   <version>19.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>Services</name>
+  <name>Services serverless</name>
 
   <modules>
     <module>communs</module>
