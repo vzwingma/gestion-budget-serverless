@@ -21,6 +21,7 @@
         Handler: not.used.in.provided.runtimei
         Runtime: provided
         CodeUri: parametrages/function.zip
+        Description: µService Paramétrages __ENV__
         MemorySize: 128
         Policies: AWSLambdaBasicExecutionRole
         Events:
@@ -36,6 +37,7 @@
         Handler: not.used.in.provided.runtimei
         Runtime: provided
         CodeUri: utilisateurs/function.zip
+        Description: µService Utilisateurs __ENV__
         MemorySize: 128
         Policies: AWSLambdaBasicExecutionRole
         Events:
@@ -52,6 +54,7 @@
         Handler: not.used.in.provided.runtimei
         Runtime: provided
         CodeUri: comptes/function.zip
+        Description: µService Comptes __ENV__
         MemorySize: 128
         Policies: AWSLambdaBasicExecutionRole
         Events:
@@ -68,6 +71,7 @@
         Handler: not.used.in.provided.runtimei
         Runtime: provided
         CodeUri: operations/function.zip
+        Description: µService Opérations __ENV__
         MemorySize: 128
         Policies: AWSLambdaBasicExecutionRole
         Events:
