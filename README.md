@@ -14,12 +14,12 @@ Ce projet utilise Quarkus, le Supersonic Subatomic Java Framework et les microse
 [![GitHub issues](https://img.shields.io/github/issues-raw/vzwingma/gestion-budget-serverless.svg?style=flat-square)](https://github.com/vzwingma/gestion-budget-serverless/issues)
 
 [![Known Vulnerabilities](https://snyk.io/test/github/vzwingma/gestion-budget-serverless/badge.svg?targetFile=pom.xml)](https://snyk.io/test/github/vzwingma/gestion-budget-serverless)
-[![Dépendences](https://img.shields.io/librariesio/github/vzwingma/gestion-budget-serverless.png)](https://libraries.io/github/vzwingma/gestion-budget-serverless)
+[![Dépendences](https://img.shields.io/librariesio/github/vzwingma/gestion-budget-serverless)](https://libraries.io/github/vzwingma/gestion-budget-serverless)
 
-<a href="https://sonarcloud.io/dashboard?id=gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=gestion-budget-serverless&metric=coverage" /></a>
-<a href="https://sonarcloud.io/dashboard?id=gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=gestion-budget-serverless&metric=sqale_rating" /></a>
-<a href="https://sonarcloud.io/dashboard?id=gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=gestion-budget-serverless&metric=reliability_rating" /></a>
-<a href="https://sonarcloud.io/dashboard?id=gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=gestion-budget-serverless&metric=security_rating" /></a>
+<a href="https://sonarcloud.io/dashboard?id=vzwingma_gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=vzwingma_gestion-budget-serverless&metric=coverage" /></a>
+<a href="https://sonarcloud.io/dashboard?id=vzwingma_gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=gestion-vzwingma_gestion-budget-serverless&metric=sqale_rating" /></a>
+<a href="https://sonarcloud.io/dashboard?id=vzwingma_gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=vzwingma_gestion-budget-serverless&metric=reliability_rating" /></a>
+<a href="https://sonarcloud.io/dashboard?id=vzwingma_gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=vzwingma_gestion-budget-serverless&metric=security_rating" /></a>
 
 ### Frameworks utilisés
 
