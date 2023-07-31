@@ -6,6 +6,13 @@
       EndpointConfiguration: REGIONAL
       BinaryMediaTypes:
         - "*/*"
+  Function:
+    Timeout: 15
+    Environment:
+      Variables:
+        DISABLE_SIGNAL_HANDLERS: true
+        QUARKUS_MONGODB_CONNECTION_STRING: mongodb+srv://budgetdev:23ed8acc18fe33d5fbfa1c73bac352a8@clusterdev.oqiqv.mongodb.net/v12-app-dev?retryWrites=true&w=majority
+        QUARKUS_MONGODB_DATABASE: v12-app-dev
 
   Resources:
     ParametragesNative__ENV__:
@@ -16,10 +23,6 @@
         CodeUri: parametrages/function.zip
         MemorySize: 128
         Policies: AWSLambdaBasicExecutionRole
-        Timeout: 15
-        Environment:
-          Variables:
-            DISABLE_SIGNAL_HANDLERS: true
         Events:
           GetResource:
             Type: Api
@@ -35,10 +38,6 @@
         CodeUri: utilisateurs/function.zip
         MemorySize: 128
         Policies: AWSLambdaBasicExecutionRole
-        Timeout: 15
-        Environment:
-          Variables:
-            DISABLE_SIGNAL_HANDLERS: true
         Events:
           GetResource:
             Type: Api
@@ -55,10 +54,6 @@
         CodeUri: comptes/function.zip
         MemorySize: 128
         Policies: AWSLambdaBasicExecutionRole
-        Timeout: 15
-        Environment:
-          Variables:
-            DISABLE_SIGNAL_HANDLERS: true
         Events:
           GetResource:
             Type: Api
@@ -75,10 +70,6 @@
         CodeUri: operations/function.zip
         MemorySize: 128
         Policies: AWSLambdaBasicExecutionRole
-        Timeout: 15
-        Environment:
-          Variables:
-            DISABLE_SIGNAL_HANDLERS: true
         Events:
           GetResource:
             Type: Api
