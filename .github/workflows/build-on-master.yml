@@ -17,6 +17,7 @@ jobs:
     name: Build Communs
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    environment: QUA
     permissions:
       contents: read
       packages: write
@@ -50,7 +51,11 @@ jobs:
       - name: Find and Replace in Sam
         run: sed "s/__ENV__/QUA/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template2.yaml
       - name: Find and Replace in Sam 2
-        run: sed "s/__VERSION__/SNAPSHOT/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template2.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
+        run: sed "s/__VERSION__/SNAPSHOT/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template2.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template3.yaml
+      - name: Find and Replace DATABASE_URL in Sam Template
+        run: sed "s/__DATABASE_URL__/${{ secrets.DATABASE_URL }}/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template3.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template4.yaml
+      - name: Find and Replace DATABASE_NAME in Sam Template
+        run: sed "s/__DATABASE_NAME__/${{ secrets.DATABASE_NAME }}/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template4.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
 
       - uses: actions/upload-artifact@v3
         name: Upload SAM Function Configuration
