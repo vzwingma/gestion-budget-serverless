@@ -15,7 +15,7 @@ import jakarta.ws.rs.container.ContainerResponseContext;
 public abstract class AbstractAPIInterceptors {
 
 
-    private final Logger LOG = LoggerFactory.getLogger(AbstractAPIInterceptors.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractAPIInterceptors.class);
     @Context
     SecurityContext securityContext;
     /**
