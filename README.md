@@ -17,7 +17,7 @@ Ce projet utilise Quarkus, le Supersonic Subatomic Java Framework et les microse
 [![Dépendences](https://img.shields.io/librariesio/github/vzwingma/gestion-budget-serverless)](https://libraries.io/github/vzwingma/gestion-budget-serverless)
 
 <a href="https://sonarcloud.io/dashboard?id=vzwingma_gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=vzwingma_gestion-budget-serverless&metric=coverage" /></a>
-<a href="https://sonarcloud.io/dashboard?id=vzwingma_gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=gestion-vzwingma_gestion-budget-serverless&metric=sqale_rating" /></a>
+<a href="https://sonarcloud.io/dashboard?id=vzwingma_gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=vzwingma_gestion-budget-serverless&metric=sqale_rating" /></a>
 <a href="https://sonarcloud.io/dashboard?id=vzwingma_gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=vzwingma_gestion-budget-serverless&metric=reliability_rating" /></a>
 <a href="https://sonarcloud.io/dashboard?id=vzwingma_gestion-budget-serverless"><img alt="Sonar Build Status" src="https://sonarcloud.io/api/project_badges/measure?project=vzwingma_gestion-budget-serverless&metric=security_rating" /></a>
 
