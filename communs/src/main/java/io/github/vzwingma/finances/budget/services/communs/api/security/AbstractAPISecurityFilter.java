@@ -23,6 +23,7 @@ public class AbstractAPISecurityFilter implements ContainerRequestFilter {
 
     private final Logger logger = LoggerFactory.getLogger(AbstractAPISecurityFilter.class);
 
+    public static final String HTTP_HEADER_API_KEY = "X-Api-Key";
 
     /**
      * Filtre de sécurité sur JWT

@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.services.communs.api;
 
+import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
@@ -25,7 +26,8 @@ public abstract class AbstractAPIInterceptors {
     public void preMatchingFilter(ContainerRequestContext requestContext) {
         // Replace pattern-breaking characters
         String path = requestContext.getUriInfo().getPath().replaceAll("[\n\r\t]", "_");
-        LOG.debug("[HTTP][uri:{} {}]", requestContext.getMethod(), path);
+        String apiKey = requestContext.getHeaderString(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY);
+        LOG.debug("[HTTP] > [api-key:{}][uri:{} {}]", apiKey, requestContext.getMethod(), path);
     }
 
     /**
@@ -35,7 +37,7 @@ public abstract class AbstractAPIInterceptors {
     public void postMatchingFilter(ContainerResponseContext responseContext) {
 
         BusinessTraceContext.getclear();
-        LOG.debug("[HTTP][{}] {}", responseContext.getStatus(), responseContext.getStatusInfo().getReasonPhrase());
+        LOG.debug("[HTTP] < [{} - {}]", responseContext.getStatus(), responseContext.getStatusInfo().getReasonPhrase());
     }
 
     public String getAuthenticatedUser(){
