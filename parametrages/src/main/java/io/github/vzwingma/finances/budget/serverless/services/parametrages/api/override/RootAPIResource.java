@@ -5,6 +5,7 @@ import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIResour
 import io.github.vzwingma.finances.budget.services.communs.data.model.Info;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
@@ -19,6 +20,13 @@ public class RootAPIResource extends AbstractAPIResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Uni<Info> info() {
+        return super.info();
+    }
+
+    @POST
+    @Path("_infos")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<Info> infoPost() {
         return super.info();
     }
 
