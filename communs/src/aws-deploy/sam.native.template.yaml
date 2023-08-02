@@ -13,6 +13,7 @@
           DISABLE_SIGNAL_HANDLERS: true
           QUARKUS_MONGODB_CONNECTION_STRING: __DATABASE_URL__
           QUARKUS_MONGODB_DATABASE: __DATABASE_NAME__
+          APP_CONFIG_URL_IHM: __APP_CONFIG_URL_IHM__
 
   Resources:
     ParametragesNative__ENV__:
