@@ -16,6 +16,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.smallrye.mutiny.Uni;
 
+import jakarta.annotation.security.RolesAllowed;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -76,7 +77,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Données introuvables")
     })
     @GET
-    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_QUERY)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> getBudget(
@@ -116,7 +117,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Données introuvables")
     })
     @GET
-    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_ID)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> getBudget(@RestPath("idBudget") String idBudget) {
@@ -147,7 +148,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "405", description = "Compte clos. Impossible de réinitialiser le budget")
     })
     @DELETE
-    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_ID)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> reinitializeBudget(@RestPath("idBudget") String idBudget){
@@ -176,7 +177,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Données introuvables")
     })
     @GET
-    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_ETAT)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<Boolean> isBudgetActif(
@@ -208,7 +209,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "500", description = "Opération en échec")
     })
     @POST
-    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_ETAT)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> setBudgetActif(
@@ -239,7 +240,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Données introuvables")
     })
     @POST
-    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_OPERATION_DERNIERE)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -270,7 +271,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "423", description = "Compte clos")
     })
     @POST
-    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_OPERATION)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -306,7 +307,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
     })
     @POST
     @Path(value= OperationsAPIEnum.BUDGET_OPERATION_BY_ID)
-    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> updateOperation(
@@ -346,7 +347,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "423", description = "Compte clos")
     })
     @POST
-    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_OPERATION_INTERCOMPTE)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -385,7 +386,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "405", description = "Compte clos")
     })
     @DELETE
-    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_OPERATION_BY_ID)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -417,7 +418,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Données introuvables")
     })
     @GET
-    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_COMPTE_INTERVALLES)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<IntervallesCompteAPIObject> getIntervallesBudgetsCompte(@RestPath("idCompte") String idCompte) {
@@ -458,7 +459,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Données introuvables")
     })
     @GET
-    //RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_COMPTE_OPERATIONS_LIBELLES)
     @Produces(MediaType.APPLICATION_JSON)
     public  Uni<LibellesOperationsAPIObject> getLibellesOperations(@RestPath("idCompte") String idCompte, @RestQuery("annee") Integer annee) {
