@@ -1,4 +1,4 @@
-package io.github.vzwingma.finances.budget.serverless.services.utilisateurs.config.codec;
+package io.github.vzwingma.finances.budget.serverless.services.parametrages.config;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
