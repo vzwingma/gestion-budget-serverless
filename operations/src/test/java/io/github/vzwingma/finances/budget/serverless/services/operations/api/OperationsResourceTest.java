@@ -3,8 +3,8 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.api;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.BudgetService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.OperationsService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
+import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
 import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
 import io.github.vzwingma.finances.budget.services.communs.data.model.JwtAuthHeader;
@@ -45,8 +45,6 @@ class OperationsResourceTest {
     @Inject
     IBudgetAppProvider budgetService;
 
-    @Inject
-    IOperationsAppProvider operationsService;
     @BeforeAll
     public static void init() {
         QuarkusMock.installMockForType(Mockito.mock(BudgetService.class), BudgetService.class);
@@ -67,7 +65,7 @@ class OperationsResourceTest {
                 +"?actif=true";
 
         given()
-            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
         .when().post(url)
         .then()
             .statusCode(200)
@@ -88,7 +86,7 @@ class OperationsResourceTest {
                 +"?actif=true";
 
         given()
-            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
         .when()
             .get(url)
         .then()
@@ -107,7 +105,7 @@ class OperationsResourceTest {
                 +"?actif=true";
 
         given()
-            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
         .when()
             .get(url)
         .then()
@@ -125,7 +123,7 @@ class OperationsResourceTest {
                 + OperationsAPIEnum.BUDGET_ID.replace(OperationsAPIEnum.PARAM_ID_BUDGET, "1");
 
         given()
-            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
         .when()
             .get(url)
         .then()
@@ -145,7 +143,7 @@ class OperationsResourceTest {
                 + OperationsAPIEnum.BUDGET_QUERY + "?idCompte=1&mois=1&annee=2020";
 
         given()
-            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
         .when().get(url)
         .then()
             .statusCode(200)
@@ -160,7 +158,7 @@ class OperationsResourceTest {
         String url = OperationsAPIEnum.BUDGET_BASE + OperationsAPIEnum.BUDGET_QUERY;
 
         given()
-            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
         .when().get(url)
         .then()
             .statusCode(500);
@@ -177,7 +175,7 @@ class OperationsResourceTest {
                 + OperationsAPIEnum.BUDGET_ID.replace(OperationsAPIEnum.PARAM_ID_BUDGET, "1");
 
         given()
-            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
         .when().delete(url)
         .then()
             .statusCode(200)
