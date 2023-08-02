@@ -22,12 +22,4 @@ public class RootAPIResource extends AbstractAPIResource {
     public Uni<Info> info() {
         return super.info();
     }
-
-    @POST
-    @Path("_infos")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Uni<Info> infoPost() {
-        return super.info();
-    }
-
 }
