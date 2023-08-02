@@ -126,12 +126,20 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
 		@Schema(description = "Mensualité pour les opérations périodiques. de 1 (mensuelle) à 12 (annuelle)")
 		private OperationPeriodiciteEnum periode = OperationPeriodiciteEnum.PONCTUELLE;
 
+		@Schema(description = "Rang de la période")
+		private int rangPeriode = -1;
+
+		public void setPeriode(OperationPeriodiciteEnum periode) {
+			this.periode = periode;
+			setRangPeriode(this.periode != null ? this.periode.ordinal() : -1);
+		}
+
 		@Schema(description = "nb mois avant la prochaine échéance")
 		private int prochaineEcheance = -1;
 
 		@Override
 		public String toString() {
-			return "Mensualite = { période=" + periode +" , prochaine échéance dans = " + prochaineEcheance + " mois }";
+			return "Mensualite = { période=" + rangPeriode+"/" + periode +" , prochaine échéance dans = " + prochaineEcheance + " mois }";
 		}
 	}
 
