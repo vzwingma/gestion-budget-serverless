@@ -76,8 +76,7 @@
         Policies: AWSLambdaBasicExecutionRole
         Environment:
           Variables:
-            APP_CONFIG_URL_PARAMS: __APP_CONFIG_URL_PARAMS__
-            APP_CONFIG_URL_COMPTES: __APP_CONFIG_URL_COMPTES__
+            APP_CONFIG_URL_BACKENDS: __APP_CONFIG_URL_BACKENDS__
         Events:
           GetResource:
             Type: Api
