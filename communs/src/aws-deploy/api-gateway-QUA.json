@@ -6,7 +6,7 @@
     "version" : "1.0"
   },
   "servers" : [ {
-    "url" : "https://ew7c41o3ej.execute-api.eu-west-3.amazonaws.com/{basePath}",
+    "url" : "https://qi9vnqs14d.execute-api.eu-west-3.amazonaws.com/{basePath}",
     "variables" : {
       "basePath" : {
         "default" : "Qua"
@@ -80,7 +80,7 @@
         "x-amazon-apigateway-integration" : {
           "type" : "aws_proxy",
           "httpMethod" : "POST",
-          "uri" : "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-ComptesNativeQUA-LBScavJU7S6k/invocations",
+          "uri" : "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-ComptesNativeQUA-uHbW1YlWxZAZ/invocations",
           "passthroughBehavior" : "when_no_match"
         }
       }
@@ -151,7 +151,7 @@
         "x-amazon-apigateway-integration" : {
           "type" : "aws_proxy",
           "httpMethod" : "POST",
-          "uri" : "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-ParametragesNativeQUA-UaG8cmcVa3xV/invocations",
+          "uri" : "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-ParametragesNativeQUA-qBCqKVRofG3M/invocations",
           "responses" : {
             "default" : {
               "statusCode" : "200"
@@ -230,7 +230,7 @@
         "x-amazon-apigateway-integration" : {
           "type" : "aws_proxy",
           "httpMethod" : "POST",
-          "uri" : "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-UtilisateursNativeQUA-eULhetJZRarr/invocations",
+          "uri" : "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-UtilisateursNativeQUA-yjcOFBj0fS4H/invocations",
           "passthroughBehavior" : "when_no_match"
         }
       }
@@ -301,7 +301,7 @@
         "x-amazon-apigateway-integration" : {
           "type" : "aws_proxy",
           "httpMethod" : "POST",
-          "uri" : "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-OperationsNativeQUA-InAplq9HmhKC/invocations",
+          "uri" : "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-OperationsNativeQUA-GOFa0nRZDdyy/invocations",
           "passthroughBehavior" : "when_no_match"
         }
       }
