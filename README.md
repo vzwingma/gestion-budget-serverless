@@ -4,7 +4,7 @@ Ce projet utilise Quarkus, le Supersonic Subatomic Java Framework et les microse
 
 | Module                                                            | Version                                                                                                                                           |
 |-------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| [IHM](https://github.com/vzwingma/gestion-budget)                 | [![GitHub version](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-ihm.svg)](https://badge.fury.io/gh/vzwingma%2Fgestion-budget)                   |
+| [IHM](https://github.com/vzwingma/gestion-budget-ihm)                 | [![GitHub version](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-ihm.svg)](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-ihm)                   |
 | [Services](https://github.com/vzwingma/gestion-budget-serverless) | [![GitHub version](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-serverless.svg)](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-serverless) |
 
 ### Statut
