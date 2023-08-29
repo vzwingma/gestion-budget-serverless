@@ -408,6 +408,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
      * Retourne l'invervalle des budgets pour le compte
      * @param idCompte id du compte
      * @return l'intervalle des budgets
+     * @deprecated inutile pour la version refondue de l'IHM
      */
     @Operation(description="Intervalles des budgets pour un compte")
     @APIResponses(value = {
@@ -421,6 +422,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
     @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
     @Path(value= OperationsAPIEnum.BUDGET_COMPTE_INTERVALLES)
     @Produces(MediaType.APPLICATION_JSON)
+    @Deprecated (forRemoval = true, since = "19.3")
     public Uni<IntervallesCompteAPIObject> getIntervallesBudgetsCompte(@RestPath("idCompte") String idCompte) {
         if(idCompte == null){
             return Uni.createFrom().failure(new BadParametersException("Le paramètre idCompte est obligatoire"));

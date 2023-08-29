@@ -51,6 +51,7 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
      * @param compte id du compte
      * @return la date du premier budget décrit pour cet utilisateur
      */
+    @Deprecated (forRemoval = true, since = "19.3")
     Uni<BudgetMensuel[]> getPremierDernierBudgets(String compte) ;
 
     /**

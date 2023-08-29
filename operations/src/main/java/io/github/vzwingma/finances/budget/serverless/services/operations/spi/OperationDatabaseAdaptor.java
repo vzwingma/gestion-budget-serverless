@@ -105,6 +105,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
 	}
 
 	@Override
+	@Deprecated (forRemoval = true, since = "19.3")
 	public Uni<BudgetMensuel[]> getPremierDernierBudgets(String idCompte) {
 		return list(ATTRIBUT_COMPTE_ID, Sort.ascending(ATTRIBUT_ANNEE, ATTRIBUT_BUDGET_ID), idCompte)
 				.flatMap(b -> {

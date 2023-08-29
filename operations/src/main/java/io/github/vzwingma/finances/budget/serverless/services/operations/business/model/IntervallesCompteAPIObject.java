@@ -10,7 +10,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.io.Serial;
 import java.time.LocalDate;
-
+@Deprecated (forRemoval = true, since = "19.3")
 @Getter @Setter
 public class IntervallesCompteAPIObject extends AbstractAPIObjectModel {
 
