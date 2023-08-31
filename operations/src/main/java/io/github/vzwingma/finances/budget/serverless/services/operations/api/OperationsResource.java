@@ -35,7 +35,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.SecurityContext;
 import java.time.Month;
-import java.util.Set;
 import java.util.UUID;
 
 /**
