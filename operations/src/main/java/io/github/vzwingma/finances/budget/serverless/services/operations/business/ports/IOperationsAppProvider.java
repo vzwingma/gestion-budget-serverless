@@ -25,13 +25,6 @@ public interface IOperationsAppProvider {
     void calculSoldes(List<LigneOperation> operations, BudgetMensuel.Soldes soldes, Map<String, TotauxCategorie> totauxCategorieMap, Map<String, TotauxCategorie> totauxSsCategoriesMap);
 
     /**
-     * Charge les libelles des opérations
-     * @param idCompte identifiant du compte
-     * @param annee annee du compte
-     * @return liste des libelles opérations
-     */
-    Multi<String> getLibellesOperations(String idCompte, int annee);
-    /**
      * Ajout d'une ligne transfert intercompte
      *
      * @param operations            liste des opérations à mettre à jour budget

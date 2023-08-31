@@ -403,46 +403,6 @@ public class OperationsResource extends AbstractAPIInterceptors {
 
 
 
-    /**
-     * Liste des libellés des opérations d'un compte (tout mois confondu)
-     * @param idCompte idCompte
-     * @param annee année
-     */
-    @Operation(description="Libelles des opérations des budgets de l'année pour un compte")
-    @APIResponses(value = {
-            @APIResponse(responseCode = "200", description = "Opération réussie",
-                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = LibellesOperationsAPIObject.class))}),
-            @APIResponse(responseCode = "204", description = "Aucune donnée"),
-            @APIResponse(responseCode = "401", description = "L'utilisateur doit être authentifié"),
-            @APIResponse(responseCode = "403", description = "L'opération n'est pas autorisée"),
-            @APIResponse(responseCode = "404", description = "Données introuvables")
-    })
-    @GET
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
-    @Path(value= OperationsAPIEnum.BUDGET_COMPTE_OPERATIONS_LIBELLES)
-    @Produces(MediaType.APPLICATION_JSON)
-    public  Uni<LibellesOperationsAPIObject> getLibellesOperations(@RestPath("idCompte") String idCompte, @RestQuery("annee") Integer annee) {
-
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
-
-        LOG.trace("Libellés Opérations de l'année {}", annee);
-        return this.operationsService.getLibellesOperations(idCompte, annee)
-                    .collect().asList()
-                    .flatMap(libelles -> {
-                        if(libelles != null && !libelles.isEmpty()){
-                            LibellesOperationsAPIObject libellesO = new LibellesOperationsAPIObject();
-                            libellesO.setIdCompte(idCompte);
-                            libellesO.setLibellesOperations(Set.copyOf(libelles));
-                            LOG.info("{} libellés chargés", libellesO.getLibellesOperations().size());
-                            return Uni.createFrom().item(libellesO);
-                        }
-                        else{
-                            return Uni.createFrom().failure(new DataNotFoundException("Impossible de trouver les libellés des opérations pour le compte " + idCompte));
-                        }
-                    });
-
-    }
-
     @Override
     @ServerRequestFilter(preMatching = true)
     public void preMatchingFilter(ContainerRequestContext requestContext) {
