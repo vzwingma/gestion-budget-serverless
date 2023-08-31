@@ -83,14 +83,4 @@ public interface IBudgetAppProvider {
      * @param budget budget à calculer
      */
     void recalculSoldes(BudgetMensuel budget);
-
-    /**
-     * Charge la date du premier budget déclaré pour ce compte pour cet utilisateur
-     * @param idCompte id du compte
-     * @return la date du premier budget décrit pour cet utilisateur
-     * @deprecated (forRemoval = true, since = "19.3")
-     */
-    @Deprecated (forRemoval = true, since = "19.3")
-    Uni<LocalDate[]> getIntervallesBudgets(String idCompte);
-
 }

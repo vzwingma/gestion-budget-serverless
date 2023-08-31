@@ -4,11 +4,9 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.utils.B
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIInterceptors;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
-import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IntervallesCompteAPIObject;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibellesOperationsAPIObject;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
@@ -401,47 +399,6 @@ public class OperationsResource extends AbstractAPIInterceptors {
         else{
             return Uni.createFrom().failure(new BadParametersException("Les paramètres idBudget et idOperation sont obligatoires"));
         }
-    }
-
-
-    /**
-     * Retourne l'invervalle des budgets pour le compte
-     * @param idCompte id du compte
-     * @return l'intervalle des budgets
-     * @deprecated inutile pour la version refondue de l'IHM
-     */
-    @Operation(description="Intervalles des budgets pour un compte")
-    @APIResponses(value = {
-            @APIResponse(responseCode = "200", description = "Opération réussie",
-                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = IntervallesCompteAPIObject.class))}),
-            @APIResponse(responseCode = "401", description = "L'utilisateur doit être authentifié"),
-            @APIResponse(responseCode = "403", description = "L'opération n'est pas autorisée"),
-            @APIResponse(responseCode = "404", description = "Données introuvables")
-    })
-    @GET
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
-    @Path(value= OperationsAPIEnum.BUDGET_COMPTE_INTERVALLES)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Deprecated (forRemoval = true, since = "19.3")
-    public Uni<IntervallesCompteAPIObject> getIntervallesBudgetsCompte(@RestPath("idCompte") String idCompte) {
-        if(idCompte == null){
-            return Uni.createFrom().failure(new BadParametersException("Le paramètre idCompte est obligatoire"));
-        }
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
-        LOG.trace("getIntervallesBudgetsCompte");
-
-        return this.budgetService.getIntervallesBudgets(idCompte)
-            .onItem().transformToUni(intervalles -> {
-                if(intervalles != null && intervalles.length >= 2){
-                    IntervallesCompteAPIObject intervallesAPI = new IntervallesCompteAPIObject();
-                    intervallesAPI.setDatePremierBudget(BudgetDateTimeUtils.getNbDayFromLocalDate(intervalles[0]));
-                    intervallesAPI.setDateDernierBudget(BudgetDateTimeUtils.getNbDayFromLocalDate(intervalles[1]));
-                    return Uni.createFrom().item(intervallesAPI);
-            }
-            else{
-                return Uni.createFrom().failure(new DataNotFoundException("Impossible de trouver l'intervalle de budget pour le compte " + idCompte));
-            }
-        });
     }
 
 
