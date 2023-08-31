@@ -22,7 +22,8 @@
       Type: AWS::Serverless::Function
       Properties:
         Handler: not.used.in.provided.runtimei
-        Runtime: provided
+        Architecture: arm64
+        Runtime: provided.al2
         CodeUri: parametrages/function.zip
         Description: µService Paramétrages __ENV__
         MemorySize: 128
@@ -38,7 +39,8 @@
       Type: AWS::Serverless::Function
       Properties:
         Handler: not.used.in.provided.runtimei
-        Runtime: provided
+        Architecture: arm64
+        Runtime: provided.al2
         CodeUri: utilisateurs/function.zip
         Description: µService Utilisateurs __ENV__
         MemorySize: 128
@@ -55,7 +57,8 @@
       Type: AWS::Serverless::Function
       Properties:
         Handler: not.used.in.provided.runtimei
-        Runtime: provided
+        Architecture: arm64
+        Runtime: provided.al2
         CodeUri: comptes/function.zip
         Description: µService Comptes __ENV__
         MemorySize: 128
@@ -72,7 +75,8 @@
       Type: AWS::Serverless::Function
       Properties:
         Handler: not.used.in.provided.runtimei
-        Runtime: provided
+        Architecture: arm64
+        Runtime: provided.al2
         CodeUri: operations/function.zip
         Description: µService Opérations __ENV__
         MemorySize: 128
