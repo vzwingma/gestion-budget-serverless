@@ -4,11 +4,9 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.utils.B
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIInterceptors;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
-import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IntervallesCompteAPIObject;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibellesOperationsAPIObject;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
@@ -37,7 +35,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.SecurityContext;
 import java.time.Month;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -404,85 +401,6 @@ public class OperationsResource extends AbstractAPIInterceptors {
     }
 
 
-    /**
-     * Retourne l'invervalle des budgets pour le compte
-     * @param idCompte id du compte
-     * @return l'intervalle des budgets
-     */
-    @Operation(description="Intervalles des budgets pour un compte")
-    @APIResponses(value = {
-            @APIResponse(responseCode = "200", description = "Opération réussie",
-                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = IntervallesCompteAPIObject.class))}),
-            @APIResponse(responseCode = "401", description = "L'utilisateur doit être authentifié"),
-            @APIResponse(responseCode = "403", description = "L'opération n'est pas autorisée"),
-            @APIResponse(responseCode = "404", description = "Données introuvables")
-    })
-    @GET
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
-    @Path(value= OperationsAPIEnum.BUDGET_COMPTE_INTERVALLES)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Uni<IntervallesCompteAPIObject> getIntervallesBudgetsCompte(@RestPath("idCompte") String idCompte) {
-        if(idCompte == null){
-            return Uni.createFrom().failure(new BadParametersException("Le paramètre idCompte est obligatoire"));
-        }
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
-        LOG.trace("getIntervallesBudgetsCompte");
-
-        return this.budgetService.getIntervallesBudgets(idCompte)
-            .onItem().transformToUni(intervalles -> {
-                if(intervalles != null && intervalles.length >= 2){
-                    IntervallesCompteAPIObject intervallesAPI = new IntervallesCompteAPIObject();
-                    intervallesAPI.setDatePremierBudget(BudgetDateTimeUtils.getNbDayFromLocalDate(intervalles[0]));
-                    intervallesAPI.setDateDernierBudget(BudgetDateTimeUtils.getNbDayFromLocalDate(intervalles[1]));
-                    return Uni.createFrom().item(intervallesAPI);
-            }
-            else{
-                return Uni.createFrom().failure(new DataNotFoundException("Impossible de trouver l'intervalle de budget pour le compte " + idCompte));
-            }
-        });
-    }
-
-
-
-    /**
-     * Liste des libellés des opérations d'un compte (tout mois confondu)
-     * @param idCompte idCompte
-     * @param annee année
-     */
-    @Operation(description="Libelles des opérations des budgets de l'année pour un compte")
-    @APIResponses(value = {
-            @APIResponse(responseCode = "200", description = "Opération réussie",
-                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = LibellesOperationsAPIObject.class))}),
-            @APIResponse(responseCode = "204", description = "Aucune donnée"),
-            @APIResponse(responseCode = "401", description = "L'utilisateur doit être authentifié"),
-            @APIResponse(responseCode = "403", description = "L'opération n'est pas autorisée"),
-            @APIResponse(responseCode = "404", description = "Données introuvables")
-    })
-    @GET
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
-    @Path(value= OperationsAPIEnum.BUDGET_COMPTE_OPERATIONS_LIBELLES)
-    @Produces(MediaType.APPLICATION_JSON)
-    public  Uni<LibellesOperationsAPIObject> getLibellesOperations(@RestPath("idCompte") String idCompte, @RestQuery("annee") Integer annee) {
-
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
-
-        LOG.trace("Libellés Opérations de l'année {}", annee);
-        return this.operationsService.getLibellesOperations(idCompte, annee)
-                    .collect().asList()
-                    .flatMap(libelles -> {
-                        if(libelles != null && !libelles.isEmpty()){
-                            LibellesOperationsAPIObject libellesO = new LibellesOperationsAPIObject();
-                            libellesO.setIdCompte(idCompte);
-                            libellesO.setLibellesOperations(Set.copyOf(libelles));
-                            LOG.info("{} libellés chargés", libellesO.getLibellesOperations().size());
-                            return Uni.createFrom().item(libellesO);
-                        }
-                        else{
-                            return Uni.createFrom().failure(new DataNotFoundException("Impossible de trouver les libellés des opérations pour le compte " + idCompte));
-                        }
-                    });
-
-    }
 
     @Override
     @ServerRequestFilter(preMatching = true)

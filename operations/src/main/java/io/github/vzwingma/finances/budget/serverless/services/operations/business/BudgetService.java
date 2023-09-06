@@ -522,27 +522,4 @@ public class BudgetService implements IBudgetAppProvider {
 		return dataOperationsProvider.sauvegardeBudgetMensuel(budget);
 	}
 
-
-	/**
-	 * Charge la date du premier budget déclaré pour ce compte pour cet utilisateur
-	 * @param idCompte id du compte
-	 * @return la date du premier budget décrit pour cet utilisateur
-	 */
-	@Override
-	public Uni<LocalDate[]> getIntervallesBudgets(String idCompte) {
-		return this.dataOperationsProvider.getPremierDernierBudgets(idCompte)
-				.onItem().ifNotNull()
-				.transform(premierDernierBudgets -> {
-					LocalDate premier = BudgetDateTimeUtils.localDateFirstDayOfMonth();
-					if(premierDernierBudgets[0] != null){
-						premier = premier.withMonth(premierDernierBudgets[0].getMois().getValue()).withYear(premierDernierBudgets[0].getAnnee());
-					}
-					LocalDate dernier = BudgetDateTimeUtils.localDateFirstDayOfMonth();
-					if(premierDernierBudgets[1] != null){
-						dernier = dernier.withMonth(premierDernierBudgets[1].getMois().getValue()).withYear(premierDernierBudgets[1].getAnnee());
-					}
-					return new LocalDate[]{premier, dernier};
-				});
-	}
-
 }

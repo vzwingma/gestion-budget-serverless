@@ -85,47 +85,11 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
 				.invoke(budget -> LOGGER.debug("-> Réception du budget {}. {} opérations", budget.getId(), budget.getListeOperations().size()));
 	}
 
-	/**
-	 * Liste des lignes opérations d'un budget
-	 * @param budget budget concerné
-	 * @return liste des opérations
-
-	public Multi<LigneOperation> chargerLignesOperations(String idBudget) {
-		return chargeBudgetMensuel(idBudget)
-				.map(budget -> budget.getListeOperations())
-				.onItem().transformToMulti(ligneOperations -> Multi.createFrom().iterable(ligneOperations));
-	}
-	 */
 
 	@Override
 	public Uni<BudgetMensuel> sauvegardeBudgetMensuel(BudgetMensuel budget) {
 		LOGGER.info("Sauvegarde du budget du compte {} du {}/{}", budget.getIdCompteBancaire(), budget.getMois(), budget.getAnnee());
 		return persistOrUpdate(budget)
 				.invoke(budgetSauvegarde -> LOGGER.debug("-> Budget {} sauvegardé", budgetSauvegarde.getId()));
-	}
-
-	@Override
-	public Uni<BudgetMensuel[]> getPremierDernierBudgets(String idCompte) {
-		return list(ATTRIBUT_COMPTE_ID, Sort.ascending(ATTRIBUT_ANNEE, ATTRIBUT_BUDGET_ID), idCompte)
-				.flatMap(b -> {
-					if(b != null && !b.isEmpty()){
-						return Uni.createFrom().item(new BudgetMensuel[] { b.get(0), b.get(b.size() - 1) });
-					}
-					else{
-						return Uni.createFrom().failure(new DataNotFoundException("Erreur lors du chargement des intervalles de budgets de " + idCompte));
-					}
-				})
-				.invoke(budget -> LOGGER.info("-> Réception de l'intervalle de budgets -> {} / {}", budget[0].getId(), budget[1].getId()));
-	}
-
-	@Override
-	public Multi<String> chargeLibellesOperations(String idCompte, int annee) {
-		LOGGER.info("Chargement des libellés des dépenses du compte pour l'année {}", annee);
-		final String query = ATTRIBUT_COMPTE_ID + "=?1 and " + ATTRIBUT_ANNEE + "= ?2";
-		return find(query, idCompte, annee)
-				.stream()
-				.map(BudgetMensuel::getListeOperations)
-				.map(listOperations -> listOperations.parallelStream().map(LigneOperation::getLibelle).toList())
-				.flatMap(listLibelles -> Multi.createFrom().iterable(listLibelles));
 	}
 }

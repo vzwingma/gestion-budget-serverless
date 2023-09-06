@@ -44,21 +44,4 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
      * @return résultat de la sauvegarde: id du budget
      */
     Uni<BudgetMensuel> sauvegardeBudgetMensuel(BudgetMensuel budget);
-
-
-    /**
-     * Charge la date du premier budget déclaré pour ce compte pour cet utilisateur
-     * @param compte id du compte
-     * @return la date du premier budget décrit pour cet utilisateur
-     */
-    Uni<BudgetMensuel[]> getPremierDernierBudgets(String compte) ;
-
-    /**
-     * Chargement des libellés des dépenses
-     * @param annee année du budget
-     * @param idCompte id du compte
-     * @return liste des libellés
-     */
-    Multi<String> chargeLibellesOperations(String idCompte, int annee);
-
 }

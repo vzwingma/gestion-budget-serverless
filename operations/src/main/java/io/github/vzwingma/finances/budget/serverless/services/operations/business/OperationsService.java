@@ -57,13 +57,6 @@ public class OperationsService implements IOperationsAppProvider {
     IParametragesServiceProvider parametragesService;
 
 
-	@Override
-	public Multi<String> getLibellesOperations(String idCompte, int annee) {
-		return dataOperationsProvider.chargeLibellesOperations(idCompte, annee)
-				// #124 : suppression des tags [] dans les libellés
-				.map(BudgetDataUtils::deleteTagFromString);
-	}
-
 
 	/**
 	 * Calcul des soldes
