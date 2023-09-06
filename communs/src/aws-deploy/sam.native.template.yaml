@@ -11,7 +11,7 @@
       Environment:
         Variables:
           DISABLE_SIGNAL_HANDLERS: true
-          QUARKUS_MONGODB_CONNECTION_STRING: __DATABASE_URL__
+          QUARKUS_MONGODB_CONNECTION_STRING: __DATABASE_URL__&ssl=true&authSource=admin&retryWrites=true&w=majority
           QUARKUS_MONGODB_DATABASE: __DATABASE_NAME__
           APP_CONFIG_URL_IHM: __APP_CONFIG_URL_IHM__
           QUARKUS_LOG_LEVEL: __QUARKUS_LOG_LEVEL__
