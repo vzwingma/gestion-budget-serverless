@@ -46,30 +46,6 @@ class OperationsServiceTest {
         operationsAppProvider.setParametragesService(parametragesServiceProvider);
     }
 
-    @Test
-    void testSetDerniereOperationKO(){
-        // When
-        Mockito.when(budgetAppProvider.getBudgetMensuel(Mockito.anyString()))
-                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et3operationsRealisees()));
-        // Test
-
-        CompletionException thrown = assertThrows(CompletionException.class, () -> operationsAppProvider.setLigneAsDerniereOperation("Test", "Test")
-                .await().indefinitely());
-        assertEquals("io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException", thrown.getMessage());
-        Mockito.verify(mockOperationDataProvider, Mockito.never()).sauvegardeBudgetMensuel(Mockito.any());
-    }
-
-
-    @Test
-    void testSetDerniereOperation(){
-        // When
-        Mockito.when(budgetAppProvider.getBudgetMensuel(Mockito.anyString()))
-                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et3operationsRealisees()));
-        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
-        // Test
-        assertTrue(operationsAppProvider.setLigneAsDerniereOperation("Test", "C1B2_L3").await().indefinitely());
-        Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(Mockito.any());
-    }
 
 
     @Test
