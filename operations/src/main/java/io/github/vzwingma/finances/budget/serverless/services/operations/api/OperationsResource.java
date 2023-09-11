@@ -50,9 +50,6 @@ public class OperationsResource extends AbstractAPIInterceptors {
     @Inject
     IBudgetAppProvider budgetService;
 
-    @Inject
-    IOperationsAppProvider operationsService;
-
     @Context
     SecurityContext securityContext;
 

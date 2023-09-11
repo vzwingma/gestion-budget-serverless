@@ -31,15 +31,6 @@ public enum LibellesOperationEnum {
 	}
 
 
-	public static LibellesOperationEnum getEnum(String idEnum){
-		for (LibellesOperationEnum enums : values()) {
-			if(enums.getId().equals(idEnum)){
-				return enums;
-			}
-		}
-		return null;
-	}
-
 	/* (non-Javadoc)
 	 * @see java.lang.Enum#toString()
 	 */
