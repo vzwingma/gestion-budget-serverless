@@ -149,42 +149,6 @@ public class OperationsService implements IOperationsAppProvider {
 	}
 
 
-
-	@Override
-	public Uni<Boolean> setLigneAsDerniereOperation(String idBudget, String ligneId) {
-		LOGGER.info("Tag de la ligne comme dernière opération {} sur {}", ligneId, idBudget);
-		final AtomicBoolean operationUpdate = new AtomicBoolean(false);
-		return this.budgetService.getBudgetMensuel(idBudget)
-				.onItem()
-				.invoke(budget -> {
-					if( budget == null){
-						LOGGER.warn("Budget NULL");
-					}
-					else if(budget.getListeOperations() != null && !budget.getListeOperations().isEmpty()) {
-						budget.getListeOperations()
-							.forEach(op -> {
-								op.setTagDerniereOperation(ligneId.equals(op.getId()));
-								if(ligneId.equals(op.getId())) {
-									LOGGER.debug("L'opération a été trouvée dans le budget ");
-									operationUpdate.set(true);
-								}
-							});
-						// Mise à jour du budget
-						budget.setDateMiseAJour(LocalDateTime.now());
-				}})
-				.call(budget -> {
-					if(operationUpdate.get()) {
-						return this.dataOperationsProvider.sauvegardeBudgetMensuel(budget);
-					}
-					else{
-						return Uni.createFrom().failure(new DataNotFoundException("L'opération "+ligneId+" n'a pas été trouvée dans le budget "+idBudget));
-					}
-				})
-				.onItem()
-					.transform(Objects::nonNull);
-	}
-
-
 	@Override
 	public void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur)  {
 		BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, ligneOperation.getId());

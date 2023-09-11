@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.utils;
 
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibellesOperationEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
@@ -153,7 +154,6 @@ public class BudgetDataUtils {
 		ligneOperationClonee.setEtat(OperationEtatEnum.PREVUE);
 		ligneOperationClonee.setTypeOperation(ligneOperation.getTypeOperation());
 		ligneOperationClonee.putValeurFromSaisie(Math.abs(ligneOperation.getValeur()));
-		ligneOperationClonee.setTagDerniereOperation(false);
 		return ligneOperationClonee;
 	}
 
@@ -182,7 +182,10 @@ public class BudgetDataUtils {
 					LOGGER.warn("L'opération périodique {} est reportée : en retard", ligneOperation.getMensualite().getPeriode().name());
 				}
 				LigneOperation ligneOperationEcheanceReportee = cloneOperationToMoisSuivant(ligneOperation);
-				ligneOperationEcheanceReportee.setLibelle("[En Retard] " + ligneOperation.getLibelle());
+				if(ligneOperationEcheanceReportee.getLibelle() != null
+						&& !ligneOperationEcheanceReportee.getLibelle().startsWith(LibellesOperationEnum.EN_RETARD.getLibelle())){
+					ligneOperationEcheanceReportee.setLibelle(LibellesOperationEnum.EN_RETARD.getLibelle() + ligneOperation.getLibelle());
+				}
 				LigneOperation.Mensualite echeanceReportee = new LigneOperation.Mensualite();
 				echeanceReportee.setPeriode(OperationPeriodiciteEnum.PONCTUELLE);
 				echeanceReportee.setProchaineEcheance(-1);

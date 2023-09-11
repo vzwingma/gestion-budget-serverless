@@ -64,10 +64,6 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
 	@Schema(description = "Opération périodique ?")
 	private Mensualite mensualite;
 
-	// tag comme dernière opération
-	@Schema(description = "Dernier opération ?")
-	private boolean tagDerniereOperation;
-
 	@Schema(description = "Autres infos")
 	private AddInfos autresInfos;
 
@@ -203,7 +199,6 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
 
 		putValeurFromSaisie(absValeur);
 		this.etat = etat;
-		this.tagDerniereOperation = false;
 
 		setCategorie(categorie);
 		setSsCategorie(ssCategorie);
@@ -260,8 +255,8 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
 	 */
 	@Override
 	public String toString() {
-		return String.format("LigneOperations [id=%s, categorie=%s, sous-categorie=%s, libelle=%s, typeDepense=%s, etat=%s, valeur=%s, %s, derniereOperation=%s]"
-				, id, categorie, ssCategorie, libelle, typeOperation, etat, valeur, mensualite != null ? mensualite.toString() : "mensualite=false", tagDerniereOperation);
+		return String.format("LigneOperations [id=%s, categorie=%s, sous-categorie=%s, libelle=%s, typeDepense=%s, etat=%s, valeur=%s, %s]"
+				, id, categorie, ssCategorie, libelle, typeOperation, etat, valeur, mensualite != null ? mensualite.toString() : "mensualite=false");
 	}
 
 	@Override

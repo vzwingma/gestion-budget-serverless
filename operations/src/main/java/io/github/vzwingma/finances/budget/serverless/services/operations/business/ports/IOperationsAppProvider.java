@@ -34,12 +34,7 @@ public interface IOperationsAppProvider {
      * @return liste des opérations à mettre à jour dans le budget, avec l'intercompte
      */
     void addOperationIntercompte(List<LigneOperation> operations, LigneOperation ligneOperationSource, String libelleOperationCible, String auteur);
-    /**
-     * Mise à jour de la ligne comme dernière opération
-     *
-     * @param ligneId identifiant de ligne
-     */
-    Uni<Boolean> setLigneAsDerniereOperation(String idBudget, String ligneId);
+
 
     /**
      * Suppression d'une opération
