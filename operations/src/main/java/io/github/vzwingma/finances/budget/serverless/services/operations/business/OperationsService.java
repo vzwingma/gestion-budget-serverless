@@ -7,6 +7,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.utils.B
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.TotauxCategorie;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
@@ -244,7 +245,9 @@ public class OperationsService implements IOperationsAppProvider {
 							Uni.createFrom().item(operationSource),
 							this.parametragesService.getCategorieParId(IdsCategoriesEnum.REMBOURSEMENT.getId()))
 					.asTuple()
-					.map(tuple -> createOperationRemboursement(tuple.getItem1(), tuple.getItem2(), auteur));
+					.map(tuple -> createOperationRemboursement(tuple.getItem1(), tuple.getItem2(), auteur))
+					.onItem()
+						.ifNull().failWith(new DataNotFoundException("Impossible de créer le remboursement car la catégorie de remboursement n'a pas été trouvée"));
 		}
 		else{
 			return Uni.createFrom().nullItem();
@@ -257,7 +260,6 @@ public class OperationsService implements IOperationsAppProvider {
 	 * @param ligneOperation ligne d'opération à ajouter
 	 * @return ligne de remboursement
 	 */
-
 	private LigneOperation createOperationRemboursement(LigneOperation ligneOperation, CategorieOperations ssCategorieRemboursement, String auteur) {
 		if(ssCategorieRemboursement != null) {
 			return completeOperationAttributes(new LigneOperation(

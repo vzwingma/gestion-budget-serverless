@@ -32,14 +32,13 @@ class OperationsServiceTest {
     private OperationsService operationsAppProvider;
 
     private IParametragesServiceProvider parametragesServiceProvider;
-    private IBudgetAppProvider budgetAppProvider;
     private IOperationsRepository mockOperationDataProvider;
 
     @BeforeEach
     public void setup() {
         mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
         operationsAppProvider = Mockito.spy(new OperationsService());
-        budgetAppProvider = Mockito.mock(BudgetService.class);
+        IBudgetAppProvider budgetAppProvider = Mockito.mock(BudgetService.class);
         operationsAppProvider.setDataOperationsProvider(mockOperationDataProvider);
         operationsAppProvider.setBudgetService(budgetAppProvider);
         parametragesServiceProvider = Mockito.mock(IParametragesServiceProvider.class);
