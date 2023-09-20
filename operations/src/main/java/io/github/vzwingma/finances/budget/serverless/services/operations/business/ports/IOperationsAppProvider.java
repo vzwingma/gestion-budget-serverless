@@ -3,7 +3,6 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.TotauxCategorie;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 import java.util.List;
@@ -31,15 +30,10 @@ public interface IOperationsAppProvider {
      * @param ligneOperationSource  ligne de dépense, source, pour créer une nouvelle opération
      * @param libelleOperationCible libelle de la nouvelle opération
      * @param auteur                auteur de l'action
-     * @return liste des opérations à mettre à jour dans le budget, avec l'intercompte
+     *  liste des opérations à mettre à jour dans le budget, avec l'intercompte
      */
     void addOperationIntercompte(List<LigneOperation> operations, LigneOperation ligneOperationSource, String libelleOperationCible, String auteur);
-    /**
-     * Mise à jour de la ligne comme dernière opération
-     *
-     * @param ligneId identifiant de ligne
-     */
-    Uni<Boolean> setLigneAsDerniereOperation(String idBudget, String ligneId);
+
 
     /**
      * Suppression d'une opération

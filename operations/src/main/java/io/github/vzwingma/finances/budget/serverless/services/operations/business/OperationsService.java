@@ -16,7 +16,6 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -30,8 +29,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Service fournissant les calculs de budget sur les opérations
@@ -74,7 +71,7 @@ public class OperationsService implements IOperationsAppProvider {
 
 			// Calcul par catégorie
 			calculBudgetTotalCategories(totauxCategorieMap, operation);
-			// Calcul par sous catégorie
+			// Calcul par sous catégories
 			calculBudgetTotalSsCategories(totauxSsCategoriesMap, operation);
 			// Calcul des totaux
 			if(operation.getEtat().equals(OperationEtatEnum.REALISEE)){
@@ -146,42 +143,6 @@ public class OperationsService implements IOperationsAppProvider {
 		else {
 			LOGGER.warn("L'opération [{}]  n'a pas de sous-catégorie [{}]", operation, operation.getSsCategorie() );
 		}
-	}
-
-
-
-	@Override
-	public Uni<Boolean> setLigneAsDerniereOperation(String idBudget, String ligneId) {
-		LOGGER.info("Tag de la ligne comme dernière opération {} sur {}", ligneId, idBudget);
-		final AtomicBoolean operationUpdate = new AtomicBoolean(false);
-		return this.budgetService.getBudgetMensuel(idBudget)
-				.onItem()
-				.invoke(budget -> {
-					if( budget == null){
-						LOGGER.warn("Budget NULL");
-					}
-					else if(budget.getListeOperations() != null && !budget.getListeOperations().isEmpty()) {
-						budget.getListeOperations()
-							.forEach(op -> {
-								op.setTagDerniereOperation(ligneId.equals(op.getId()));
-								if(ligneId.equals(op.getId())) {
-									LOGGER.debug("L'opération a été trouvée dans le budget ");
-									operationUpdate.set(true);
-								}
-							});
-						// Mise à jour du budget
-						budget.setDateMiseAJour(LocalDateTime.now());
-				}})
-				.call(budget -> {
-					if(operationUpdate.get()) {
-						return this.dataOperationsProvider.sauvegardeBudgetMensuel(budget);
-					}
-					else{
-						return Uni.createFrom().failure(new DataNotFoundException("L'opération "+ligneId+" n'a pas été trouvée dans le budget "+idBudget));
-					}
-				})
-				.onItem()
-					.transform(Objects::nonNull);
 	}
 
 
@@ -299,7 +260,6 @@ public class OperationsService implements IOperationsAppProvider {
 	 * @param ligneOperation ligne d'opération à ajouter
 	 * @return ligne de remboursement
 	 */
-
 	private LigneOperation createOperationRemboursement(LigneOperation ligneOperation, CategorieOperations ssCategorieRemboursement, String auteur) {
 		if(ssCategorieRemboursement != null) {
 			return completeOperationAttributes(new LigneOperation(

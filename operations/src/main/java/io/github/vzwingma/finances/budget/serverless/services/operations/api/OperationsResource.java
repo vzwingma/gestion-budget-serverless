@@ -5,10 +5,8 @@ import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIInterc
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
-import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibellesOperationsAPIObject;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
@@ -51,9 +49,6 @@ public class OperationsResource extends AbstractAPIInterceptors {
 
     @Inject
     IBudgetAppProvider budgetService;
-
-    @Inject
-    IOperationsAppProvider operationsService;
 
     @Context
     SecurityContext securityContext;
@@ -222,33 +217,6 @@ public class OperationsResource extends AbstractAPIInterceptors {
     /* ********************************************************
      *                      OPERATIONS
      *********************************************************/
-
-
-    /**
-     * Met à jour le flag de l'opération comme dernière opération réalisée
-     * @param idBudget id du compte
-     * @return résultat de l'action
-     */
-    @Operation(description="Met à jour le flag de l'opération comme dernière opération réalisée")
-    @APIResponses(value = {
-            @APIResponse(responseCode = "200", description = "Budget mis à jour"),
-            @APIResponse(responseCode = "401", description = "Utilisateur non authentifié"),
-            @APIResponse(responseCode = "403", description = "Opération non autorisée"),
-            @APIResponse(responseCode = "404", description = "Données introuvables")
-    })
-    @POST
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
-    @Path(value= OperationsAPIEnum.BUDGET_OPERATION_DERNIERE)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Uni<Boolean> setAsDerniereOperation(
-            @RestPath("idBudget") String idBudget,
-            @RestPath("idOperation") String idOperation)  {
-
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, idOperation).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
-        LOG.trace("setAsDerniereOperation");
-        return operationsService.setLigneAsDerniereOperation(idBudget, idOperation);
-    }
 
 
     /**
