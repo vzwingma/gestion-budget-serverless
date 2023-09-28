@@ -96,6 +96,47 @@ public class OperationsResource extends AbstractAPIInterceptors {
 
 
     /**
+     * Retour le budget d'un utilisateur
+     * @param idCompte id du compte
+     * @param mois mois du budget
+     * @param annee année du budget
+     * @return budget
+     */
+    @Operation(description = "Recherche d'un solde d'un budget mensuel pour un compte d'un utilisateur")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "200", description = "Opération réussie",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = BudgetMensuel.class))}),
+            @APIResponse(responseCode = "401", description = "Utilisateur non authentifié"),
+            @APIResponse(responseCode = "403", description = "Opération non autorisée"),
+            @APIResponse(responseCode = "404", description = "Données introuvables")
+    })
+    @GET
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @Path(value= OperationsAPIEnum.BUDGET_SOLDES)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<BudgetMensuel.Soldes> getBudgetSolde(
+            @RestQuery("idCompte") String idCompte,
+            @RestQuery("mois") Integer mois,
+            @RestQuery("annee") Integer annee) {
+
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
+        LOG.trace("getSoldesBudget {}/{}", mois, annee);
+
+        if(mois != null && annee != null){
+            try{
+                String idBudget = BudgetDataUtils.getBudgetId(idCompte, Month.of(mois), annee);
+                BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
+                return budgetService.getBudgetMensuel(idCompte, Month.of(mois), annee).map(BudgetMensuel::getSoldes);
+            }
+            catch(NumberFormatException e){
+                return Uni.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
+            }
+        }
+        return Uni.createFrom().failure(new BadParametersException("Mois et année doivent être renseignés"));
+    }
+
+
+    /**
      * Mise à jour du budget
      * @param idBudget id du budget
      * @return budget mis à jour
@@ -246,7 +287,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
         LOG.trace("createOperation");
         if(operation != null && idBudget != null){
             operation.setId(UUID.randomUUID().toString());
-            return budgetService.addOperationInBudget(idBudget, operation, super.getAuthenticatedUser());
+            return budgetService.addOrUpdateOperationInBudget(idBudget, operation, super.getAuthenticatedUser());
         }
         else {
             return Uni.createFrom().failure(new BadParametersException("Les paramètres idBudget et operation sont obligatoires"));
@@ -286,7 +327,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
 
         if(operation != null && idBudget != null){
             operation.setId(idOperation);
-            return budgetService.addOperationInBudget(idBudget, operation, super.getAuthenticatedUser());
+            return budgetService.addOrUpdateOperationInBudget(idBudget, operation, super.getAuthenticatedUser());
         }
         else {
             return Uni.createFrom().failure(new BadParametersException("Les paramètres idBudget et idOperation sont obligatoires"));
@@ -301,7 +342,7 @@ public class OperationsResource extends AbstractAPIInterceptors {
      * @param idCompte id du compte à mettre à jour
      * @return budget mis à jour
      */
-    @Operation(description="Mise à jour d'une opération Intercomptes")
+    @Operation(description="Création d'une opération Intercomptes")
     @APIResponses(value = {
             @APIResponse(responseCode = "200", description = "Opération mise à jour",
                     content = { @Content(mediaType = "application/json", schema = @Schema(implementation = BudgetMensuel.class))}),
