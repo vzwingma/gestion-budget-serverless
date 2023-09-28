@@ -2,7 +2,6 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
-import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
@@ -16,10 +15,8 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
-import io.smallrye.mutiny.Uni;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

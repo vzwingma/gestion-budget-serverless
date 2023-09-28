@@ -1,9 +1,7 @@
 package io.github.vzwingma.finances.budget.services.communs.data.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractAPIObjectModel;
 import io.quarkus.mongodb.panache.common.MongoEntity;
-import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,7 +9,6 @@ import lombok.Setter;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-import java.beans.Transient;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Set;
@@ -49,8 +46,6 @@ public class CategorieOperations extends AbstractAPIObjectModel implements Compa
 	private boolean actif;
 	/**
 	 * Liste des sous catégories
-	 * @return the listeSSCategories
-
 	 */
 	@Getter
 	@Schema(description = "Liste des sous catégories")
