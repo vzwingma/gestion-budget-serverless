@@ -49,9 +49,7 @@ public class OperationsService implements IOperationsAppProvider {
 	@Inject
 	IBudgetAppProvider budgetService;
 
-	@RestClient
-	@Inject
-    IParametragesServiceProvider parametragesService;
+
 
 
 
@@ -147,10 +145,11 @@ public class OperationsService implements IOperationsAppProvider {
 
 
 	@Override
-	public void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur)  {
+	public void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur, CategorieOperations ssCategorieRemboursement) throws DataNotFoundException {
 		BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, ligneOperation.getId());
 		// Si mise à jour d'une opération, on l'enlève
 		LigneOperation ligneOperationToUpdate = operations.stream().filter(op -> op.getId().equals(ligneOperation.getId())).findFirst().orElse(null);
+
 		int rangMaj = operations.indexOf(ligneOperation);
 		operations.removeIf(op -> op.getId().equals(ligneOperation.getId()));
 
@@ -163,6 +162,21 @@ public class OperationsService implements IOperationsAppProvider {
 			} else {
 				LOGGER.info("Ajout de l'opération : {}", ligneUpdatedPeriodicOperation);
 				operations.add(ligneUpdatedPeriodicOperation);
+
+				// Création du remboursement si besoin
+				if (ligneUpdatedPeriodicOperation.getSsCategorie() != null
+						&& ligneUpdatedPeriodicOperation.getCategorie() != null
+						&& IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId().equals(ligneUpdatedPeriodicOperation.getCategorie().getId())) {
+
+					if(ssCategorieRemboursement != null){
+						LigneOperation operationRemboursement = createOperationRemboursement(ligneUpdatedPeriodicOperation, auteur, ssCategorieRemboursement);
+						LOGGER.info("Ajout de l'opération de remboursement : {}", operationRemboursement);
+						operations.add(operationRemboursement);
+					}
+					else{
+						throw new DataNotFoundException("Catégorie Remboursement non trouvée. Impossible de créer l'opération de remboursement");
+					}
+				}
 			}
 		} else {
 			LOGGER.info("Suppression d'une opération : {}", ligneOperation);
@@ -187,6 +201,8 @@ public class OperationsService implements IOperationsAppProvider {
 		if(OperationEtatEnum.REALISEE.equals(ligneOperation.getEtat())
 				&& ligneOperation.getAutresInfos().getDateOperation() == null){
 			ligneOperation.getAutresInfos().setDateOperation(LocalDate.now());
+		} else if (OperationEtatEnum.REPORTEE.equals(ligneOperation.getEtat())) {
+			ligneOperation.getAutresInfos().setDateOperation(null);
 		}
 		return ligneOperation;
 	}
@@ -233,47 +249,19 @@ public class OperationsService implements IOperationsAppProvider {
 	 * @param operationSource ligne d'opération source, ajoutée
 	 * @return ligne de remboursement
 	 */
-	@Override
-	public Uni<LigneOperation> createOperationRemboursement(LigneOperation operationSource, String auteur){
+
+	private LigneOperation createOperationRemboursement(LigneOperation operationSource, String auteur, CategorieOperations ssCategorieRemboursement){
 
 		// Si l'opération est une opération de remboursement, on ajoute la catégorie de remboursement
-		if (operationSource.getSsCategorie() != null
-				&& operationSource.getCategorie() != null
-				&& IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId().equals(operationSource.getCategorie().getId())) {
-
-			return Uni.combine().all().unis(
-							Uni.createFrom().item(operationSource),
-							this.parametragesService.getCategorieParId(IdsCategoriesEnum.REMBOURSEMENT.getId()))
-					.asTuple()
-					.map(tuple -> createOperationRemboursement(tuple.getItem1(), tuple.getItem2(), auteur))
-					.onItem()
-						.ifNull().failWith(new DataNotFoundException("Impossible de créer le remboursement car la catégorie de remboursement n'a pas été trouvée"));
-		}
-		else{
-			return Uni.createFrom().nullItem();
-		}
+		return completeOperationAttributes(new LigneOperation(
+							ssCategorieRemboursement,
+							operationSource.getLibelle(),
+							OperationTypeEnum.CREDIT,
+							Math.abs(operationSource.getValeur()),
+							OperationEtatEnum.REPORTEE),
+							auteur);
 	}
 
-	/**
-	 * Si frais remboursable : ajout du remboursement en prévision
-	 * #62 : et en mode création
-	 * @param ligneOperation ligne d'opération à ajouter
-	 * @return ligne de remboursement
-	 */
-	private LigneOperation createOperationRemboursement(LigneOperation ligneOperation, CategorieOperations ssCategorieRemboursement, String auteur) {
-		if(ssCategorieRemboursement != null) {
-			return completeOperationAttributes(new LigneOperation(
-					ssCategorieRemboursement,
-					ligneOperation.getLibelle(),
-					OperationTypeEnum.CREDIT,
-					Math.abs(ligneOperation.getValeur()),
-					OperationEtatEnum.REPORTEE),
-					auteur);
-		}
-		else{
-			return null;
-		}
-	}
 
 
 

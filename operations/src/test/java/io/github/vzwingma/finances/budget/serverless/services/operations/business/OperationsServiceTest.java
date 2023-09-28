@@ -41,14 +41,12 @@ class OperationsServiceTest {
         IBudgetAppProvider budgetAppProvider = Mockito.mock(BudgetService.class);
         operationsAppProvider.setDataOperationsProvider(mockOperationDataProvider);
         operationsAppProvider.setBudgetService(budgetAppProvider);
-        parametragesServiceProvider = Mockito.mock(IParametragesServiceProvider.class);
-        operationsAppProvider.setParametragesService(parametragesServiceProvider);
     }
 
 
 
     @Test
-    void testUpdateOperation(){
+    void testUpdateOperation() throws DataNotFoundException {
 
         // When
         List<LigneOperation> listeOperations = new ArrayList<>();
@@ -57,7 +55,7 @@ class OperationsServiceTest {
         LigneOperation operation = MockDataOperations.getOperationPrelevement();
         operation.setEtat(OperationEtatEnum.REALISEE);
         // Test
-        operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest");
+        operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest", null);
         assertEquals(1, listeOperations.size());
         assertEquals(OperationEtatEnum.REALISEE, listeOperations.get(0).getEtat());
         assertNotNull(listeOperations.get(0).getAutresInfos().getDateOperation());
@@ -66,7 +64,7 @@ class OperationsServiceTest {
 
 
     @Test
-    void testUpdateOperationPeriodique(){
+    void testUpdateOperationPeriodique() throws DataNotFoundException {
 
         // When
         List<LigneOperation> listeOperations = new ArrayList<>();
@@ -75,7 +73,7 @@ class OperationsServiceTest {
         LigneOperation operation = MockDataOperations.getOperationMensuelleRealisee();
         operation.setEtat(OperationEtatEnum.REALISEE);
         // Test
-        operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest");
+        operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest", null);
         assertEquals(1, listeOperations.size());
         assertEquals(OperationEtatEnum.REALISEE, listeOperations.get(0).getEtat());
         assertEquals(OperationPeriodiciteEnum.MENSUELLE, listeOperations.get(0).getMensualite().getPeriode());
@@ -84,18 +82,18 @@ class OperationsServiceTest {
 
         // Changement de période
         operation.getMensualite().setPeriode(OperationPeriodiciteEnum.PONCTUELLE);
-        operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest");
+        operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest", null);
         assertEquals(OperationPeriodiciteEnum.PONCTUELLE, listeOperations.get(0).getMensualite().getPeriode());
         assertEquals(-1, listeOperations.get(0).getMensualite().getProchaineEcheance());
         operation.getMensualite().setPeriode(OperationPeriodiciteEnum.TRIMESTRIELLE);
-        operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest");
+        operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest", null);
         assertEquals(OperationPeriodiciteEnum.TRIMESTRIELLE, listeOperations.get(0).getMensualite().getPeriode());
         assertEquals(3, listeOperations.get(0).getMensualite().getProchaineEcheance());
     }
 
 
     @Test
-    void testAddOperation(){
+    void testAddOperation() throws DataNotFoundException {
 
         // When
         List<LigneOperation> listeOperations = new ArrayList<>();
@@ -105,7 +103,7 @@ class OperationsServiceTest {
         operation.setId("Test2");
         operation.setEtat(OperationEtatEnum.REALISEE);
         // Test
-        operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest");
+        operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest", null);
         assertEquals(2, listeOperations.size());
     }
 
@@ -166,42 +164,29 @@ class OperationsServiceTest {
     void testAddOperationRemboursementCatFailure(){
 
         // When
-        Mockito.when(parametragesServiceProvider.getCategorieParId(Mockito.anyString()))
-                .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Impossible de trouver la catégorie")));
 
         // Test
-        CompletionException thrown = Assertions.assertThrows(CompletionException.class, () -> operationsAppProvider.createOperationRemboursement(MockDataOperations.getOperationRemboursement(), "userTest").await().indefinitely());
-        assertEquals("io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException", thrown.getMessage());
+        Assertions.assertThrows(DataNotFoundException.class, () -> operationsAppProvider.addOrReplaceOperation(new ArrayList<>(), MockDataOperations.getOperationRemboursement(), "userTest", null));
         Mockito.verify(mockOperationDataProvider, Mockito.never()).sauvegardeBudgetMensuel(Mockito.any());
 
     }
 
     @Test
-    void testAddOperationRemboursementCatUnkown(){
-
-        // When
-        Mockito.when(parametragesServiceProvider.getCategorieParId(Mockito.anyString())).thenReturn(Uni.createFrom().nullItem());
-
-        // Test
-        CompletionException thrown = Assertions.assertThrows(CompletionException.class, () -> operationsAppProvider.createOperationRemboursement(MockDataOperations.getOperationRemboursement(), "userTest").await().indefinitely());
-        assertEquals("io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException", thrown.getMessage());
-        Mockito.verify(mockOperationDataProvider, Mockito.never()).sauvegardeBudgetMensuel(Mockito.any());
-
-    }
-
-    @Test
-    void testAddOperationRemboursement(){
+    void testAddOperationRemboursement() throws DataNotFoundException {
 
         // When
         CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId());
+        dep.setLibelle(IdsCategoriesEnum.FRAIS_REMBOURSABLES.toString());
         CategorieOperations.CategorieParente cat = new CategorieOperations.CategorieParente(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId(), "Frais");
         dep.setCategorieParente(cat);
-        Mockito.when(parametragesServiceProvider.getCategorieParId(Mockito.anyString())).thenReturn(Uni.createFrom().item(dep));
         // Test
-        LigneOperation operationRemb = operationsAppProvider.createOperationRemboursement(MockDataOperations.getOperationRemboursement(), "userTest").await().indefinitely();
+        List<LigneOperation> operations = new ArrayList<>();
+        operationsAppProvider.addOrReplaceOperation(operations, MockDataOperations.getOperationRemboursement(), "userTest", dep);
 
-        assertNotNull(operationRemb);
+        assertNotNull(operations.get(0));
+        assertNotNull(operations.get(1));
         // Anomalie #208
-        assertEquals("TestRemboursement", operationRemb.getLibelle());
+        assertEquals("TestRemboursement", operations.get(0).getLibelle());
+        assertEquals("TestRemboursement", operations.get(1).getLibelle());
     }
 }

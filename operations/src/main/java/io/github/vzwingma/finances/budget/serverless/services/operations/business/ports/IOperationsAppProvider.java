@@ -3,6 +3,8 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.TotauxCategorie;
+import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.smallrye.mutiny.Uni;
 
 import java.util.List;
@@ -49,14 +51,8 @@ public interface IOperationsAppProvider {
      * @param operations     liste des opérations à mettre à jour budget
      * @param auteur         auteur de l'action
      * @param ligneOperation ligne de dépense
+     * @param ssCategorieRemboursement catégorie Remboursement
      */
-    void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur);
+    void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur, CategorieOperations ssCategorieRemboursement) throws DataNotFoundException;
 
-    /**
-     * Ajout d'une opération de remboursement
-     *
-     * @param operationSource     opération source du remboursement
-     * @param auteur         auteur de l'action
-     */
-    Uni<LigneOperation> createOperationRemboursement(LigneOperation operationSource, String auteur);
 }

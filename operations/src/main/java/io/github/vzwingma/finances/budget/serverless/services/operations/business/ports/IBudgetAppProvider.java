@@ -4,7 +4,6 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.smallrye.mutiny.Uni;
 
-import java.time.LocalDate;
 import java.time.Month;
 
 /**
@@ -37,7 +36,7 @@ public interface IBudgetAppProvider {
      * @param idBudget       identifiant de budget
      * @param ligneOperation ligne de dépense
      */
-    Uni<BudgetMensuel> addOperationInBudget(String idBudget, final LigneOperation ligneOperation, String auteur) ;
+    Uni<BudgetMensuel> addOrUpdateOperationInBudget(String idBudget, final LigneOperation ligneOperation, String auteur) ;
 
     /**
      * Création d'une opération intercompte

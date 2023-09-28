@@ -49,7 +49,10 @@ public class CategorieOperations extends AbstractAPIObjectModel implements Compa
 	private boolean actif;
 	/**
 	 * Liste des sous catégories
+	 * @return the listeSSCategories
+
 	 */
+	@Getter
 	@Schema(description = "Liste des sous catégories")
 	private Set<CategorieOperations> listeSSCategories;
 
@@ -95,20 +98,13 @@ public class CategorieOperations extends AbstractAPIObjectModel implements Compa
 	public CategorieOperations(){
 		this.id = UUID.randomUUID().toString();
 	}
-	
+
 	/**
 	 * Constructeur pour le clone
 	 * @param guidCategorie guidCategorie du parent
 	 */
 	public CategorieOperations(String guidCategorie){
 		this.id = guidCategorie;
-	}
-
-	/**
-	 * @return the listeSSCategories
-	 */
-	public Set<CategorieOperations> getListeSSCategories() {
-		return listeSSCategories;
 	}
 
 	/**
