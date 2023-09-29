@@ -3,7 +3,6 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 import java.time.Month;

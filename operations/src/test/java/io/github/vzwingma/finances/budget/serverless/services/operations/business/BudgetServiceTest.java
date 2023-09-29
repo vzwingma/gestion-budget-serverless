@@ -48,6 +48,9 @@ class BudgetServiceTest {
 
     }
 
+    /**
+     * Test d'un chargement de budget sans compte
+     */
     @Test
     void testGetBudgetWithNoCompte() {
 
