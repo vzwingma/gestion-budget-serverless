@@ -4,6 +4,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
+import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
@@ -138,12 +139,12 @@ public class BudgetService implements IBudgetAppProvider {
 				budgetSurCompteActif,
 				Uni.createFrom().item(ligneOperation),
 				// On ne va charger la catégorie Remboursement - que pour un frais remboursable
-				ligneOperation.getCategorie().getId().equals(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId()) ? this.parametragesService.getCategorieParId(IdsCategoriesEnum.REMBOURSEMENT.getId()) : null)
+				ligneOperation.getCategorie().getId().equals(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId()) ? this.parametragesService.getCategorieParId(IdsCategoriesEnum.REMBOURSEMENT.getId()) : Uni.createFrom().voidItem())
 			.asTuple()
 			// Ajout des opérations standard et remboursement (si non nulle)
 			.invoke(tuple -> {
 				try {
-					this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, tuple.getItem3());
+					this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, (CategorieOperations) tuple.getItem3());
 				} catch (DataNotFoundException e) {
 					tuple.mapItem1(u -> Uni.createFrom().failure(e));
 				}
