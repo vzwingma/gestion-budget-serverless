@@ -1,11 +1,13 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business;
 
 
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
+import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
-import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
@@ -19,7 +21,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IComptesServiceProvider;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
-import io.smallrye.mutiny.tuples.Tuple3;
+
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -28,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
@@ -60,6 +61,9 @@ public class BudgetService implements IBudgetAppProvider {
 	@Inject
 	IOperationsAppProvider operationsAppProvider;
 
+	@RestClient
+	@Inject
+	IParametragesServiceProvider parametragesService;
 
 	/**
 	 * Chargement du budget du mois courant
@@ -122,26 +126,30 @@ public class BudgetService implements IBudgetAppProvider {
 	 * @return budget mensuel mis à jour
 	 */
 	@Override
-	public Uni<BudgetMensuel> addOperationInBudget(String idBudget, LigneOperation ligneOperation, String auteur) {
+	public Uni<BudgetMensuel> addOrUpdateOperationInBudget(String idBudget, LigneOperation ligneOperation, String auteur) {
 
 		Uni<BudgetMensuel> budgetSurCompteActif = getBudgetAndCompteActif(idBudget)
 				// Si pas d'erreur, update de l'opération
 				.onItem()
 				.transform(Tuple2::getItem1);
 		BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, ligneOperation.getId());
+
+
 		return Uni.combine().all().unis(
 				budgetSurCompteActif,
 				Uni.createFrom().item(ligneOperation),
-				this.operationsAppProvider.createOperationRemboursement(ligneOperation, auteur))
+				// On ne va charger la catégorie Remboursement - que pour un frais remboursable
+				ligneOperation.getCategorie().getId().equals(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId()) ? this.parametragesService.getCategorieParId(IdsCategoriesEnum.REMBOURSEMENT.getId()) : Uni.createFrom().voidItem())
 			.asTuple()
 			// Ajout des opérations standard et remboursement (si non nulle)
 			.invoke(tuple -> {
-				this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur);
-				if(tuple.getItem3() != null){
-					this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem3(), auteur);
+				try {
+					this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, (CategorieOperations) tuple.getItem3());
+				} catch (DataNotFoundException e) {
+					tuple.mapItem1(u -> Uni.createFrom().failure(e));
 				}
 			})
-			.onItem().transform(Tuple3::getItem1)
+			.onItem().transform(Tuple2::getItem1)
 			// recalcul de tous les soldes du budget courant
 			.onItem().ifNotNull()
 				.invoke(this::recalculSoldes)
@@ -177,7 +185,11 @@ public class BudgetService implements IBudgetAppProvider {
 				.invoke(tuple -> {
 					BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteDestination);
 					ligneOperation.setLibelle("[vers "+tuple.getItem2().getLibelle()+"] " + libelleOperation);
-					this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), ligneOperation, auteur);
+					try {
+						this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), ligneOperation, auteur, null);
+					} catch (DataNotFoundException e) {
+						tuple.mapItem1(u -> Uni.createFrom().failure(e));
+					}
 				})
 				.map(Tuple2::getItem1)
 				.onItem().ifNotNull()

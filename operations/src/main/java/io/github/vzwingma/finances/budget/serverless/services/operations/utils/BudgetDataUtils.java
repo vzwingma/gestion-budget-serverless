@@ -174,23 +174,10 @@ public class BudgetDataUtils {
 
 			int prochaineMensualite = ligneOperation.getMensualite().getProchaineEcheance() -1 ;
 
-
 			// Si une opération était à échéance, mais a été reportée - on la réinjecte, en retard
 			if(ligneOperation.getMensualite().getProchaineEcheance() == ligneOperation.getMensualite().getPeriode().getNbMois()
 			&& OperationEtatEnum.REPORTEE.equals(ligneOperation.getEtat())){
-				if(LOGGER.isWarnEnabled() && ligneOperation.getMensualite() != null && ligneOperation.getMensualite().getPeriode() != null){
-					LOGGER.warn("L'opération périodique {} est reportée : en retard", ligneOperation.getMensualite().getPeriode().name());
-				}
-				LigneOperation ligneOperationEcheanceReportee = cloneOperationToMoisSuivant(ligneOperation);
-				if(ligneOperationEcheanceReportee.getLibelle() != null
-						&& !ligneOperationEcheanceReportee.getLibelle().startsWith(LibellesOperationEnum.EN_RETARD.getLibelle())){
-					ligneOperationEcheanceReportee.setLibelle(LibellesOperationEnum.EN_RETARD.getLibelle() + ligneOperation.getLibelle());
-				}
-				LigneOperation.Mensualite echeanceReportee = new LigneOperation.Mensualite();
-				echeanceReportee.setPeriode(OperationPeriodiciteEnum.PONCTUELLE);
-				echeanceReportee.setProchaineEcheance(-1);
-				ligneOperationEcheanceReportee.setMensualite(echeanceReportee);
-				lignesOperationClonees.add(ligneOperationEcheanceReportee);
+				cloneOperationAEcheanceReportee(lignesOperationClonees, ligneOperation);
 			}
 			// Si la mensualité arrive à échéance, elle est prévue, et la prochaine échéance est réinitalisée
 			if(prochaineMensualite == 0){
@@ -214,7 +201,26 @@ public class BudgetDataUtils {
 		return lignesOperationClonees;
 	}
 
-
+	/**
+	 * Opération périodique à échéance qui est reportée en retard
+	 * @param lignesOperationClonees liste des opérations
+	 * @param ligneOperation opération à traiter
+	 */
+	private static void cloneOperationAEcheanceReportee(List<LigneOperation> lignesOperationClonees, LigneOperation ligneOperation){
+		if(LOGGER.isWarnEnabled() && ligneOperation.getMensualite() != null && ligneOperation.getMensualite().getPeriode() != null){
+			LOGGER.warn("L'opération périodique {} est reportée : en retard", ligneOperation.getMensualite().getPeriode().name());
+		}
+		LigneOperation ligneOperationEcheanceReportee = cloneOperationToMoisSuivant(ligneOperation);
+		if(ligneOperationEcheanceReportee.getLibelle() != null
+				&& !ligneOperationEcheanceReportee.getLibelle().startsWith(LibellesOperationEnum.EN_RETARD.getLibelle())){
+			ligneOperationEcheanceReportee.setLibelle(LibellesOperationEnum.EN_RETARD.getLibelle() + ligneOperation.getLibelle());
+		}
+		LigneOperation.Mensualite echeanceReportee = new LigneOperation.Mensualite();
+		echeanceReportee.setPeriode(OperationPeriodiciteEnum.PONCTUELLE);
+		echeanceReportee.setProchaineEcheance(-1);
+		ligneOperationEcheanceReportee.setMensualite(echeanceReportee);
+		lignesOperationClonees.add(ligneOperationEcheanceReportee);
+	}
 
 	/**
 	 * @param listeOperations liste des opérations

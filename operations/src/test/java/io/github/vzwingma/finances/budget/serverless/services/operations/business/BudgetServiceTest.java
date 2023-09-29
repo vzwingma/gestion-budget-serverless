@@ -48,6 +48,9 @@ class BudgetServiceTest {
 
     }
 
+    /**
+     * Test d'un chargement de budget sans compte
+     */
     @Test
     void testGetBudgetWithNoCompte() {
 
@@ -293,7 +296,7 @@ class BudgetServiceTest {
 
         // Test
         CompletionException exception = Assertions.assertThrows(CompletionException.class,
-                () -> budgetAppProvider.addOperationInBudget("idBudget", MockDataOperations.getOperationPrelevement(), "userTest").await().indefinitely());
+                () -> budgetAppProvider.addOrUpdateOperationInBudget("idBudget", MockDataOperations.getOperationPrelevement(), "userTest").await().indefinitely());
         assertEquals(CompteClosedException.class, exception.getCause().getClass());
 
     }
@@ -308,7 +311,7 @@ class BudgetServiceTest {
         Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
         // Test
         LigneOperation ligneOperation = MockDataOperations.getOperationPrelevement();
-        BudgetMensuel budgetMensuelAJour = budgetAppProvider.addOperationInBudget("C1_2022_01", ligneOperation, "userTest").await().indefinitely();
+        BudgetMensuel budgetMensuelAJour = budgetAppProvider.addOrUpdateOperationInBudget("C1_2022_01", ligneOperation, "userTest").await().indefinitely();
         assertEquals(1, budgetMensuelAJour.getListeOperations().size());
 
         Mockito.verify(budgetAppProvider, Mockito.times(1)).recalculSoldes(any(BudgetMensuel.class));
