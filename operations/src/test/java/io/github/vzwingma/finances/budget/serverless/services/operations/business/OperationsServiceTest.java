@@ -26,7 +26,6 @@ class OperationsServiceTest {
 
     private OperationsService operationsAppProvider;
 
-    private IParametragesServiceProvider parametragesServiceProvider;
     private IOperationsRepository mockOperationDataProvider;
 
     @BeforeEach
