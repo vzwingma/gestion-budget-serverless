@@ -248,6 +248,11 @@ public class OperationsService implements IOperationsAppProvider {
 	 */
 
 	private LigneOperation createOperationRemboursement(LigneOperation operationSource, String auteur, CategorieOperations ssCategorieRemboursement){
+		// Workaround de #26
+		if(ssCategorieRemboursement != null && ssCategorieRemboursement.getCategorieParente() == null){
+			CategorieOperations.CategorieParente categorieParente = new CategorieOperations.CategorieParente(IdsCategoriesEnum.VIREMENT.getId(), "Virement");
+			ssCategorieRemboursement.setCategorieParente(categorieParente);
+		}
 
 		// Si l'opération est une opération de remboursement, on ajoute la catégorie de remboursement
 		return completeOperationAttributes(new LigneOperation(
