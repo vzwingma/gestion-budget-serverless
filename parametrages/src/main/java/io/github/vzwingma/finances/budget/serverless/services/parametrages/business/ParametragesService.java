@@ -49,13 +49,13 @@ public class ParametragesService implements IParametrageAppProvider {
 
 			return dataParams.chargeCategories()
 					.filter(c -> c.getListeSSCategories() != null && !c.getListeSSCategories().isEmpty())
+					.filter(CategorieOperations::isActif)
+					.map(this::cloneCategorie)
 					//async call for log
 					.invoke(c -> {
 						LOGGER.debug("[{}][{}] {}", c.isActif() ? "v" : "X", c.getId(), c);
 						c.getListeSSCategories().forEach(s -> LOGGER.debug("[{}][{}]\t\t{}", s.isActif() ? "v" : "X", s.getId(), s));
 					})
-					.filter(CategorieOperations::isActif)
-					.map(this::cloneCategorie)
 					.collect().asList();
 	}
 
