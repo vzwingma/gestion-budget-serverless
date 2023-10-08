@@ -77,7 +77,7 @@ public class ParametragesService implements IParametrageAppProvider {
 						c.getListeSSCategories().forEach(s -> {
 							if(s.getId().equals(idCategorie)){
 								s.setCategorieParente(new CategorieOperations.CategorieParente(c.getId(), c.getLibelle()));
-								LOGGER.info("Sous Catégorie trouvée : {}/{}" , c, s);
+								LOGGER.info("Sous Catégorie trouvée : {}/{}" , s.getCategorieParente(), s);
 								categorie.set(s);
 							}
 						});
