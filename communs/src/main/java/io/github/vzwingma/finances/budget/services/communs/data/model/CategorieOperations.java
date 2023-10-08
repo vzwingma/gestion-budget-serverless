@@ -6,7 +6,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.io.Serial;
@@ -54,7 +53,6 @@ public class CategorieOperations extends AbstractAPIObjectModel implements Compa
 	/**
 	 * Catégorie
 	 */
-	@BsonIgnore
 	@Schema(description = "Catégorie parente")
 	private CategorieOperations.CategorieParente categorieParente;
 
@@ -116,7 +114,12 @@ public class CategorieOperations extends AbstractAPIObjectModel implements Compa
 	 */
 	@Override
 	public String toString() {
-		return this.libelle;
+		if(this.isCategorie()) {
+			return this.libelle;
+		}
+		else{
+			return (this.categorieParente != null ? this.categorieParente.libelle : "?") + "/" + this.libelle;
+		}
 	}
 
 
