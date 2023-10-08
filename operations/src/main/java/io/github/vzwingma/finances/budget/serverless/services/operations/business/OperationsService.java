@@ -273,6 +273,8 @@ public class OperationsService implements IOperationsAppProvider {
 			// pour tous les autres cas, on prend l'état de l'opération source
 			default -> etatDepenseTransfert = OperationEtatEnum.PREVUE;
 		}
+		// fix #28 : Opération source est forcément en DEBIT
+		ligneOperationSource.setTypeOperation(OperationTypeEnum.DEPENSE);
 
 		LigneOperation.Mensualite mensualiteTransfert = null;
 		if(ligneOperationSource.getMensualite() != null ){
