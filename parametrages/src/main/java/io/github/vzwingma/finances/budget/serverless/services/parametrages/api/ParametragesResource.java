@@ -70,7 +70,14 @@ public class ParametragesResource extends AbstractAPIInterceptors {
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
 
         return paramsServices.getCategorieById(idCategorie)
-                .invoke(categorie -> LOG.info("[idCategorie={}] Chargement de la {}catégorie : {}", idCategorie, categorie != null && categorie.isCategorie() ? "" : "sous-", categorie))
+                .invoke(categorie -> {
+                    if(categorie != null){
+                        LOG.info("[idCategorie={}] Chargement de la {}catégorie : {}", idCategorie, categorie.isCategorie() ? "" : "sous-", categorie);
+                    }
+                    else{
+                        LOG.error("[idCategorie={}] Impossible de trouver la catégorie", idCategorie);
+                    }
+                })
                 .invoke(l -> BusinessTraceContext.get().remove(BusinessTraceContextKeyEnum.USER));
     }
 

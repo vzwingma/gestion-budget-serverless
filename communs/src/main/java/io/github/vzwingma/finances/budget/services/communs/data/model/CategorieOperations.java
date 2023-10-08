@@ -2,15 +2,14 @@ package io.github.vzwingma.finances.budget.services.communs.data.model;
 
 import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractAPIObjectModel;
 import io.quarkus.mongodb.panache.common.MongoEntity;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.io.Serial;
-import java.io.Serializable;
 import java.util.Set;
 import java.util.UUID;
 
@@ -20,8 +19,8 @@ import java.util.UUID;
  *
  */
 @MongoEntity(collection = "categoriesoperations")
-@Getter
-@Setter
+@Getter @Setter
+@RegisterForReflection
 @EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
 public class CategorieOperations extends AbstractAPIObjectModel implements Comparable<CategorieOperations> { //
 
@@ -54,7 +53,7 @@ public class CategorieOperations extends AbstractAPIObjectModel implements Compa
 	/**
 	 * Catégorie
 	 */
-	@BsonIgnore
+	@Getter
 	@Schema(description = "Catégorie parente")
 	private CategorieOperations.CategorieParente categorieParente;
 
@@ -65,9 +64,9 @@ public class CategorieOperations extends AbstractAPIObjectModel implements Compa
 	private boolean categorie = true;
 
 
-	@Getter @Setter @NoArgsConstructor
+	@Getter @Setter @NoArgsConstructor @RegisterForReflection
 	@Schema(description = "Catégorie parente de la sous catégorie")
-	public static class CategorieParente implements Serializable {
+	public static class CategorieParente extends AbstractAPIObjectModel {
 
 		@Serial
 		private static final long serialVersionUID = 3069367940675936890L;
@@ -116,7 +115,12 @@ public class CategorieOperations extends AbstractAPIObjectModel implements Compa
 	 */
 	@Override
 	public String toString() {
-		return this.libelle;
+		if(this.isCategorie()) {
+			return this.libelle;
+		}
+		else{
+			return (this.categorieParente != null ? this.categorieParente.libelle : "?") + "/" + this.libelle;
+		}
 	}
 
 
