@@ -29,9 +29,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.SecurityContext;
 import java.time.Month;
 import java.util.UUID;
 
@@ -49,9 +47,6 @@ public class OperationsResource extends AbstractAPIInterceptors {
 
     @Inject
     IBudgetAppProvider budgetService;
-
-    @Context
-    SecurityContext securityContext;
 
     /**
      * Retour le budget d'un utilisateur

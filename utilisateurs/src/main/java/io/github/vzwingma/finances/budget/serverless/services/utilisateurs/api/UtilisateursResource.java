@@ -18,9 +18,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -48,8 +46,6 @@ public class UtilisateursResource extends AbstractAPIInterceptors {
     @Inject
     IUtilisateursAppProvider service;
 
-    @Context
-    SecurityContext securityContext;
 
     /**
      * Date de dernier accès utilisateur

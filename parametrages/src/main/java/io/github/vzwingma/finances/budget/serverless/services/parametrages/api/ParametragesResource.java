@@ -14,9 +14,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.SecurityContext;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
@@ -37,9 +35,6 @@ public class ParametragesResource extends AbstractAPIInterceptors {
     private static final Logger LOG = LoggerFactory.getLogger(ParametragesResource.class);
     @Inject
     IParametrageAppProvider paramsServices;
-
-    @Context
-    SecurityContext securityContext;
 
     /**
      * @return la liste des catégories d'opérations

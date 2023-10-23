@@ -28,10 +28,14 @@
 
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-    <quarkus.platform.version>3.4.1</quarkus.platform.version>
+    <quarkus.platform.version>3.5.0</quarkus.platform.version>
     <lombok.version>1.18.30</lombok.version>
-    <surefire-plugin.version>3.1.0</surefire-plugin.version>
-    <jacoco.version>0.8.10</jacoco.version>
+    <surefire-plugin.version>3.1.2</surefire-plugin.version>
+    <jacoco.version>0.8.11</jacoco.version>
+    <sonar.core.codeCoveragePlugin>jacoco</sonar.core.codeCoveragePlugin>
+    <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
+    <sonar.jacoco.reportPath>target/jacoco.exec</sonar.jacoco.reportPath>
+    <sonar.surefire.reportsPath>target/surefire-reports</sonar.surefire.reportsPath>
   </properties>
 
   <build>
@@ -67,7 +71,6 @@
         <configuration>
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-            <maven.home>${maven.home}</maven.home>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -106,7 +109,6 @@
             <configuration>
               <systemPropertyVariables>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                <maven.home>${maven.home}</maven.home>
               </systemPropertyVariables>
             </configuration>
           </plugin>
@@ -123,7 +125,6 @@
                   <systemPropertyVariables>
                     <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                     <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                    <maven.home>${maven.home}</maven.home>
                   </systemPropertyVariables>
                 </configuration>
               </execution>
@@ -157,11 +158,33 @@
                 </goals>
                 <configuration>
                   <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
-                  <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
+                  <destFile>${project.build.directory}/jacoco.exec</destFile>
                   <append>true</append>
                 </configuration>
               </execution>
+              <execution>
+                <phase>verify</phase>
+                <goals>
+                  <goal>report-aggregate</goal>
+                </goals>
+                <configuration>
+                  <dataFileIncludes>
+                    <dataFileInclude>**/jacoco.exec</dataFileInclude>
+                  </dataFileIncludes>
+                  <outputDirectory>${project.build.directory}/jacoco-aggregate</outputDirectory>
+                </configuration>
+              </execution>
             </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <systemPropertyVariables>
+                <quarkus.jacoco.data-file>${project.build.directory}/jacoco.exec</quarkus.jacoco.data-file>
+                <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
+                <quarkus.jacoco.report-location>${project.build.directory}/coverage</quarkus.jacoco.report-location>
+              </systemPropertyVariables>
+            </configuration>
           </plugin>
         </plugins>
       </build>
@@ -209,10 +232,14 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>5.5.0</version>
+      <version>5.6.0</version>
       <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jacoco</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>

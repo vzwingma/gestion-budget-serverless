@@ -25,9 +25,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.SecurityContext;
 import java.util.List;
 
 /**
@@ -45,8 +43,6 @@ public class ComptesResource extends AbstractAPIInterceptors {
     @Inject
     IComptesAppProvider services;
 
-    @Context
-    SecurityContext securityContext;
     /**
      * Retour la liste des comptes
      * @return liste des comptes de l'utilisateur
