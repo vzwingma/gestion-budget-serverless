@@ -70,37 +70,31 @@ jobs:
     steps:
       - uses: actions/delete-package-versions@v4
         with:
-          name: "Clean Commun Package"
           package-name: 'io.github.vzwingma.finances.budget.serverless.communs'
-          package-type: 'mvn'
+          package-type: 'maven'
           min-versions-to-keep: 3
       - uses: actions/delete-package-versions@v4
         with:
-          name: "Clean Services Package"
           package-name: 'io.github.vzwingma.finances.budget.serverless.services'
-          package-type: 'mvn'
+          package-type: 'maven'
           min-versions-to-keep: 3
       - uses: actions/delete-package-versions@v4
         with:
-          name: "Clean Utilisateurs Package"
           package-name: 'io.github.vzwingma.finances.budget.serverless.utilisateurs'
-          package-type: 'mvn'
+          package-type: 'maven'
           min-versions-to-keep: 3
       - uses: actions/delete-package-versions@v4
         with:
-          name: "Clean Paramétrages Package"
           package-name: 'io.github.vzwingma.finances.budget.serverless.parametrages'
-          package-type: 'mvn'
+          package-type: 'maven'
           min-versions-to-keep: 3
       - uses: actions/delete-package-versions@v4
         with:
-          name: "Clean Comptes Package"
           package-name: 'io.github.vzwingma.finances.budget.serverless.comptes'
-          package-type: 'mvn'
+          package-type: 'maven'
           min-versions-to-keep: 3
       - uses: actions/delete-package-versions@v4
         with:
-          name: "Clean Opérations Package"
           package-name: 'io.github.vzwingma.finances.budget.serverless.operations'
-          package-type: 'mvn'
+          package-type: 'maven'
           min-versions-to-keep: 3
