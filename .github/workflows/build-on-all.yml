@@ -59,3 +59,48 @@ jobs:
       # Runs the Build with Maven
       - name: Build with Maven
         run: mvn clean install -B --file pom.xml
+
+  #
+  ## CLEAN GitHub Packages
+  #
+  clean-github-packages:
+    name: Clean packages
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/delete-package-versions@v4
+        with:
+          name: "Clean Commun Package"
+          package-name: 'io.github.vzwingma.finances.budget.serverless.communs'
+          package-type: 'mvn'
+          min-versions-to-keep: 3
+      - uses: actions/delete-package-versions@v4
+        with:
+          name: "Clean Services Package"
+          package-name: 'io.github.vzwingma.finances.budget.serverless.services'
+          package-type: 'mvn'
+          min-versions-to-keep: 3
+      - uses: actions/delete-package-versions@v4
+        with:
+          name: "Clean Utilisateurs Package"
+          package-name: 'io.github.vzwingma.finances.budget.serverless.utilisateurs'
+          package-type: 'mvn'
+          min-versions-to-keep: 3
+      - uses: actions/delete-package-versions@v4
+        with:
+          name: "Clean Paramétrages Package"
+          package-name: 'io.github.vzwingma.finances.budget.serverless.parametrages'
+          package-type: 'mvn'
+          min-versions-to-keep: 3
+      - uses: actions/delete-package-versions@v4
+        with:
+          name: "Clean Comptes Package"
+          package-name: 'io.github.vzwingma.finances.budget.serverless.comptes'
+          package-type: 'mvn'
+          min-versions-to-keep: 3
+      - uses: actions/delete-package-versions@v4
+        with:
+          name: "Clean Opérations Package"
+          package-name: 'io.github.vzwingma.finances.budget.serverless.operations'
+          package-type: 'mvn'
+          min-versions-to-keep: 3
