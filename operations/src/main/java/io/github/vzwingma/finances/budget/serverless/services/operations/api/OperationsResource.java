@@ -50,9 +50,6 @@ public class OperationsResource extends AbstractAPIInterceptors {
     @Inject
     IBudgetAppProvider budgetService;
 
-    @Context
-    SecurityContext securityContext;
-
     /**
      * Retour le budget d'un utilisateur
      * @param idCompte id du compte

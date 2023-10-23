@@ -48,8 +48,6 @@ public class UtilisateursResource extends AbstractAPIInterceptors {
     @Inject
     IUtilisateursAppProvider service;
 
-    @Context
-    SecurityContext securityContext;
 
     /**
      * Date de dernier accès utilisateur

@@ -38,9 +38,6 @@ public class ParametragesResource extends AbstractAPIInterceptors {
     @Inject
     IParametrageAppProvider paramsServices;
 
-    @Context
-    SecurityContext securityContext;
-
     /**
      * @return la liste des catégories d'opérations
      **/

@@ -45,8 +45,6 @@ public class ComptesResource extends AbstractAPIInterceptors {
     @Inject
     IComptesAppProvider services;
 
-    @Context
-    SecurityContext securityContext;
     /**
      * Retour la liste des comptes
      * @return liste des comptes de l'utilisateur
