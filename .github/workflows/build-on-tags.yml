@@ -320,30 +320,30 @@ jobs:
       - uses: actions/delete-package-versions@v4
         with:
           package-name: 'io.github.vzwingma.finances.budget.serverless.communs'
-          package-type: 'mvn'
+          package-type: 'maven'
           min-versions-to-keep: 3
       - uses: actions/delete-package-versions@v4
         with:
           package-name: 'io.github.vzwingma.finances.budget.serverless.services'
-          package-type: 'mvn'
+          package-type: 'maven'
           min-versions-to-keep: 3
       - uses: actions/delete-package-versions@v4
         with:
           package-name: 'io.github.vzwingma.finances.budget.serverless.utilisateurs'
-          package-type: 'mvn'
+          package-type: 'maven'
           min-versions-to-keep: 3
       - uses: actions/delete-package-versions@v4
         with:
           package-name: 'io.github.vzwingma.finances.budget.serverless.parametrages'
-          package-type: 'mvn'
+          package-type: 'maven'
           min-versions-to-keep: 3
       - uses: actions/delete-package-versions@v4
         with:
           package-name: 'io.github.vzwingma.finances.budget.serverless.comptes'
-          package-type: 'mvn'
+          package-type: 'maven'
           min-versions-to-keep: 3
       - uses: actions/delete-package-versions@v4
         with:
           package-name: 'io.github.vzwingma.finances.budget.serverless.operations'
-          package-type: 'mvn'
+          package-type: 'maven'
           min-versions-to-keep: 3
