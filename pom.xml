@@ -34,7 +34,8 @@
     <jacoco.version>0.8.11</jacoco.version>
     <sonar.core.codeCoveragePlugin>jacoco</sonar.core.codeCoveragePlugin>
     <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
-    <sonar.jacoco.reportPath>${project.basedir}/../target/jacoco.exec</sonar.jacoco.reportPath>
+    <sonar.jacoco.reportPath>target/jacoco.exec</sonar.jacoco.reportPath>
+    <sonar.surefire.reportsPath>target/surefire-reports</sonar.surefire.reportsPath>
   </properties>
 
   <build>
@@ -159,6 +160,18 @@
                   <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
                   <destFile>${project.build.directory}/jacoco.exec</destFile>
                   <append>true</append>
+                </configuration>
+              </execution>
+              <execution>
+                <phase>verify</phase>
+                <goals>
+                  <goal>report-aggregate</goal>
+                </goals>
+                <configuration>
+                  <dataFileIncludes>
+                    <dataFileInclude>**/jacoco.exec</dataFileInclude>
+                  </dataFileIncludes>
+                  <outputDirectory>${project.build.directory}/jacoco-aggregate</outputDirectory>
                 </configuration>
               </execution>
             </executions>
