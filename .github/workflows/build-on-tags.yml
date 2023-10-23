@@ -308,3 +308,44 @@ jobs:
       # Prevent prompts and failure when the stack is unchanged
       - run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset -t sam.native.yaml --config-file samconfig.toml
         name: SAM Deploy
+
+
+  #
+  ## CLEAN GitHub Packages
+  #
+  clean-github-packages:
+    name: Clean packages
+    permissions: write-all
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/delete-package-versions@v4
+        with:
+          package-name: 'io.github.vzwingma.finances.budget.serverless.communs'
+          package-type: 'maven'
+          min-versions-to-keep: 3
+      - uses: actions/delete-package-versions@v4
+        with:
+          package-name: 'io.github.vzwingma.finances.budget.serverless.services'
+          package-type: 'maven'
+          min-versions-to-keep: 3
+      - uses: actions/delete-package-versions@v4
+        with:
+          package-name: 'io.github.vzwingma.finances.budget.serverless.utilisateurs'
+          package-type: 'maven'
+          min-versions-to-keep: 3
+      - uses: actions/delete-package-versions@v4
+        with:
+          package-name: 'io.github.vzwingma.finances.budget.serverless.parametrages'
+          package-type: 'maven'
+          min-versions-to-keep: 3
+      - uses: actions/delete-package-versions@v4
+        with:
+          package-name: 'io.github.vzwingma.finances.budget.serverless.comptes'
+          package-type: 'maven'
+          min-versions-to-keep: 3
+      - uses: actions/delete-package-versions@v4
+        with:
+          package-name: 'io.github.vzwingma.finances.budget.serverless.operations'
+          package-type: 'maven'
+          min-versions-to-keep: 3
