@@ -338,7 +338,7 @@ class BudgetServiceTest {
         LigneOperation ligneOperation = MockDataOperations.getOperationIntercompte();
         BudgetMensuel budgetMensuelAJour = budgetAppProvider.createOperationsIntercomptes("C1_2022_01", ligneOperation, "C2" , "userTest").await().indefinitely();
 
-        assertEquals("[vers Libelle2] TestIntercompte", budgetMensuelAJour.getListeOperations().get(1).getLibelle());
+        assertEquals("[vers C2] TestIntercompte", budgetMensuelAJour.getListeOperations().get(1).getLibelle());
 
         assertEquals(2, budgetMensuelAJour.getListeOperations().size());
 
