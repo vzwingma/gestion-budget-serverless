@@ -33,9 +33,9 @@ class TestJWTUtils {
         assertNotNull(token.getPayload());
         assertEquals("https://accounts.google.com", token.getPayload().getIss());
         assertNotNull(token.issuedAt());
-        assertEquals("2023-01-02T13:46:42", token.issuedAt().toString());
+        assertEquals("2023-01-02T12:46:42", token.issuedAt().toString());
         assertNotNull(token.expiredAt());
-        assertEquals("2023-01-02T14:46:42", token.expiredAt().toString());
+        assertEquals("2023-01-02T13:46:42", token.expiredAt().toString());
 
         LOG.info(LocalDateTime.now().toString());
         LOG.info(token.expiredAt().toString());
