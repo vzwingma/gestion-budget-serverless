@@ -184,7 +184,7 @@ public class BudgetService implements IBudgetAppProvider {
 				.asTuple()
 				.invoke(tuple -> {
 					BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteDestination);
-					ligneOperation.setLibelle("[vers "+tuple.getItem2().getLibelle()+"] " + libelleOperation);
+					ligneOperation.setLibelle("[vers "+tuple.getItem2().getId()+"] " + libelleOperation);
 					try {
 						this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), ligneOperation, auteur, null);
 					} catch (DataNotFoundException e) {
@@ -208,7 +208,7 @@ public class BudgetService implements IBudgetAppProvider {
 				.asTuple()
 				.invoke(tuple -> {
 					BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudgetDestination).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource);
-					String libelleOperationCible = "[depuis "+tuple.getItem2().getLibelle()+"] " + libelleOperation;
+					String libelleOperationCible = "[depuis "+tuple.getItem2().getId()+"] " + libelleOperation;
 					this.operationsAppProvider.addOperationIntercompte(tuple.getItem1().getListeOperations(), ligneOperation, libelleOperationCible, auteur);
 				})
 				.map(Tuple2::getItem1)
