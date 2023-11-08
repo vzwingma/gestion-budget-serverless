@@ -304,7 +304,8 @@ public class OperationsService implements IOperationsAppProvider {
 	@Override
 	public Multi<String> getLibellesOperations(String idCompte){
 		return dataOperationsProvider.getLibellesOperations(idCompte)
-				.map(c -> c.replaceAll("\\[.*\\]", "").trim());
+				.map(c -> c.replaceAll("\\[.*\\]", "").trim())
+				.select().distinct();
 	}
 
 

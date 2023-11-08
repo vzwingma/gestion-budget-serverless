@@ -187,8 +187,10 @@ class OperationsServiceTest {
     @Test
     void getLibellesOperations() {
 
-        Mockito.when(mockOperationDataProvider.getLibellesOperations(Mockito.anyString())).thenReturn(Multi.createFrom().items("Test", "[depuis Compte] TestInterCompte", "[En Retard][Vers Compte] TestVersCompte"));
+        Mockito.when(mockOperationDataProvider.getLibellesOperations(Mockito.anyString())).thenReturn(Multi.createFrom().items("Test", "[depuis Compte] TestInterCompte", "[En Retard][Vers Compte] TestVersCompte", "Test"));
         List<String> libelles = operationsAppProvider.getLibellesOperations("testCompte").collect().asList().await().indefinitely();
+
+        assertEquals(3, libelles.size());
         assertEquals("Test", libelles.get(0));
         assertEquals("TestInterCompte", libelles.get(1));
         assertEquals("TestVersCompte", libelles.get(2));
