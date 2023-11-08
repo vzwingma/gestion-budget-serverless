@@ -17,7 +17,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import java.time.Month;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -100,17 +99,17 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
 				.aggregate(
 						Arrays.asList(new Document("$match",
 										new Document("idCompteBancaire", idCompte)),
-								// Petit trick : on projete le libellé sur un String
+								// Petit trick : on projete le libellé sur un document dont l'attribut sera un String dans BudgetMensuel
 								new Document("$project",
 										new Document("idCompteBancaire", "$listeOperations.libelle")),
-								// et on le remappe sur un des attributs correspondant : idCompteBancaire
+								// et on le remappe sur un des attributs String  idCompteBancaire dans BudgetMensuel
 								new Document("$unwind",
 										new Document("path", "$idCompteBancaire")
 												.append("includeArrayIndex", "string")
 												.append("preserveNullAndEmptyArrays", false))
 								)
 				)
-				.map(c -> c.getIdCompteBancaire());
+				.map(BudgetMensuel::getIdCompteBancaire);
 	}
 
 	/**                                g
