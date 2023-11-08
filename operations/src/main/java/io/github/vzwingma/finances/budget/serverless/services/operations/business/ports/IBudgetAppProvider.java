@@ -2,6 +2,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 import java.time.Month;
@@ -82,4 +83,12 @@ public interface IBudgetAppProvider {
      * @param budget budget à calculer
      */
     void recalculSoldes(BudgetMensuel budget);
+
+    /**
+     * Récupération des libelles des opérations
+     * @param idCompte id du compte
+     * @param auteur utilisateur authentifié
+     * @return libelles des opérations
+     */
+    Multi<String> getLibellesOperations(String idCompte, String auteur);
 }

@@ -15,6 +15,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
+import io.smallrye.mutiny.Multi;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -293,6 +294,17 @@ public class OperationsService implements IOperationsAppProvider {
 		LOGGER.debug("Ajout de l'opération [{}] dans le budget", ligneTransfert);
 
 		operations.add(ligneTransfert);
+	}
+
+	/**
+	 * Récupération des libellés des opérations
+	 * @param idCompte id du compte
+	 * @return liste des libellés des opérations
+	 */
+	@Override
+	public Multi<String> getLibellesOperations(String idCompte){
+		return dataOperationsProvider.getLibellesOperations(idCompte)
+				.map(c -> c.replaceAll("\\[.*\\]", "").trim());
 	}
 
 

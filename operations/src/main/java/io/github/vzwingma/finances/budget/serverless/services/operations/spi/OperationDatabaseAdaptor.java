@@ -7,12 +7,17 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBanc
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jakarta.enterprise.context.ApplicationScoped;
+
 import java.time.Month;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -82,6 +87,37 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
 	}
 
 
+	/**
+	 * Liste des libellés des opérations d'un compte
+	 * @param idCompte id du  compte
+	 * @return libelles des opérations
+	 */
+	@Override
+	public Multi<String> getLibellesOperations(String idCompte){
+		LOGGER.info("Liste des libellés des opérations du compte {}", idCompte);
+
+		return mongoCollection()
+				.aggregate(
+						Arrays.asList(new Document("$match",
+										new Document("idCompteBancaire", idCompte)),
+								// Petit trick : on projete le libellé sur un String
+								new Document("$project",
+										new Document("idCompteBancaire", "$listeOperations.libelle")),
+								// et on le remappe sur un des attributs correspondant : idCompteBancaire
+								new Document("$unwind",
+										new Document("path", "$idCompteBancaire")
+												.append("includeArrayIndex", "string")
+												.append("preserveNullAndEmptyArrays", false))
+								)
+				)
+				.map(c -> c.getIdCompteBancaire());
+	}
+
+	/**                                g
+	 * sauvegarde ou mise à jour du budget
+	 * @param budget budget à sauvegarder
+	 * @return budget sauvegardé
+	 */
 	@Override
 	public Uni<BudgetMensuel> sauvegardeBudgetMensuel(BudgetMensuel budget) {
 		LOGGER.info("Sauvegarde du budget du compte {} du {}/{}", budget.getIdCompteBancaire(), budget.getMois(), budget.getAnnee());

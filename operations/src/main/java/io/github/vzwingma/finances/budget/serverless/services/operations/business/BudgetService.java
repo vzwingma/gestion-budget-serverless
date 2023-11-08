@@ -19,6 +19,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IComptesServiceProvider;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 
@@ -91,6 +92,49 @@ public class BudgetService implements IBudgetAppProvider {
 	}
 
 
+	/**
+	 * Chargement du budget mensuel
+	 *
+	 * @param idBudget id du budget
+	 * @return budget mensuel
+	 */
+	@Override
+	public Uni<BudgetMensuel> getBudgetMensuel(String idBudget) {
+		BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
+		return this.dataOperationsProvider.chargeBudgetMensuel(idBudget);
+	}
+
+
+
+
+	/**
+	 * Chargement du budget et du compte en double Uni
+	 * @param idBudget id du budget
+	 * @return tuple (budget, compte)
+	 */
+	private Uni<Tuple2<BudgetMensuel, CompteBancaire>> getBudgetAndCompteActif(String idBudget){
+		BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
+		return getBudgetMensuel(idBudget)
+				.flatMap(budget -> Uni.combine().all()
+						.unis(Uni.createFrom().item(budget),
+								this.comptesService.getCompteById(budget.getIdCompteBancaire()))
+						.asTuple())
+				// Si pas d'erreur, vérification du compte
+				.onItem().ifNotNull()
+				// Vérification du compte
+				.transformToUni(tuple -> {
+					CompteBancaire compteBancaire = tuple.getItem2();
+					BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, compteBancaire.getId());
+
+					if (!Boolean.TRUE.equals(compteBancaire.isActif())) {
+						LOGGER.warn("Impossible de modifier ou créer une opération. Le compte {} est cloturé", tuple.getItem1().getIdCompteBancaire());
+						return Uni.createFrom().failure(new CompteClosedException("Impossible de modifier ou créer une opération. Le compte " + tuple.getItem1().getIdCompteBancaire() + " est cloturé"));
+					}
+					return Uni.createFrom().item(tuple);
+				});
+	}
+
+
 
 	/**
 	 * Chargement du budget du mois courant pour le compte actif
@@ -120,137 +164,41 @@ public class BudgetService implements IBudgetAppProvider {
 
 
 	/**
-	 * Ajout d'une opération dans le budget
-	 * @param idBudget       identifiant de budget
-	 * @param ligneOperation ligne de dépense à ajouter
-	 * @return budget mensuel mis à jour
+	 * Chargement du budget du dernier mois connu pour le compte inactif
+	 * @param compteBancaire compte bancaire
+	 * @param mois mois
+	 * @param annee année
+	 * @return budget mensuel chargé à partir des données précédentes
 	 */
-	@Override
-	public Uni<BudgetMensuel> addOrUpdateOperationInBudget(String idBudget, LigneOperation ligneOperation, String auteur) {
+	private Uni<BudgetMensuel> chargerBudgetMensuelSurCompteInactif(CompteBancaire compteBancaire, Month mois, int annee) {
+		LOGGER.debug(" Chargement du budget sur compte inactif de {}/{}", mois, annee);
 
-		Uni<BudgetMensuel> budgetSurCompteActif = getBudgetAndCompteActif(idBudget)
-				// Si pas d'erreur, update de l'opération
+		// Calcul de paramètres pour le recovery
+		Month moisPrecedent = mois.minus(1);
+		int anneePrecedente = Month.DECEMBER.equals(moisPrecedent) ? annee -1 : annee;
+
+		// Chargement du budget précédent
+		return this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, mois, annee)
 				.onItem()
-				.transform(Tuple2::getItem1);
-		BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, ligneOperation.getId());
-
-
-		return Uni.combine().all().unis(
-				budgetSurCompteActif,
-				Uni.createFrom().item(ligneOperation),
-				// On ne va charger la catégorie Remboursement - que pour un frais remboursable
-				ligneOperation.getCategorie().getId().equals(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId()) ? this.parametragesService.getCategorieParId(IdsCategoriesEnum.REMBOURSEMENT.getId()) : Uni.createFrom().voidItem())
-			.asTuple()
-			// Ajout des opérations standard et remboursement (si non nulle)
-			.invoke(tuple -> {
-				try {
-					this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, (CategorieOperations) tuple.getItem3());
-				} catch (DataNotFoundException e) {
-					tuple.mapItem1(u -> Uni.createFrom().failure(e));
-				}
-			})
-			.onItem().transform(Tuple2::getItem1)
-			// recalcul de tous les soldes du budget courant
-			.onItem().ifNotNull()
-				.invoke(this::recalculSoldes)
-				// Sauvegarde du budget
-				.call(this::sauvegardeBudget);
-	}
-
-	/**
-	 * Création des opérations inter-comptes
-	 * @param idBudget identifiant du budget source
-	 * @param ligneOperation ligne de dépense à ajouter
-	 * @param idCompteDestination identifiant du compte de destination
-	 * @return budget mensuel mis à jour
-	 */
-	@Override
-	public Uni<BudgetMensuel> createOperationsIntercomptes(String idBudget, final LigneOperation ligneOperation, String idCompteDestination, String auteur) {
-
-		try {
-			final String libelleOperation = ligneOperation.getLibelle();
-			String idBudgetDestination = BudgetDataUtils.getBudgetId(idCompteDestination, BudgetDataUtils.getMoisFromBudgetId(idBudget), BudgetDataUtils.getAnneeFromBudgetId(idBudget));
-			String idCompteSource = BudgetDataUtils.getCompteFromBudgetId(idBudget);
-
-			LOGGER.info("Ajout d'un transfert intercompte de {} vers {} ({}) > {} ", idBudget, idBudgetDestination, idCompteDestination, ligneOperation);
-
-			/*
-			 * Opération sur Compte source
-			 */
-			Uni<BudgetMensuel> budgetCourant =
-				Uni.combine().all().unis(
-					getBudgetAndCompteActif(idBudget).map(Tuple2::getItem1),
-					this.comptesService.getCompteById(idCompteDestination))
-				.asTuple()
-				.invoke(tuple -> {
-					BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteDestination);
-					ligneOperation.setLibelle("[vers "+tuple.getItem2().getId()+"] " + libelleOperation);
-					try {
-						this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), ligneOperation, auteur, null);
-					} catch (DataNotFoundException e) {
-						tuple.mapItem1(u -> Uni.createFrom().failure(e));
-					}
-				})
-				.map(Tuple2::getItem1)
-				.onItem().ifNotNull()
-					.invoke(this::recalculSoldes)
-					// Sauvegarde du budget
-					.call(this::sauvegardeBudget);
-
-			/*
-			 * Opération sur Compte cible
-			 */
-
-			Uni<BudgetMensuel> budgetCible =
-				Uni.combine().all().unis(
-					getBudgetAndCompteActif(idBudgetDestination).map(Tuple2::getItem1),
-					this.comptesService.getCompteById(idCompteSource))
-				.asTuple()
-				.invoke(tuple -> {
-					BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudgetDestination).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource);
-					String libelleOperationCible = "[depuis "+tuple.getItem2().getId()+"] " + libelleOperation;
-					this.operationsAppProvider.addOperationIntercompte(tuple.getItem1().getListeOperations(), ligneOperation, libelleOperationCible, auteur);
-				})
-				.map(Tuple2::getItem1)
-				.onItem().ifNotNull()
-					.invoke(this::recalculSoldes)
-					// Sauvegarde du budget
-					.call(this::sauvegardeBudget);
-
-			return Uni.combine().all().unis(budgetCourant, budgetCible)
-					.asTuple()
-					.onItem()
-						.invoke(tuple -> BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource))
-					.onItem()
-						.ifNotNull().transform(Tuple2::getItem1);
-
-		} catch (BudgetNotFoundException e) {
-			LOGGER.error("Erreur lors de la création de l'opération intercompte", e);
-			return Uni.createFrom().failure(e);
-		}
-	}
-
-		/**
-         * Ajout d'une opération dans le budget
-         * @param idBudget       identifiant de budget
-         * @param idOperation ligne de dépense à ajouter
-         * @return budget mensuel mis à jour
-         */
-	@Override
-	public Uni<BudgetMensuel> deleteOperationInBudget(String idBudget, String idOperation) {
-
-		BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, idOperation);
-		return getBudgetAndCompteActif(idBudget)
-				// Si pas d'erreur, update de l'opération
+				// Si le budget n'existe pas, on recherche le dernier
+				.ifNull()
+				.switchTo(() -> chargerBudgetMensuelSurCompteInactif(compteBancaire, moisPrecedent, anneePrecedente))
 				.onItem()
-					.transform(Tuple2::getItem1)
-					.invoke(budget -> this.operationsAppProvider.deleteOperation(budget.getListeOperations(), idOperation))
-				// recalcul de tous les soldes du budget courant
-				.onItem().ifNotNull()
-					.invoke(this::recalculSoldes)
-					// Sauvegarde du budget
-					.call(this::sauvegardeBudget);
+				.transform(budgetMensuel -> {
+					// On reporte l'état inactif du compte sur les anciens budgets
+					budgetMensuel.setIdCompteBancaire(compteBancaire.getId());
+					// L'état du budget est forcé à inactif
+					budgetMensuel.setActif(false);
+					return budgetMensuel;
+				})
+				.invoke(budgetMensuel -> LOGGER.info("Budget sur compte inactif de {}/{} chargé : {}", mois, annee, budgetMensuel));
 	}
+
+
+	/************************************
+	 *  			CALCULS
+	 ***********************************/
+
 
 	/**
 	 * Recalcul du solde à la fin du mois précédent
@@ -294,37 +242,6 @@ public class BudgetService implements IBudgetAppProvider {
 		BudgetDataUtils.razCalculs(budget);
 
 		this.operationsAppProvider.calculSoldes(budget.getListeOperations(), budget.getSoldes(), budget.getTotauxParCategories(), budget.getTotauxParSSCategories());
-	}
-
-	/**
-	 * Chargement du budget du dernier mois connu pour le compte inactif
-	 * @param compteBancaire compte bancaire
-	 * @param mois mois
-	 * @param annee année
-	 * @return budget mensuel chargé à partir des données précédentes
-	 */
-	private Uni<BudgetMensuel> chargerBudgetMensuelSurCompteInactif(CompteBancaire compteBancaire, Month mois, int annee) {
-		LOGGER.debug(" Chargement du budget sur compte inactif de {}/{}", mois, annee);
-
-		// Calcul de paramètres pour le recovery
-		Month moisPrecedent = mois.minus(1);
-		int anneePrecedente = Month.DECEMBER.equals(moisPrecedent) ? annee -1 : annee;
-
-		// Chargement du budget précédent
-		return this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, mois, annee)
-				.onItem()
-				// Si le budget n'existe pas, on recherche le dernier
-				.ifNull()
-					.switchTo(() -> chargerBudgetMensuelSurCompteInactif(compteBancaire, moisPrecedent, anneePrecedente))
-				.onItem()
-					.transform(budgetMensuel -> {
-						// On reporte l'état inactif du compte sur les anciens budgets
-						budgetMensuel.setIdCompteBancaire(compteBancaire.getId());
-						// L'état du budget est forcé à inactif
-						budgetMensuel.setActif(false);
-						return budgetMensuel;
-					})
-					.invoke(budgetMensuel -> LOGGER.info("Budget sur compte inactif de {}/{} chargé : {}", mois, annee, budgetMensuel));
 	}
 
 
@@ -418,17 +335,6 @@ public class BudgetService implements IBudgetAppProvider {
 		return budgetInitVide;
 	}
 
-	/**
-	 * Chargement du budget mensuel
-	 *
-	 * @param idBudget id du budget
-	 * @return budget mensuel
-	 */
-	@Override
-	public Uni<BudgetMensuel> getBudgetMensuel(String idBudget) {
-		BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
-		return this.dataOperationsProvider.chargeBudgetMensuel(idBudget);
-	}
 
 	/**
 	 * Réinitialisation du budget
@@ -449,33 +355,6 @@ public class BudgetService implements IBudgetAppProvider {
 					.invoke(this::recalculSoldes)
 					// Sauvegarde du budget
 					.call(this::sauvegardeBudget);
-	}
-
-	/**
-	 * Chargement du budget et du compte en double Uni
-	 * @param idBudget id du budget
-	 * @return tuple (budget, compte)
-	 */
-	private Uni<Tuple2<BudgetMensuel, CompteBancaire>> getBudgetAndCompteActif(String idBudget){
-		BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
-		return getBudgetMensuel(idBudget)
-				.flatMap(budget -> Uni.combine().all()
-						.unis(Uni.createFrom().item(budget),
-							  this.comptesService.getCompteById(budget.getIdCompteBancaire()))
-						.asTuple())
-				// Si pas d'erreur, vérification du compte
-				.onItem().ifNotNull()
-					// Vérification du compte
-					.transformToUni(tuple -> {
-						CompteBancaire compteBancaire = tuple.getItem2();
-						BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, compteBancaire.getId());
-
-						if (!Boolean.TRUE.equals(compteBancaire.isActif())) {
-							LOGGER.warn("Impossible de modifier ou créer une opération. Le compte {} est cloturé", tuple.getItem1().getIdCompteBancaire());
-							return Uni.createFrom().failure(new CompteClosedException("Impossible de modifier ou créer une opération. Le compte " + tuple.getItem1().getIdCompteBancaire() + " est cloturé"));
-						}
-						return Uni.createFrom().item(tuple);
-					});
 	}
 
 	/**
@@ -522,7 +401,6 @@ public class BudgetService implements IBudgetAppProvider {
 	}
 
 
-
 	/**
 	 * sauvegarde du budget Courant
 	 *
@@ -534,4 +412,152 @@ public class BudgetService implements IBudgetAppProvider {
 		return dataOperationsProvider.sauvegardeBudgetMensuel(budget);
 	}
 
+
+	/************************************
+	 *  			OPERATIONS
+	 ***********************************/
+
+	/**
+	 * Ajout d'une opération dans le budget
+	 * @param idBudget       identifiant de budget
+	 * @param ligneOperation ligne de dépense à ajouter
+	 * @return budget mensuel mis à jour
+	 */
+	@Override
+	public Uni<BudgetMensuel> addOrUpdateOperationInBudget(String idBudget, LigneOperation ligneOperation, String auteur) {
+
+		Uni<BudgetMensuel> budgetSurCompteActif = getBudgetAndCompteActif(idBudget)
+				// Si pas d'erreur, update de l'opération
+				.onItem()
+				.transform(Tuple2::getItem1);
+		BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, ligneOperation.getId());
+
+
+		return Uni.combine().all().unis(
+						budgetSurCompteActif,
+						Uni.createFrom().item(ligneOperation),
+						// On ne va charger la catégorie Remboursement - que pour un frais remboursable
+						ligneOperation.getCategorie().getId().equals(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId()) ? this.parametragesService.getCategorieParId(IdsCategoriesEnum.REMBOURSEMENT.getId()) : Uni.createFrom().voidItem())
+				.asTuple()
+				// Ajout des opérations standard et remboursement (si non nulle)
+				.invoke(tuple -> {
+					try {
+						this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, (CategorieOperations) tuple.getItem3());
+					} catch (DataNotFoundException e) {
+						tuple.mapItem1(u -> Uni.createFrom().failure(e));
+					}
+				})
+				.onItem().transform(Tuple2::getItem1)
+				// recalcul de tous les soldes du budget courant
+				.onItem().ifNotNull()
+				.invoke(this::recalculSoldes)
+				// Sauvegarde du budget
+				.call(this::sauvegardeBudget);
+	}
+
+	/**
+	 * Création des opérations inter-comptes
+	 * @param idBudget identifiant du budget source
+	 * @param ligneOperation ligne de dépense à ajouter
+	 * @param idCompteDestination identifiant du compte de destination
+	 * @return budget mensuel mis à jour
+	 */
+	@Override
+	public Uni<BudgetMensuel> createOperationsIntercomptes(String idBudget, final LigneOperation ligneOperation, String idCompteDestination, String auteur) {
+
+		try {
+			final String libelleOperation = ligneOperation.getLibelle();
+			String idBudgetDestination = BudgetDataUtils.getBudgetId(idCompteDestination, BudgetDataUtils.getMoisFromBudgetId(idBudget), BudgetDataUtils.getAnneeFromBudgetId(idBudget));
+			String idCompteSource = BudgetDataUtils.getCompteFromBudgetId(idBudget);
+
+			LOGGER.info("Ajout d'un transfert intercompte de {} vers {} ({}) > {} ", idBudget, idBudgetDestination, idCompteDestination, ligneOperation);
+
+			/*
+			 * Opération sur Compte source
+			 */
+			Uni<BudgetMensuel> budgetCourant =
+					Uni.combine().all().unis(
+									getBudgetAndCompteActif(idBudget).map(Tuple2::getItem1),
+									this.comptesService.getCompteById(idCompteDestination))
+							.asTuple()
+							.invoke(tuple -> {
+								BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteDestination);
+								ligneOperation.setLibelle("[vers "+tuple.getItem2().getId()+"] " + libelleOperation);
+								try {
+									this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), ligneOperation, auteur, null);
+								} catch (DataNotFoundException e) {
+									tuple.mapItem1(u -> Uni.createFrom().failure(e));
+								}
+							})
+							.map(Tuple2::getItem1)
+							.onItem().ifNotNull()
+							.invoke(this::recalculSoldes)
+							// Sauvegarde du budget
+							.call(this::sauvegardeBudget);
+
+			/*
+			 * Opération sur Compte cible
+			 */
+
+			Uni<BudgetMensuel> budgetCible =
+					Uni.combine().all().unis(
+									getBudgetAndCompteActif(idBudgetDestination).map(Tuple2::getItem1),
+									this.comptesService.getCompteById(idCompteSource))
+							.asTuple()
+							.invoke(tuple -> {
+								BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudgetDestination).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource);
+								String libelleOperationCible = "[depuis "+tuple.getItem2().getId()+"] " + libelleOperation;
+								this.operationsAppProvider.addOperationIntercompte(tuple.getItem1().getListeOperations(), ligneOperation, libelleOperationCible, auteur);
+							})
+							.map(Tuple2::getItem1)
+							.onItem().ifNotNull()
+							.invoke(this::recalculSoldes)
+							// Sauvegarde du budget
+							.call(this::sauvegardeBudget);
+
+			return Uni.combine().all().unis(budgetCourant, budgetCible)
+					.asTuple()
+					.onItem()
+					.invoke(tuple -> BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource))
+					.onItem()
+					.ifNotNull().transform(Tuple2::getItem1);
+
+		} catch (BudgetNotFoundException e) {
+			LOGGER.error("Erreur lors de la création de l'opération intercompte", e);
+			return Uni.createFrom().failure(e);
+		}
+	}
+
+	/**
+	 * Ajout d'une opération dans le budget
+	 * @param idBudget       identifiant de budget
+	 * @param idOperation ligne de dépense à ajouter
+	 * @return budget mensuel mis à jour
+	 */
+	@Override
+	public Uni<BudgetMensuel> deleteOperationInBudget(String idBudget, String idOperation) {
+
+		BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, idOperation);
+		return getBudgetAndCompteActif(idBudget)
+				// Si pas d'erreur, update de l'opération
+				.onItem()
+				.transform(Tuple2::getItem1)
+				.invoke(budget -> this.operationsAppProvider.deleteOperation(budget.getListeOperations(), idOperation))
+				// recalcul de tous les soldes du budget courant
+				.onItem().ifNotNull()
+				.invoke(this::recalculSoldes)
+				// Sauvegarde du budget
+				.call(this::sauvegardeBudget);
+	}
+
+
+	/**
+	 * @param idCompte id du compte
+	 * @param auteur   utilisateur authentifié
+	 * @return liste des libellés d'opérations
+	 */
+	@Override
+	public Multi<String> getLibellesOperations(String idCompte, String auteur) {
+		return this.operationsAppProvider.getLibellesOperations(idCompte);
+	}
 }

@@ -10,6 +10,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.test.da
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.mutiny.Multi;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -181,5 +182,17 @@ class OperationsServiceTest {
         // Anomalie #208
         assertEquals("TestRemboursement", operations.get(0).getLibelle());
         assertEquals("TestRemboursement", operations.get(1).getLibelle());
+    }
+
+    @Test
+    void getLibellesOperations() {
+
+        Mockito.when(mockOperationDataProvider.getLibellesOperations(Mockito.anyString())).thenReturn(Multi.createFrom().items("Test", "[depuis Compte] TestInterCompte", "[En Retard][Vers Compte] TestVersCompte"));
+        List<String> libelles = operationsAppProvider.getLibellesOperations("testCompte").collect().asList().await().indefinitely();
+        assertEquals("Test", libelles.get(0));
+        assertEquals("TestInterCompte", libelles.get(1));
+        assertEquals("TestVersCompte", libelles.get(2));
+
+
     }
 }

@@ -40,9 +40,9 @@ import java.util.UUID;
  *
  */
 @Path(OperationsAPIEnum.BUDGET_BASE)
-public class OperationsResource extends AbstractAPIInterceptors {
+public class BudgetsResource extends AbstractAPIInterceptors {
 
-    private static final Logger LOG = LoggerFactory.getLogger(OperationsResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BudgetsResource.class);
 
 
     @Inject
@@ -291,6 +291,45 @@ public class OperationsResource extends AbstractAPIInterceptors {
 
 
     /**
+     * Création d'une opération inter comptes
+     * @param idBudget id du budget
+     * @param idCompte id du compte à mettre à jour
+     * @return budget mis à jour
+     */
+    @Operation(description="Création d'une opération Intercomptes")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "200", description = "Opération mise à jour",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = BudgetMensuel.class))}),
+            @APIResponse(responseCode = "400", description = "Paramètres incorrects"),
+            @APIResponse(responseCode = "401", description = "Utilisateur non authentifié"),
+            @APIResponse(responseCode = "403", description = "Opération non autorisée"),
+            @APIResponse(responseCode = "404", description = "Données introuvables"),
+            @APIResponse(responseCode = "423", description = "Compte clos")
+    })
+    @POST
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @Path(value= OperationsAPIEnum.BUDGET_OPERATION_INTERCOMPTE)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<BudgetMensuel> createOperationIntercomptes(
+            @RestPath("idBudget") String idBudget,
+            @RestPath("idCompte") String idCompte,
+            LigneOperation operation) {
+
+        String uuidOperation = UUID.randomUUID().toString();
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, uuidOperation).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
+        LOG.trace("Create Operation InterCompte [->{}]", idCompte);
+        if(operation != null && idBudget != null){
+            operation.setId(uuidOperation);
+            return budgetService.createOperationsIntercomptes(idBudget, operation, idCompte, super.getAuthenticatedUser());
+        }
+        else{
+            return Uni.createFrom().failure(new BadParametersException("Les paramètres idBudget, idOperation et idCompte sont obligatoires"));
+        }
+    }
+
+
+    /**
      * Mise à jour d'une opération
      * @param idBudget id du budget
      * @param operation opération à mettre à jour
@@ -329,45 +368,6 @@ public class OperationsResource extends AbstractAPIInterceptors {
         }
     }
 
-
-
-    /**
-     * Création d'une opération inter comptes
-     * @param idBudget id du budget
-     * @param idCompte id du compte à mettre à jour
-     * @return budget mis à jour
-     */
-    @Operation(description="Création d'une opération Intercomptes")
-    @APIResponses(value = {
-            @APIResponse(responseCode = "200", description = "Opération mise à jour",
-                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = BudgetMensuel.class))}),
-            @APIResponse(responseCode = "400", description = "Paramètres incorrects"),
-            @APIResponse(responseCode = "401", description = "Utilisateur non authentifié"),
-            @APIResponse(responseCode = "403", description = "Opération non autorisée"),
-            @APIResponse(responseCode = "404", description = "Données introuvables"),
-            @APIResponse(responseCode = "423", description = "Compte clos")
-    })
-    @POST
-    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
-    @Path(value= OperationsAPIEnum.BUDGET_OPERATION_INTERCOMPTE)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Uni<BudgetMensuel> createOperationIntercomptes(
-            @RestPath("idBudget") String idBudget,
-            @RestPath("idCompte") String idCompte,
-            LigneOperation operation) {
-
-        String uuidOperation = UUID.randomUUID().toString();
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, uuidOperation).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
-        LOG.trace("Create Operation InterCompte [->{}]", idCompte);
-        if(operation != null && idBudget != null){
-            operation.setId(uuidOperation);
-            return budgetService.createOperationsIntercomptes(idBudget, operation, idCompte, super.getAuthenticatedUser());
-        }
-        else{
-            return Uni.createFrom().failure(new BadParametersException("Les paramètres idBudget, idOperation et idCompte sont obligatoires"));
-        }
-    }
 
     /**
      * Suppression d'une opération
