@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 import java.time.Month;
@@ -43,4 +44,11 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
      * @return résultat de la sauvegarde: id du budget
      */
     Uni<BudgetMensuel> sauvegardeBudgetMensuel(BudgetMensuel budget);
+
+    /**
+     * Liste des libellés des opérations d'un compte
+     * @param idCompte id du  compte
+     * @return libelles des opérations
+     */
+    Multi<String> getLibellesOperations(String idCompte);
 }
