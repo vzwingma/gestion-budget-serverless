@@ -10,6 +10,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 import jakarta.annotation.security.RolesAllowed;
@@ -404,6 +405,40 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         }
     }
 
+
+
+    /**
+     * Liste des libellés des opérations
+     * @param idCompte id du compte
+     * @return liste des libellés
+     */
+    @Operation(description="Liste des libellés des opérations")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "200", description = "Liste des opérations",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = BudgetMensuel.class))}),
+            @APIResponse(responseCode = "400", description = "Paramètres incorrects"),
+            @APIResponse(responseCode = "401", description = "Utilisateur non authentifié"),
+            @APIResponse(responseCode = "403", description = "Opération non autorisée"),
+            @APIResponse(responseCode = "404", description = "Données introuvables"),
+            @APIResponse(responseCode = "423", description = "Compte clos")
+    })
+    @GET
+    @Path(value= OperationsAPIEnum.OPERATIONS_LIBELLES)
+    @RolesAllowed({ OperationsAPIEnum.OPERATIONS_ROLE })
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Multi<String> libellesOperationsCompte(@RestPath("idCompte") String idCompte) {
+
+        LOG.info("Libelles des opérations du Compte " + idCompte);
+
+        if(idCompte != null){
+            BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
+            return budgetService.getLibellesOperations(idCompte, super.getAuthenticatedUser());
+        }
+        else {
+            return Multi.createFrom().failure(new BadParametersException("Le paramètre idCompte est obligatoire"));
+        }
+    }
 
 
     @Override

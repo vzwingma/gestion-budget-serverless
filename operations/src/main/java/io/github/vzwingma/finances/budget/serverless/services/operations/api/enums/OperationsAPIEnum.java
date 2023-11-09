@@ -40,11 +40,7 @@ public class OperationsAPIEnum {
 	public static final String BUDGET_OPERATION_INTERCOMPTE = BUDGET_OPERATION + "/versCompte/"+PARAM_ID_COMPTE ;
 
 
-	/**
-	 * Compte
-	 */
-	public static final String COMPTE_BASE = "/comptes/v2";
-	public static final String OPERATIONS_LIBELLES = "/" + PARAM_ID_COMPTE + "/operations/libelles";
+	public static final String OPERATIONS_LIBELLES = "/compte/" + PARAM_ID_COMPTE + "/operations/libelles";
 	/**
 	 * Roles
 	 */
