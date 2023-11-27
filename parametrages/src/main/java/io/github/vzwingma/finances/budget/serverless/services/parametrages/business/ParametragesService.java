@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -42,33 +41,22 @@ public class ParametragesService implements IParametrageAppProvider {
 		this.dataParams = parametrageRepository;
 	}
 
-	/**
-	 * Liste des catégories en cache
-	 * (A usage interne uniquement !!! Pour réponse : Clonage obligatoire)
-	 */
-	private final List<CategorieOperations> listeCategories = new ArrayList<>();
 
 	/**'
 	 * @return liste des catégories
 	 */
 	public Uni<List<CategorieOperations>> getCategories(){
 
-		if(listeCategories.isEmpty()){
 			return dataParams.chargeCategories()
 					.filter(c -> c.getListeSSCategories() != null && !c.getListeSSCategories().isEmpty())
+					.filter(CategorieOperations::isActif)
+					.map(this::cloneCategorie)
 					//async call for log
 					.invoke(c -> {
 						LOGGER.debug("[{}][{}] {}", c.isActif() ? "v" : "X", c.getId(), c);
 						c.getListeSSCategories().forEach(s -> LOGGER.debug("[{}][{}]\t\t{}", s.isActif() ? "v" : "X", s.getId(), s));
 					})
-					.filter(CategorieOperations::isActif)
-					.map(this::cloneCategorie)
-					.invoke(listeCategories::add)
 					.collect().asList();
-		}
-		else{
-			return Uni.createFrom().item(listeCategories);
-		}
 	}
 
 	/**
@@ -89,7 +77,7 @@ public class ParametragesService implements IParametrageAppProvider {
 						c.getListeSSCategories().forEach(s -> {
 							if(s.getId().equals(idCategorie)){
 								s.setCategorieParente(new CategorieOperations.CategorieParente(c.getId(), c.getLibelle()));
-								LOGGER.info("Sous Catégorie trouvée : {}/{}" , c, s);
+								LOGGER.info("Sous Catégorie trouvée : {}/{}" , s.getCategorieParente(), s);
 								categorie.set(s);
 							}
 						});

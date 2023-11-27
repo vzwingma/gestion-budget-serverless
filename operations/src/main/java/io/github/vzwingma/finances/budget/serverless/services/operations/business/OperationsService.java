@@ -248,15 +248,17 @@ public class OperationsService implements IOperationsAppProvider {
 	 */
 
 	private LigneOperation createOperationRemboursement(LigneOperation operationSource, String auteur, CategorieOperations ssCategorieRemboursement){
-
+		// Workaround de #26
+		CategorieOperations.CategorieParente categorieParente = new CategorieOperations.CategorieParente(IdsCategoriesEnum.VIREMENT.getId(), "Virement");
+		ssCategorieRemboursement.setCategorieParente(categorieParente);
 		// Si l'opération est une opération de remboursement, on ajoute la catégorie de remboursement
 		return completeOperationAttributes(new LigneOperation(
-							ssCategorieRemboursement,
-							operationSource.getLibelle(),
-							OperationTypeEnum.CREDIT,
-							Math.abs(operationSource.getValeur()),
-							OperationEtatEnum.REPORTEE),
-							auteur);
+									ssCategorieRemboursement,
+									operationSource.getLibelle(),
+									OperationTypeEnum.CREDIT,
+									Math.abs(operationSource.getValeur()),
+									OperationEtatEnum.REPORTEE),
+									auteur);
 	}
 
 
@@ -273,6 +275,8 @@ public class OperationsService implements IOperationsAppProvider {
 			// pour tous les autres cas, on prend l'état de l'opération source
 			default -> etatDepenseTransfert = OperationEtatEnum.PREVUE;
 		}
+		// fix #28 : Opération source est forcément en DEBIT
+		ligneOperationSource.setTypeOperation(OperationTypeEnum.DEPENSE);
 
 		LigneOperation.Mensualite mensualiteTransfert = null;
 		if(ligneOperationSource.getMensualite() != null ){
