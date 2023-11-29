@@ -31,7 +31,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.*;
 
 @QuarkusTest
-class OperationsResourceTest {
+class BudgetsResourceTest {
 
     @Test
     void testInfoEndpoint() {

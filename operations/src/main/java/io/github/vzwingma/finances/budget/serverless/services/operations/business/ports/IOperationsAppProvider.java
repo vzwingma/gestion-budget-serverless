@@ -5,6 +5,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.TotauxCategorie;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
+import io.smallrye.mutiny.Multi;
 
 import java.util.List;
 import java.util.Map;
@@ -54,4 +55,10 @@ public interface IOperationsAppProvider {
      */
     void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur, CategorieOperations ssCategorieRemboursement) throws DataNotFoundException;
 
+    /**
+     * Récupération des libellés des opérations
+     * @param idCompte id du compte
+     * @return liste des libellés des opérations
+     */
+    Multi<String> getLibellesOperations(String idCompte);
 }
