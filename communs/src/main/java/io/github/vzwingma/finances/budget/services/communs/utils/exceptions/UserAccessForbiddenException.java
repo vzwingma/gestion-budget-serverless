@@ -4,19 +4,20 @@ import java.io.Serial;
 
 /**
  * Utilisateur non authentifié
- * @author vzwingma
  *
+ * @author vzwingma
  */
 public class UserAccessForbiddenException extends AbstractBusinessException {
 
-	@Serial
-	private static final long serialVersionUID = 1L;
-	
-	/**
-	 * Message d'erreur
-	 * @param libelleErreur libellé de l'erreur
-	 */
-	public UserAccessForbiddenException(String libelleErreur){
-		super(libelleErreur);
-	}
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * Message d'erreur
+     *
+     * @param libelleErreur libellé de l'erreur
+     */
+    public UserAccessForbiddenException(String libelleErreur) {
+        super(libelleErreur);
+    }
 }

@@ -1,8 +1,8 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.test.data;
 
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 
 import java.time.LocalDateTime;
 import java.time.Month;
@@ -14,14 +14,15 @@ import java.util.ArrayList;
 public class MockDataBudgets {
 
 
-    public static CompteBancaire getCompteC1(){
+    public static CompteBancaire getCompteC1() {
         return getCompteCx(1);
     }
-    public static CompteBancaire getCompteC2(){
+
+    public static CompteBancaire getCompteC2() {
         return getCompteCx(2);
     }
 
-    private static CompteBancaire getCompteCx(int noCompte){
+    private static CompteBancaire getCompteCx(int noCompte) {
         CompteBancaire c1 = new CompteBancaire();
         c1.setActif(true);
         c1.setId("C" + noCompte);
@@ -33,20 +34,20 @@ public class MockDataBudgets {
     }
 
 
-    public static CompteBancaire getCompteInactif(){
+    public static CompteBancaire getCompteInactif() {
         CompteBancaire c2 = getCompteCx(2);
         c2.setActif(false);
         return c2;
     }
 
-    public static BudgetMensuel getBudgetInactifCompteC1(){
+    public static BudgetMensuel getBudgetInactifCompteC1() {
         // Budget
         BudgetMensuel bo = new BudgetMensuel();
         bo.setIdCompteBancaire(getCompteC1().getId());
         bo.setMois(Month.JANUARY);
         bo.setAnnee(2022);
         bo.setActif(false);
-        bo.setId(getCompteC1().getId()+"_2022_1");
+        bo.setId(getCompteC1().getId() + "_2022_1");
 
         bo.getSoldes().setSoldeAtFinMoisCourant(0D);
         bo.getSoldes().setSoldeAtMaintenant(1000D);
@@ -56,7 +57,7 @@ public class MockDataBudgets {
         return bo;
     }
 
-    public static BudgetMensuel getBudgetActifCompteC1et1operationPrevue(){
+    public static BudgetMensuel getBudgetActifCompteC1et1operationPrevue() {
 
         BudgetMensuel budget = new BudgetMensuel();
         budget.setMois(Month.JANUARY);
@@ -77,7 +78,7 @@ public class MockDataBudgets {
     }
 
 
-    public static BudgetMensuel getBudgetActifCompteC2et0operationPrevue(){
+    public static BudgetMensuel getBudgetActifCompteC2et0operationPrevue() {
 
         BudgetMensuel budget = new BudgetMensuel();
         budget.setMois(Month.JANUARY);
@@ -93,7 +94,7 @@ public class MockDataBudgets {
     }
 
 
-    public static BudgetMensuel getBudgetPrecedentCompteC1(){
+    public static BudgetMensuel getBudgetPrecedentCompteC1() {
         // Budget
         BudgetMensuel bo = new BudgetMensuel();
         bo.setIdCompteBancaire(getCompteC1().getId());
@@ -115,8 +116,7 @@ public class MockDataBudgets {
     }
 
 
-
-    public static BudgetMensuel getBudgetActifCompteC1et3operationsRealisees(){
+    public static BudgetMensuel getBudgetActifCompteC1et3operationsRealisees() {
 
         BudgetMensuel budget = new BudgetMensuel();
         budget.setMois(Month.JANUARY);

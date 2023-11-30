@@ -6,7 +6,7 @@ import io.smallrye.mutiny.Uni;
 import java.util.List;
 
 /**
- *  Application Provider Interface de Paramétrages
+ * Application Provider Interface de Paramétrages
  */
 public interface IParametrageAppProvider {
 

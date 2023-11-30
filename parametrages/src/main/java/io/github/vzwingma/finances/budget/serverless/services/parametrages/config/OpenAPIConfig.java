@@ -10,8 +10,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @OpenAPIDefinition(
         tags = {
-                @Tag(name="application", description="Gestion de budget"),
-                @Tag(name="parametrages", description="Operations en rapport avec le paramétrage")
+                @Tag(name = "application", description = "Gestion de budget"),
+                @Tag(name = "parametrages", description = "Operations en rapport avec le paramétrage")
         },
         info = @Info(
                 title = "Gestion de Budgets : µService de paramétrages",

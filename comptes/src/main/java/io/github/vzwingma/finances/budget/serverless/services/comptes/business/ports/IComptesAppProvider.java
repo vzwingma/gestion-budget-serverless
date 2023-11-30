@@ -6,13 +6,14 @@ import io.smallrye.mutiny.Uni;
 import java.util.List;
 
 /**
- *  Application Provider Interface de Comptes
+ * Application Provider Interface de Comptes
  */
 public interface IComptesAppProvider {
 
 
     /**
      * Retourne l'etat d'un compte
+     *
      * @param idCompte id du compte
      * @return etat du compte
      */
@@ -20,19 +21,20 @@ public interface IComptesAppProvider {
 
     /**
      * Recherche du compte par id
-     * @param idCompte id du compte
+     *
+     * @param idCompte      id du compte
      * @param idUtilisateur utilisateur
      * @return compteBancaire
      */
-    Uni<CompteBancaire> getCompteById(String idCompte, String idUtilisateur) ;
-
+    Uni<CompteBancaire> getCompteById(String idCompte, String idUtilisateur);
 
 
     /**
      * Recherche des comptes d'un utilisateur
+     *
      * @param idUtilisateur utilisateur
      * @return liste des comptes bancaires
      */
-    Uni<List<CompteBancaire>> getComptesUtilisateur(String idUtilisateur) ;
+    Uni<List<CompteBancaire>> getComptesUtilisateur(String idUtilisateur);
 
 }

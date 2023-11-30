@@ -22,10 +22,12 @@ public class JWTUtils {
     /**
      * Constructeur privé
      */
-    private JWTUtils(){ }
+    private JWTUtils() {
+    }
 
     /**
      * Décodage d'un token JWT
+     *
      * @param base64JWT token en Base64
      * @throws DecodeException de décodage si le token n'est pas bien formé
      */
@@ -38,8 +40,7 @@ public class JWTUtils {
             String header = new String(decoder.decode(chunks[0]));
             String payload = new String(decoder.decode(chunks[1]));
             return new JWTAuthToken(Json.decodeValue(header, JwtAuthHeader.class), Json.decodeValue(payload, JWTAuthPayload.class));
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             LOG.error("Erreur lors du décodage du token [{}]", base64JWT, e);
             throw new DecodeException("Erreur lors du décodage du token");
         }
@@ -55,9 +56,8 @@ public class JWTUtils {
             String payloadJson = Json.encode(jwt.getPayload());
             String chunks0 = encoder.encodeToString(headerJson.getBytes()).replace("==", "");
             String chunks1 = encoder.encodeToString(payloadJson.getBytes()).replace("==", "");
-            return chunks0+"."+chunks1;
-        }
-        catch (Exception e){
+            return chunks0 + "." + chunks1;
+        } catch (Exception e) {
             LOG.error("Erreur lors de l'encodage du token [{}]", jwt);
             throw new EncodeException("Erreur lors de l'encodage du token");
         }

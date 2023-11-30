@@ -11,7 +11,7 @@ import java.util.List;
  */
 public class MockDataCategoriesOperations {
 
-    public static List<CategorieOperations> getListeTestCategories(){
+    public static List<CategorieOperations> getListeTestCategories() {
         List<CategorieOperations> categoriesFromSPI = new ArrayList<>();
         CategorieOperations catAlimentation = new CategorieOperations();
         catAlimentation.setId("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a");

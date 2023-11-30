@@ -10,7 +10,7 @@ import java.util.List;
  */
 public class MockDataComptes {
 
-    public static List<CompteBancaire> getListeComptes(){
+    public static List<CompteBancaire> getListeComptes() {
 
         List<CompteBancaire> comptes = new ArrayList<>();
         CompteBancaire c1 = new CompteBancaire();
@@ -38,7 +38,7 @@ public class MockDataComptes {
         return comptes;
     }
 
-    public static CompteBancaire getCompte1(){
+    public static CompteBancaire getCompte1() {
         return getListeComptes().get(0);
     }
 

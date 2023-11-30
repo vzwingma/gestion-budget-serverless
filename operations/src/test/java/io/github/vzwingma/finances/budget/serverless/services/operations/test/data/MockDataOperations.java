@@ -2,11 +2,11 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.test.d
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationPeriodiciteEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationTypeEnum;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationPeriodiciteEnum;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.List;
  */
 public class MockDataOperations {
 
-    public static List<LigneOperation> get3LignesOperations(CompteBancaire compte){
+    public static List<LigneOperation> get3LignesOperations(CompteBancaire compte) {
 
         List<LigneOperation> listeOperations = new ArrayList<>(3);
         listeOperations.add(getOperationRealisee(compte, 1));
@@ -31,17 +31,17 @@ public class MockDataOperations {
 
     }
 
-    public static LigneOperation getOperationRealisee(CompteBancaire compte, int numero){
+    public static LigneOperation getOperationRealisee(CompteBancaire compte, int numero) {
 
         LigneOperation lo = new LigneOperation();
-        lo.setId(compte.getId()+"B2_L"+numero);
+        lo.setId(compte.getId() + "B2_L" + numero);
         lo.setEtat(OperationEtatEnum.REALISEE);
-        lo.setLibelle("Opération "+numero);
+        lo.setLibelle("Opération " + numero);
         return lo;
 
     }
 
-    public static LigneOperation getOperationIntercompte(){
+    public static LigneOperation getOperationIntercompte() {
         CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.TRANSFERT_INTERCOMPTE.getId());
         CategorieOperations cat = new CategorieOperations(IdsCategoriesEnum.TRANSFERT_INTERCOMPTE.getId());
         dep.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
@@ -49,7 +49,8 @@ public class MockDataOperations {
         test1.setId("TestIntercompte");
         return test1;
     }
-    public static LigneOperation getOperationPrelevement(){
+
+    public static LigneOperation getOperationPrelevement() {
         CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.PRELEVEMENTS_MENSUELS.getId());
         CategorieOperations cat = new CategorieOperations(IdsCategoriesEnum.PRELEVEMENTS_MENSUELS.getId());
         dep.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
@@ -58,7 +59,7 @@ public class MockDataOperations {
         return test1;
     }
 
-    public static LigneOperation getOperationRemboursement(){
+    public static LigneOperation getOperationRemboursement() {
         CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId());
         CategorieOperations cat = new CategorieOperations(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId());
         dep.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
@@ -68,8 +69,7 @@ public class MockDataOperations {
     }
 
 
-
-    public static LigneOperation getOperationMensuelleRealisee(){
+    public static LigneOperation getOperationMensuelleRealisee() {
         LigneOperation lo = new LigneOperation();
         lo.setId("C1_B2_L4");
         lo.setEtat(OperationEtatEnum.REALISEE);

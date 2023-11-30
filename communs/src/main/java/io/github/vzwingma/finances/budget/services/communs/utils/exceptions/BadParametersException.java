@@ -4,18 +4,18 @@ import java.io.Serial;
 
 /**
  * Erreur sur les paramètres en entrée
- * @author vzwingma
  *
+ * @author vzwingma
  */
 public class BadParametersException extends AbstractBusinessException {
 
-	@Serial
-	private static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
-	/**
-	 * @param message d'erreur
-	 */
-	public BadParametersException(String message) {
-		super(message);
-	}
+    /**
+     * @param message d'erreur
+     */
+    public BadParametersException(String message) {
+        super(message);
+    }
 }

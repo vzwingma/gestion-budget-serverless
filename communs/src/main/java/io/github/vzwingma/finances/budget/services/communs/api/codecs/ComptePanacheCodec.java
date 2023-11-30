@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.services.communs.api.codecs;
 
 import com.mongodb.MongoClientSettings;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.bson.*;
 import org.bson.codecs.Codec;
 import org.bson.codecs.CollectibleCodec;
@@ -11,7 +12,6 @@ import org.bson.codecs.EncoderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 
 /**
@@ -20,13 +20,13 @@ import java.util.UUID;
 @ApplicationScoped
 public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ComptePanacheCodec.class);
     private final Codec<Document> documentCodec;
 
     public ComptePanacheCodec() {
         this.documentCodec = MongoClientSettings.getDefaultCodecRegistry().get(Document.class);
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(ComptePanacheCodec.class);
     @Override
     public CompteBancaire generateIdIfAbsentFromDocument(CompteBancaire compteBancaire) {
         compteBancaire.setId(UUID.randomUUID().toString());
@@ -42,8 +42,7 @@ public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
     public BsonValue getDocumentId(CompteBancaire compteBancaire) {
         if (documentHasId(compteBancaire)) {
             return new BsonString(compteBancaire.getId());
-        }
-        else{
+        } else {
             generateIdIfAbsentFromDocument(compteBancaire);
             return getDocumentId(compteBancaire);
         }
@@ -51,7 +50,8 @@ public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
 
     /**
      * Décodage de la classe {@link CompteBancaire}
-     * @param bsonReader reader du BSON issu de la BDD
+     *
+     * @param bsonReader     reader du BSON issu de la BDD
      * @param decoderContext contexte
      * @return utilisateur lu
      */

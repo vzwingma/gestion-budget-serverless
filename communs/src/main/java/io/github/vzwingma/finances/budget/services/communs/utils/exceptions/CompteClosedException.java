@@ -4,19 +4,20 @@ import java.io.Serial;
 
 /**
  * Budget non trouvé
- * @author vzwingma
  *
+ * @author vzwingma
  */
 public class CompteClosedException extends AbstractBusinessException {
 
-	@Serial
-	private static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
-	/**
-	 * Erreur compte clos
-	 * @param libelleErreur libellé de l'erreur
-	 */
-	public CompteClosedException(String libelleErreur){
-		super(libelleErreur);
-	}
+    /**
+     * Erreur compte clos
+     *
+     * @param libelleErreur libellé de l'erreur
+     */
+    public CompteClosedException(String libelleErreur) {
+        super(libelleErreur);
+    }
 }

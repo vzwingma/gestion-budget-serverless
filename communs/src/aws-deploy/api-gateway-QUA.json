@@ -1,268 +1,302 @@
 {
-  "swagger" : "2.0",
-  "info" : {
-    "description" : "API vers les µServices de budget QUA",
-    "version" : "1.0",
-    "title" : "budget-app-QUA"
+  "swagger": "2.0",
+  "info": {
+    "description": "API vers les µServices de budget QUA",
+    "version": "1.0",
+    "title": "budget-app-QUA"
   },
-  "host" : "dc1pomn863.execute-api.eu-west-3.amazonaws.com",
-  "basePath" : "/Qua",
-  "schemes" : [ "https" ],
-  "paths" : {
-    "/budgets/v2/{uri+}" : {
-      "options" : {
-        "consumes" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "uri",
-          "in" : "path",
-          "required" : true,
-          "type" : "string"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "200 response",
-            "headers" : {
-              "Access-Control-Allow-Origin" : {
-                "type" : "string"
+  "host": "dc1pomn863.execute-api.eu-west-3.amazonaws.com",
+  "basePath": "/Qua",
+  "schemes": [
+    "https"
+  ],
+  "paths": {
+    "/budgets/v2/{uri+}": {
+      "options": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "uri",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
               },
-              "Access-Control-Allow-Methods" : {
-                "type" : "string"
+              "Access-Control-Allow-Methods": {
+                "type": "string"
               },
-              "Access-Control-Allow-Headers" : {
-                "type" : "string"
+              "Access-Control-Allow-Headers": {
+                "type": "string"
               }
             }
           }
         },
-        "x-amazon-apigateway-integration" : {
-          "type" : "mock",
-          "responses" : {
-            "default" : {
-              "statusCode" : "200",
-              "responseParameters" : {
-                "method.response.header.Access-Control-Allow-Methods" : "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
-                "method.response.header.Access-Control-Allow-Headers" : "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-                "method.response.header.Access-Control-Allow-Origin" : "'*'"
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
               }
             }
           },
-          "requestTemplates" : {
-            "application/json" : "{\"statusCode\": 200}"
+          "requestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
           },
-          "passthroughBehavior" : "when_no_match"
+          "passthroughBehavior": "when_no_match"
         }
       },
-      "x-amazon-apigateway-any-method" : {
-        "parameters" : [ {
-          "name" : "uri",
-          "in" : "path",
-          "required" : true,
-          "type" : "string"
-        } ],
-        "responses" : { },
-        "security" : [ {
-          "api_key" : [ ]
-        } ],
-        "x-amazon-apigateway-integration" : {
-          "type" : "aws_proxy",
-          "httpMethod" : "POST",
-          "uri" : "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-OperationsNativeQUA-1IIhUb06wa1O/invocations",
-          "passthroughBehavior" : "when_no_match"
+      "x-amazon-apigateway-any-method": {
+        "parameters": [
+          {
+            "name": "uri",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {},
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "x-amazon-apigateway-integration": {
+          "type": "aws_proxy",
+          "httpMethod": "POST",
+          "uri": "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-OperationsNativeQUA-1IIhUb06wa1O/invocations",
+          "passthroughBehavior": "when_no_match"
         }
       }
     },
-    "/comptes/v2/{uri+}" : {
-      "options" : {
-        "consumes" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "uri",
-          "in" : "path",
-          "required" : true,
-          "type" : "string"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "200 response",
-            "headers" : {
-              "Access-Control-Allow-Origin" : {
-                "type" : "string"
+    "/comptes/v2/{uri+}": {
+      "options": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "uri",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
               },
-              "Access-Control-Allow-Methods" : {
-                "type" : "string"
+              "Access-Control-Allow-Methods": {
+                "type": "string"
               },
-              "Access-Control-Allow-Headers" : {
-                "type" : "string"
+              "Access-Control-Allow-Headers": {
+                "type": "string"
               }
             }
           }
         },
-        "x-amazon-apigateway-integration" : {
-          "type" : "mock",
-          "responses" : {
-            "default" : {
-              "statusCode" : "200",
-              "responseParameters" : {
-                "method.response.header.Access-Control-Allow-Methods" : "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
-                "method.response.header.Access-Control-Allow-Headers" : "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-                "method.response.header.Access-Control-Allow-Origin" : "'*'"
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
               }
             }
           },
-          "requestTemplates" : {
-            "application/json" : "{\"statusCode\": 200}"
+          "requestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
           },
-          "passthroughBehavior" : "when_no_match"
+          "passthroughBehavior": "when_no_match"
         }
       },
-      "x-amazon-apigateway-any-method" : {
-        "parameters" : [ {
-          "name" : "uri",
-          "in" : "path",
-          "required" : true,
-          "type" : "string"
-        } ],
-        "responses" : { },
-        "security" : [ {
-          "api_key" : [ ]
-        } ],
-        "x-amazon-apigateway-integration" : {
-          "type" : "aws_proxy",
-          "httpMethod" : "POST",
-          "uri" : "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-ComptesNativeQUA-BdhneuBNspRM/invocations",
-          "passthroughBehavior" : "when_no_match"
+      "x-amazon-apigateway-any-method": {
+        "parameters": [
+          {
+            "name": "uri",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {},
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "x-amazon-apigateway-integration": {
+          "type": "aws_proxy",
+          "httpMethod": "POST",
+          "uri": "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-ComptesNativeQUA-BdhneuBNspRM/invocations",
+          "passthroughBehavior": "when_no_match"
         }
       }
     },
-    "/parametres/v2/{uri+}" : {
-      "options" : {
-        "consumes" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "uri",
-          "in" : "path",
-          "required" : true,
-          "type" : "string"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "200 response",
-            "headers" : {
-              "Access-Control-Allow-Origin" : {
-                "type" : "string"
+    "/parametres/v2/{uri+}": {
+      "options": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "uri",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
               },
-              "Access-Control-Allow-Methods" : {
-                "type" : "string"
+              "Access-Control-Allow-Methods": {
+                "type": "string"
               },
-              "Access-Control-Allow-Headers" : {
-                "type" : "string"
+              "Access-Control-Allow-Headers": {
+                "type": "string"
               }
             }
           }
         },
-        "x-amazon-apigateway-integration" : {
-          "type" : "mock",
-          "responses" : {
-            "default" : {
-              "statusCode" : "200",
-              "responseParameters" : {
-                "method.response.header.Access-Control-Allow-Methods" : "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
-                "method.response.header.Access-Control-Allow-Headers" : "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-                "method.response.header.Access-Control-Allow-Origin" : "'*'"
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
               }
             }
           },
-          "requestTemplates" : {
-            "application/json" : "{\"statusCode\": 200}"
+          "requestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
           },
-          "passthroughBehavior" : "when_no_match"
+          "passthroughBehavior": "when_no_match"
         }
       },
-      "x-amazon-apigateway-any-method" : {
-        "parameters" : [ {
-          "name" : "uri",
-          "in" : "path",
-          "required" : true,
-          "type" : "string"
-        } ],
-        "responses" : { },
-        "security" : [ {
-          "api_key" : [ ]
-        } ],
-        "x-amazon-apigateway-integration" : {
-          "type" : "aws_proxy",
-          "httpMethod" : "POST",
-          "uri" : "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-ParametragesNativeQUA-GhC9KqRngQRo/invocations",
-          "passthroughBehavior" : "when_no_match"
+      "x-amazon-apigateway-any-method": {
+        "parameters": [
+          {
+            "name": "uri",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {},
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "x-amazon-apigateway-integration": {
+          "type": "aws_proxy",
+          "httpMethod": "POST",
+          "uri": "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-ParametragesNativeQUA-GhC9KqRngQRo/invocations",
+          "passthroughBehavior": "when_no_match"
         }
       }
     },
-    "/utilisateurs/v2/{uri+}" : {
-      "options" : {
-        "consumes" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "uri",
-          "in" : "path",
-          "required" : true,
-          "type" : "string"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "200 response",
-            "headers" : {
-              "Access-Control-Allow-Origin" : {
-                "type" : "string"
+    "/utilisateurs/v2/{uri+}": {
+      "options": {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "uri",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
               },
-              "Access-Control-Allow-Methods" : {
-                "type" : "string"
+              "Access-Control-Allow-Methods": {
+                "type": "string"
               },
-              "Access-Control-Allow-Headers" : {
-                "type" : "string"
+              "Access-Control-Allow-Headers": {
+                "type": "string"
               }
             }
           }
         },
-        "x-amazon-apigateway-integration" : {
-          "type" : "mock",
-          "responses" : {
-            "default" : {
-              "statusCode" : "200",
-              "responseParameters" : {
-                "method.response.header.Access-Control-Allow-Methods" : "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
-                "method.response.header.Access-Control-Allow-Headers" : "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-                "method.response.header.Access-Control-Allow-Origin" : "'*'"
+        "x-amazon-apigateway-integration": {
+          "type": "mock",
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
               }
             }
           },
-          "requestTemplates" : {
-            "application/json" : "{\"statusCode\": 200}"
+          "requestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
           },
-          "passthroughBehavior" : "when_no_match"
+          "passthroughBehavior": "when_no_match"
         }
       },
-      "x-amazon-apigateway-any-method" : {
-        "parameters" : [ {
-          "name" : "uri",
-          "in" : "path",
-          "required" : true,
-          "type" : "string"
-        } ],
-        "responses" : { },
-        "security" : [ {
-          "api_key" : [ ]
-        } ],
-        "x-amazon-apigateway-integration" : {
-          "type" : "aws_proxy",
-          "httpMethod" : "POST",
-          "uri" : "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-UtilisateursNativeQUA-38wGsYDJYxa5/invocations",
-          "passthroughBehavior" : "when_no_match"
+      "x-amazon-apigateway-any-method": {
+        "parameters": [
+          {
+            "name": "uri",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {},
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "x-amazon-apigateway-integration": {
+          "type": "aws_proxy",
+          "httpMethod": "POST",
+          "uri": "arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-3:148502549455:function:budget-app-QUA-UtilisateursNativeQUA-38wGsYDJYxa5/invocations",
+          "passthroughBehavior": "when_no_match"
         }
       }
     }
   },
-  "securityDefinitions" : {
-    "api_key" : {
-      "type" : "apiKey",
-      "name" : "x-api-key",
-      "in" : "header"
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "x-api-key",
+      "in": "header"
     }
   }
 }

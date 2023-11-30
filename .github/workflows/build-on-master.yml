@@ -34,9 +34,9 @@ jobs:
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
-           path: ~/.m2
-           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-           restore-keys: ${{ runner.os }}-m2
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
       # Runs the Build with Maven
       - name: Build Communs with Maven
         run: mvn clean install -B --file communs/pom.xml
@@ -63,38 +63,38 @@ jobs:
           path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
     # SONAR
   sonar-scan:
-      name: Scan Sonar
-      # The type of runner that the job will run on
-      runs-on: ubuntu-latest
+    name: Scan Sonar
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
 
-      # Steps represent a sequence of tasks that will be executed as part of the job
-      steps:
-        # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-        - uses: actions/checkout@v3
-        - name: Set up JDK 17
-          uses: actions/setup-java@v3
-          with:
-            java-version: 17
-            distribution: 'temurin'
-            cache: 'maven'
-        - name: Cache SonarCloud packages
-          uses: actions/cache@v3
-          with:
-            path: ~/.sonar/cache
-            key: ${{ runner.os }}-sonar
-            restore-keys: ${{ runner.os }}-sonar
-        - name: Cache Maven packages
-          uses: actions/cache@v3
-          with:
-            path: ~/.m2
-            key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-            restore-keys: ${{ runner.os }}-m2
-        # Runs a single command using the runners shell
-        - name: Build with Maven
-          run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -P sonar -Dsonar.host.url=${{ vars.SONAR_HOST }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.organization=${{ vars.SONAR_ORG }} -Dsonar.projectKey=vzwingma_gestion-budget-serverless --file pom.xml
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      # Runs a single command using the runners shell
+      - name: Build with Maven
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -P sonar -Dsonar.host.url=${{ vars.SONAR_HOST }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.organization=${{ vars.SONAR_ORG }} -Dsonar.projectKey=vzwingma_gestion-budget-serverless --file pom.xml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
 
   ###########################

@@ -21,12 +21,12 @@ import java.util.Optional;
 public class AbstractAPISecurityFilter implements ContainerRequestFilter {
 
 
-    private final Logger logger = LoggerFactory.getLogger(AbstractAPISecurityFilter.class);
-
     public static final String HTTP_HEADER_API_KEY = "X-Api-Key";
+    private final Logger logger = LoggerFactory.getLogger(AbstractAPISecurityFilter.class);
 
     /**
      * Filtre de sécurité sur JWT
+     *
      * @param requestContext requête
      * @throws DecodeException erreur de décodage
      */
@@ -50,18 +50,18 @@ public class AbstractAPISecurityFilter implements ContainerRequestFilter {
 
     /**
      * Récupération de l'Auth Bearer à partir des entêtes
+     *
      * @param authBearer liste des entêtes
      * @return l'auth Bearer si elle existe
      */
-    protected String getAuthBearerFromHeaders(List<String> authBearer){
-        if(authBearer != null && !authBearer.isEmpty()) {
+    protected String getAuthBearerFromHeaders(List<String> authBearer) {
+        if (authBearer != null && !authBearer.isEmpty()) {
             Optional<String> accessToken = authBearer.stream()
                     .filter(a -> a.startsWith("Bearer "))
                     .map(a -> a.replace("Bearer ", ""))
                     .findFirst();
             return accessToken.orElse(null);
-        }
-        else{
+        } else {
             logger.trace("Auth is null");
             return null;
         }

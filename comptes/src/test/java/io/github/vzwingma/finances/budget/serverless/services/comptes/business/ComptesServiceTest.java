@@ -1,9 +1,9 @@
 package io.github.vzwingma.finances.budget.serverless.services.comptes.business;
 
-import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.serverless.services.comptes.business.ports.IComptesAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.comptes.business.ports.IComptesRepository;
 import io.github.vzwingma.finances.budget.serverless.services.comptes.test.data.MockDataComptes;
+import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -27,7 +27,7 @@ class ComptesServiceTest {
     }
 
     @Test
-    void testGetComptes(){
+    void testGetComptes() {
 
         Mockito.when(comptesRepository.chargeComptes("test")).thenReturn(Multi.createFrom().items(MockDataComptes.getListeComptes().stream()));
 
@@ -39,7 +39,7 @@ class ComptesServiceTest {
     }
 
     @Test
-    void testGetCompteById(){
+    void testGetCompteById() {
 
         Mockito.when(comptesRepository.chargeCompteParId(Mockito.eq("A3"), Mockito.anyString())).thenReturn(Uni.createFrom().item(MockDataComptes.getCompte1()));
 
@@ -50,7 +50,7 @@ class ComptesServiceTest {
     }
 
     @Test
-    void testGetCompteActif(){
+    void testGetCompteActif() {
         Mockito.when(comptesRepository.isCompteActif("A3")).thenReturn(Uni.createFrom().item(Boolean.TRUE));
 
         Assertions.assertTrue(comptesAppProvider.isCompteActif("A3").await().indefinitely());

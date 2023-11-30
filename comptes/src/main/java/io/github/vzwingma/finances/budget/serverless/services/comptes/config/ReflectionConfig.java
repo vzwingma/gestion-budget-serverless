@@ -9,6 +9,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 /**
  * Configuration de la Reflection des classes {@link JWTAuthToken}, {@link JwtAuthHeader} et {@link JWTAuthPayload} pour le décodage JSON
  */
-@RegisterForReflection(targets = { JWTAuthToken.class, JWTAuthPayload.class, JwtAuthHeader.class, CategorieOperations.class, CategorieOperations.CategorieParente.class })
+@RegisterForReflection(targets = {JWTAuthToken.class, JWTAuthPayload.class, JwtAuthHeader.class, CategorieOperations.class, CategorieOperations.CategorieParente.class})
 public class ReflectionConfig {
 }

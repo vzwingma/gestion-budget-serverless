@@ -34,8 +34,8 @@ import java.util.Map;
 /**
  * Controleur REST -
  * Adapteur du port
- * @author vzwingma
  *
+ * @author vzwingma
  */
 @Path(UtilisateursAPIEnum.USERS_BASE)
 public class UtilisateursResource extends AbstractAPIInterceptors {
@@ -49,25 +49,26 @@ public class UtilisateursResource extends AbstractAPIInterceptors {
 
     /**
      * Date de dernier accès utilisateur
+     *
      * @return date de dernier accès
      */
-    @Operation(description = "Fournit la date de dernier accès d'un utilisateur", summary="Date de denier accès")
+    @Operation(description = "Fournit la date de dernier accès d'un utilisateur", summary = "Date de denier accès")
     @APIResponses(value = {
             @APIResponse(responseCode = "200", description = "Opération réussie",
-                    content = { @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UtilisateurPrefsAPIObject.class)) }),
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UtilisateurPrefsAPIObject.class))}),
             @APIResponse(responseCode = "401", description = "L'utilisateur doit être identifié"),
             @APIResponse(responseCode = "403", description = "L'opération n'est pas autorisée"),
             @APIResponse(responseCode = "404", description = "Session introuvable")
     })
     @GET
-    @RolesAllowed({ UtilisateursAPIEnum.UTILISATEURS_ROLE })
+    @RolesAllowed({UtilisateursAPIEnum.UTILISATEURS_ROLE})
     @Path(UtilisateursAPIEnum.USERS_ACCESS_DATE)
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<UtilisateurPrefsAPIObject> getLastAccessDateUtilisateur() throws UserAccessForbiddenException {
         String idProprietaire = super.getAuthenticatedUser();
         BusinessTraceContext.get().clear().put(BusinessTraceContextKeyEnum.USER, idProprietaire);
-        if(idProprietaire != null) {
+        if (idProprietaire != null) {
             return service.getLastAccessDate(idProprietaire)
                     .onItem().transform(lastAccess -> {
                         LOG.info("LastAccessTime : {}", lastAccess);
@@ -76,19 +77,18 @@ public class UtilisateursResource extends AbstractAPIInterceptors {
                         prefs.setLastAccessTime(BudgetDateTimeUtils.getSecondsFromLocalDateTime(lastAccess));
                         return prefs;
                     });
-        }
-        else {
+        } else {
             return Uni.createFrom().failure(new UserAccessForbiddenException("Propriétaire introuvable"));
         }
     }
 
 
-
     /**
      * Préférences d'un utilisateur
+     *
      * @return préférences
      */
-    @Operation(description = "Fournir les préférences d'affichage d'un utilisateur", summary="Préférences d'un utilisateur")
+    @Operation(description = "Fournir les préférences d'affichage d'un utilisateur", summary = "Préférences d'un utilisateur")
     @APIResponses(value = {
             @APIResponse(responseCode = "200", description = "Opération réussie",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = UtilisateurPrefsAPIObject.class))),
@@ -97,18 +97,18 @@ public class UtilisateursResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "404", description = "Session introuvable")
     })
     @GET
-    @RolesAllowed({ UtilisateursAPIEnum.UTILISATEURS_ROLE })
+    @RolesAllowed({UtilisateursAPIEnum.UTILISATEURS_ROLE})
     @Path(UtilisateursAPIEnum.USERS_PREFS)
     public Uni<UtilisateurPrefsAPIObject> getPreferencesUtilisateur() {
         String idProprietaire = super.getAuthenticatedUser();
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.USER, idProprietaire);
-        if(idProprietaire != null){
+        if (idProprietaire != null) {
             return service.getUtilisateur(idProprietaire)
                     .map(utilisateur -> {
                         UtilisateurPrefsAPIObject prefs = new UtilisateurPrefsAPIObject();
                         prefs.setIdUtilisateur(idProprietaire);
 
-                        if(utilisateur != null) {
+                        if (utilisateur != null) {
                             Map<UtilisateurPrefsEnum, String> prefsUtilisateur = utilisateur.getPrefsUtilisateur();
                             Map<UtilisateurDroitsEnum, Boolean> droitsUtilisateur = utilisateur.getDroits();
                             LOG.info("Preferences Utilisateur : {} | {}", prefsUtilisateur, droitsUtilisateur);
@@ -117,8 +117,7 @@ public class UtilisateursResource extends AbstractAPIInterceptors {
                         }
                         return prefs;
                     });
-        }
-        else {
+        } else {
             return Uni.createFrom().failure(new UserAccessForbiddenException("Propriétaire introuvable"));
         }
     }
@@ -129,8 +128,11 @@ public class UtilisateursResource extends AbstractAPIInterceptors {
     public void preMatchingFilter(ContainerRequestContext requestContext) {
         super.preMatchingFilter(requestContext);
     }
+
     @Override
     @ServerResponseFilter
-    public void postMatchingFilter(ContainerResponseContext responseContext) { super.postMatchingFilter(responseContext); }
+    public void postMatchingFilter(ContainerResponseContext responseContext) {
+        super.postMatchingFilter(responseContext);
+    }
 
 }

@@ -2,10 +2,10 @@ package io.github.vzwingma.finances.budget.serverless.services.utilisateurs.busi
 
 /**
  * Enum des préférences utilisateurs
- * @author vzwingma
  *
+ * @author vzwingma
  */
 public enum UtilisateurPrefsEnum {
-	// SELECTION
-	PREFS_STATUT_NLLE_DEPENSE
+    // SELECTION
+    PREFS_STATUT_NLLE_DEPENSE
 }

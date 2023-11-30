@@ -1,17 +1,17 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business;
 
-import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
-import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
-import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IComptesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataOperations;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
+import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Assertions;
@@ -260,7 +260,7 @@ class BudgetServiceTest {
 
 
     @Test
-    void testIsBudgetActif(){
+    void testIsBudgetActif() {
         // When
         Mockito.when(mockOperationDataProvider.isBudgetActif(anyString())).thenReturn(Uni.createFrom().item(true));
 
@@ -270,7 +270,7 @@ class BudgetServiceTest {
 
 
     @Test
-    void testSetBudgetInactif(){
+    void testSetBudgetInactif() {
         // When
         BudgetMensuel budgetADesactiver = MockDataBudgets.getBudgetActifCompteC1et1operationPrevue();
         Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString())).thenReturn(Uni.createFrom().item(budgetADesactiver));
@@ -286,7 +286,7 @@ class BudgetServiceTest {
 
 
     @Test
-    void testUpdateBudgetCompteClos(){
+    void testUpdateBudgetCompteClos() {
         // When
         Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetInactifCompteC1()));
@@ -300,8 +300,9 @@ class BudgetServiceTest {
         assertEquals(CompteClosedException.class, exception.getCause().getClass());
 
     }
+
     @Test
-    void testUpdateBudget(){
+    void testUpdateBudget() {
         // When
         Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
@@ -321,7 +322,7 @@ class BudgetServiceTest {
 
 
     @Test
-    void testCreateOperationIntercompte(){
+    void testCreateOperationIntercompte() {
         // When
         Mockito.when(mockOperationDataProvider.chargeBudgetMensuel("C1_2022_01"))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
@@ -336,7 +337,7 @@ class BudgetServiceTest {
         Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
         // Test
         LigneOperation ligneOperation = MockDataOperations.getOperationIntercompte();
-        BudgetMensuel budgetMensuelAJour = budgetAppProvider.createOperationsIntercomptes("C1_2022_01", ligneOperation, "C2" , "userTest").await().indefinitely();
+        BudgetMensuel budgetMensuelAJour = budgetAppProvider.createOperationsIntercomptes("C1_2022_01", ligneOperation, "C2", "userTest").await().indefinitely();
 
         assertEquals("[vers C2] TestIntercompte", budgetMensuelAJour.getListeOperations().get(1).getLibelle());
 
@@ -351,7 +352,7 @@ class BudgetServiceTest {
     }
 
     @Test
-    void testDeleteOperationInBudget(){
+    void testDeleteOperationInBudget() {
         // When
         Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
@@ -370,7 +371,7 @@ class BudgetServiceTest {
 
 
     @Test
-    void testDeleteOperationUnkownInBudget(){
+    void testDeleteOperationUnkownInBudget() {
         // When
         Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));

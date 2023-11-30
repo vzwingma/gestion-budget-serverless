@@ -14,6 +14,7 @@ import java.io.StringWriter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
  * Test class for {@link UtilisateurPanacheCodec}.
  */
@@ -39,7 +40,6 @@ class TestUtilisateurPanacheCodec {
     }
 
 
-
     @Test
     void testEncode() throws IOException {
 
@@ -58,7 +58,7 @@ class TestUtilisateurPanacheCodec {
 
 
     @Test
-    void testType(){
+    void testType() {
         assertEquals(Utilisateur.class, new UtilisateurPanacheCodec().getEncoderClass());
     }
 
@@ -67,7 +67,7 @@ class TestUtilisateurPanacheCodec {
     @Test : test pour vérifier qu'un documentId est bien généré
      */
     @Test
-    void testDocumentId(){
+    void testDocumentId() {
         Utilisateur user = new Utilisateur();
         assertNotNull(new UtilisateurPanacheCodec().getDocumentId(user).toString());
 

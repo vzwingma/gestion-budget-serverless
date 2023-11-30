@@ -11,30 +11,30 @@ import org.slf4j.LoggerFactory;
 /**
  * Service de données en MongoDB fournissant les paramètres
  * Adapteur du port {@link IParametragesRepository}
- * @author vzwingma
  *
+ * @author vzwingma
  */
 @ApplicationScoped
 public class ParametragesDatabaseAdaptor implements IParametragesRepository {
 
 
-	/**
-	 * Logger
-	 */
-	private static final Logger LOGGER = LoggerFactory.getLogger(ParametragesDatabaseAdaptor.class);
+    /**
+     * Logger
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParametragesDatabaseAdaptor.class);
 
-	/**
-	 * @return la liste des catégories
-	 */
-	public Multi<CategorieOperations> chargeCategories() {
+    /**
+     * @return la liste des catégories
+     */
+    public Multi<CategorieOperations> chargeCategories() {
 
-		try {
-			LOGGER.info("Chargement des catégories en BDD");
-			return findAll().stream()
-					.invoke(cat -> LOGGER.debug("Chargement de la catégorie [{}] en BDD terminé", cat));
-		} catch (Exception e) {
-			LOGGER.error("Erreur lors de la connexion à la BDD", e);
-			return Multi.createFrom().failure(new DataNotFoundException("Erreur lors de la connexion à la BDD"));
-		}
-	}
+        try {
+            LOGGER.info("Chargement des catégories en BDD");
+            return findAll().stream()
+                    .invoke(cat -> LOGGER.debug("Chargement de la catégorie [{}] en BDD terminé", cat));
+        } catch (Exception e) {
+            LOGGER.error("Erreur lors de la connexion à la BDD", e);
+            return Multi.createFrom().failure(new DataNotFoundException("Erreur lors de la connexion à la BDD"));
+        }
+    }
 }

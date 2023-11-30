@@ -9,9 +9,8 @@ import java.util.Map;
 class TestBusinessTraceContext {
 
 
-
     @Test
-    void testTraceContext(){
+    void testTraceContext() {
 
         Map<String, String> contextMap = null;
         Assertions.assertNull(BusinessTraceContext.calculateBusinessContext(contextMap));

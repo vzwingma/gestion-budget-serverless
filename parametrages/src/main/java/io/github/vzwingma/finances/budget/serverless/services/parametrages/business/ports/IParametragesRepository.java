@@ -6,8 +6,8 @@ import io.smallrye.mutiny.Multi;
 
 /**
  * Service Provider Interface pour fournir les paramètres
- * @author vzwingma
  *
+ * @author vzwingma
  */
 public interface IParametragesRepository extends ReactivePanacheMongoRepository<CategorieOperations> {
 

@@ -13,6 +13,7 @@ public interface IUtilisateursAppProvider {
 
     /**
      * Chargement d'un utilisateur
+     *
      * @param idUtilisateur login de l'utilisateur
      * @return Utilisateur correspondant au login
      */
@@ -21,6 +22,7 @@ public interface IUtilisateursAppProvider {
 
     /**
      * Date de dernier accès
+     *
      * @param idUtilisateur login de l'utilisateur
      * @return date de dernier accès
      * @throws UserAccessForbiddenException erreur d'accès
