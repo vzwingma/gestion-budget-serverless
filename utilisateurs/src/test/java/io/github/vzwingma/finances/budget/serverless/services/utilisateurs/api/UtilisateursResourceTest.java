@@ -29,16 +29,6 @@ import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
 @QuarkusTest
 class UtilisateursResourceTest {
 
-    @Test
-    void testInfoEndpoint() {
-        given()
-          .when().get(UtilisateursAPIEnum.USERS_BASE+"/_info")
-          .then()
-             .statusCode(200)
-                .body(containsStringIgnoringCase("utilisateurs"));
-    }
-
-
     @Inject
     IUtilisateursAppProvider utilisateurService;
 
@@ -46,6 +36,16 @@ class UtilisateursResourceTest {
     public static void init() {
         QuarkusMock.installMockForType(Mockito.mock(UtilisateursService.class), UtilisateursService.class);
     }
+
+    @Test
+    void testInfoEndpoint() {
+        given()
+                .when().get(UtilisateursAPIEnum.USERS_BASE + "/_info")
+                .then()
+                .statusCode(200)
+                .body(containsStringIgnoringCase("utilisateurs"));
+    }
+
     @Test
     void testGetLastAccessDate() throws UserAccessForbiddenException {
         // Init des données
@@ -54,12 +54,12 @@ class UtilisateursResourceTest {
                 .thenReturn(Uni.createFrom().item(utilisateurExpected.getDernierAcces()));
         // Test
         given()
-            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
-        .when()
-            .get(UtilisateursAPIEnum.USERS_BASE + UtilisateursAPIEnum.USERS_ACCESS_DATE)
-        .then()
-            .statusCode(200)
-            .body(Matchers.containsString("lastAccessTime"));
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+                .when()
+                .get(UtilisateursAPIEnum.USERS_BASE + UtilisateursAPIEnum.USERS_ACCESS_DATE)
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("lastAccessTime"));
     }
 
 
@@ -87,16 +87,16 @@ class UtilisateursResourceTest {
                 .thenReturn(Uni.createFrom().nullItem());
         // Test
         given()
-            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
-        .when()
-            .get(UtilisateursAPIEnum.USERS_BASE + UtilisateursAPIEnum.USERS_ACCESS_DATE)
-        .then()
-            .statusCode(200)
-            .body(Matchers.containsString("\"lastAccessTime\":null"));
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+                .when()
+                .get(UtilisateursAPIEnum.USERS_BASE + UtilisateursAPIEnum.USERS_ACCESS_DATE)
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("\"lastAccessTime\":null"));
     }
 
 
-    private String getTestJWTAuthHeader(){
+    private String getTestJWTAuthHeader() {
         JwtAuthHeader h = new JwtAuthHeader();
         JWTAuthPayload p = new JWTAuthPayload();
         p.setName("Test");

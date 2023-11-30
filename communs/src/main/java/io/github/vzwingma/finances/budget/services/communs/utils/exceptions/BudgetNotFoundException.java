@@ -4,20 +4,21 @@ import java.io.Serial;
 
 /**
  * Budget non trouvé
- * @author vzwingma
  *
+ * @author vzwingma
  */
 public class BudgetNotFoundException extends AbstractBusinessException {
 
-	@Serial
-	private static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
-	/**
-	 * Exception Budget introuvable
-	 * @param libelleErreur libellé de l'erreur
-	 */
-	public BudgetNotFoundException(String libelleErreur) {
-		super(libelleErreur);
-	}
+    /**
+     * Exception Budget introuvable
+     *
+     * @param libelleErreur libellé de l'erreur
+     */
+    public BudgetNotFoundException(String libelleErreur) {
+        super(libelleErreur);
+    }
 
 }

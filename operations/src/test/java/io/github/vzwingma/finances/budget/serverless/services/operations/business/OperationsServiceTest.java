@@ -38,7 +38,6 @@ class OperationsServiceTest {
     }
 
 
-
     @Test
     void testUpdateOperation() throws DataNotFoundException {
 
@@ -54,7 +53,6 @@ class OperationsServiceTest {
         assertEquals(OperationEtatEnum.REALISEE, listeOperations.get(0).getEtat());
         assertNotNull(listeOperations.get(0).getAutresInfos().getDateOperation());
     }
-
 
 
     @Test
@@ -103,7 +101,7 @@ class OperationsServiceTest {
 
 
     @Test
-    void testAddOperationIntercompte(){
+    void testAddOperationIntercompte() {
 
         // When
         List<LigneOperation> listeOperations = new ArrayList<>();
@@ -120,7 +118,7 @@ class OperationsServiceTest {
 
 
     @Test
-    void testAddOperationIntercompteMensuel(){
+    void testAddOperationIntercompteMensuel() {
 
         // When
         List<LigneOperation> listeOperations = new ArrayList<>();
@@ -140,7 +138,7 @@ class OperationsServiceTest {
     }
 
     @Test
-    void testAddOperationIntercompteReportee(){
+    void testAddOperationIntercompteReportee() {
 
         // When
         List<LigneOperation> listeOperations = new ArrayList<>();
@@ -155,7 +153,7 @@ class OperationsServiceTest {
     }
 
     @Test
-    void testAddOperationRemboursementCatFailure(){
+    void testAddOperationRemboursementCatFailure() {
 
         // When
 

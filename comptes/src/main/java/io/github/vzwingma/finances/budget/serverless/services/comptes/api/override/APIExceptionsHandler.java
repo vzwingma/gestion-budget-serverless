@@ -2,7 +2,6 @@ package io.github.vzwingma.finances.budget.serverless.services.comptes.api.overr
 
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIExceptionsHandler;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.AbstractBusinessException;
-
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 

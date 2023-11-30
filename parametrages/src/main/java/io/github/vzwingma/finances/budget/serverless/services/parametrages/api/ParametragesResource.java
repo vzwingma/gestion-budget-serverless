@@ -26,8 +26,8 @@ import java.util.List;
 /**
  * Controleur REST -
  * Adapteur du port {@link io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider}
- * @author vzwingma
  *
+ * @author vzwingma
  */
 @Path(ParametragesAPIEnum.PARAMS_BASE)
 public class ParametragesResource extends AbstractAPIInterceptors {
@@ -52,8 +52,6 @@ public class ParametragesResource extends AbstractAPIInterceptors {
     }
 
 
-
-
     /**
      * @return catégorie d'opérations correspondant à l'id
      **/
@@ -66,10 +64,9 @@ public class ParametragesResource extends AbstractAPIInterceptors {
 
         return paramsServices.getCategorieById(idCategorie)
                 .invoke(categorie -> {
-                    if(categorie != null){
+                    if (categorie != null) {
                         LOG.info("[idCategorie={}] Chargement de la {}catégorie : {}", idCategorie, categorie.isCategorie() ? "" : "sous-", categorie);
-                    }
-                    else{
+                    } else {
                         LOG.error("[idCategorie={}] Impossible de trouver la catégorie", idCategorie);
                     }
                 })
@@ -81,8 +78,11 @@ public class ParametragesResource extends AbstractAPIInterceptors {
     public void preMatchingFilter(ContainerRequestContext requestContext) {
         super.preMatchingFilter(requestContext);
     }
+
     @Override
     @ServerResponseFilter
-    public void postMatchingFilter(ContainerResponseContext responseContext) { super.postMatchingFilter(responseContext); }
+    public void postMatchingFilter(ContainerResponseContext responseContext) {
+        super.postMatchingFilter(responseContext);
+    }
 
 }

@@ -4,7 +4,7 @@
 
 Pour ajouter un nouveau compte, injecter un document dans la collection `v12-app.comptesbancaires`
 
-Le document doit avoir la forme suivante : 
+Le document doit avoir la forme suivante :
 
         {
             "_id": "<<id_du_compte>>",
@@ -23,13 +23,12 @@ Le document doit avoir la forme suivante :
             "actif": true
         }
 
-
 ## Initier un nouveau budget
 
 Pour initier un nouveau budget pour un nouveau compte, injecter un document dans la collection `v12-app.budgets
 ` dans la bdd.
 
-Le document doit avoir la forme suivante : 
+Le document doit avoir la forme suivante :
 
         {
             "_id": "<<id_du_budget>>",
@@ -60,6 +59,7 @@ Le document doit avoir la forme suivante :
             "totauxParSSCategories": { }
         }
 
-où 
-   - `id_du_compte` : est l'identifiant du compte, créé précédemment
-   - `id_du_budget` : est la concaténation de : "`id_du_compte`\_`annee`\_`n° du mois`"
+où
+
+- `id_du_compte` : est l'identifiant du compte, créé précédemment
+- `id_du_budget` : est la concaténation de : "`id_du_compte`\_`annee`\_`n° du mois`"

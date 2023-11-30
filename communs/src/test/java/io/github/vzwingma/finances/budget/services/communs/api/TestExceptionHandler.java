@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 class TestExceptionHandler {
 
 
-
     @Test
     void testExceptionHandler() {
         ExceptionHandler exceptionHandler = new ExceptionHandler();
@@ -20,5 +19,6 @@ class TestExceptionHandler {
     }
 
     // Classe concrète de test
-    private static class ExceptionHandler extends AbstractAPIExceptionsHandler {  }
+    private static class ExceptionHandler extends AbstractAPIExceptionsHandler {
+    }
 }

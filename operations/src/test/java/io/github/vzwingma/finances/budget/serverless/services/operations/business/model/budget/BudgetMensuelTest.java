@@ -10,26 +10,26 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BudgetMensuelTest {
 
-	@Test
-	void testResultat() {
+    @Test
+    void testResultat() {
 
-		BudgetMensuel b = new BudgetMensuel();
-		b.setSoldes(new BudgetMensuel.Soldes());
-		b.getSoldes().setSoldeAtFinMoisPrecedent(100D);
-		BudgetDataUtils.razCalculs(b);
-		LigneOperation o = new LigneOperation();
-		o.setSsCategorie(new LigneOperation.Categorie());
-		o.getSsCategorie().setId(IdsCategoriesEnum.SALAIRE.getId());
-		o.setValeur(123D);
-		o.setTypeOperation(OperationTypeEnum.CREDIT);
-		b.getListeOperations().add(o);
+        BudgetMensuel b = new BudgetMensuel();
+        b.setSoldes(new BudgetMensuel.Soldes());
+        b.getSoldes().setSoldeAtFinMoisPrecedent(100D);
+        BudgetDataUtils.razCalculs(b);
+        LigneOperation o = new LigneOperation();
+        o.setSsCategorie(new LigneOperation.Categorie());
+        o.getSsCategorie().setId(IdsCategoriesEnum.SALAIRE.getId());
+        o.setValeur(123D);
+        o.setTypeOperation(OperationTypeEnum.CREDIT);
+        b.getListeOperations().add(o);
 
-		LigneOperation o2 = new LigneOperation();
-		o2.setValeur(123D);
-		o2.setTypeOperation(OperationTypeEnum.CREDIT);
-		b.getListeOperations().add(o2);
+        LigneOperation o2 = new LigneOperation();
+        o2.setValeur(123D);
+        o2.setTypeOperation(OperationTypeEnum.CREDIT);
+        b.getListeOperations().add(o2);
 
-		assertEquals(100D, b.getSoldes().getSoldeAtFinMoisCourant());
+        assertEquals(100D, b.getSoldes().getSoldeAtFinMoisCourant());
 
-	}
+    }
 }

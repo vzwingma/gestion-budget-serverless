@@ -1,10 +1,11 @@
 # Micro-services Budget
 
-Ce projet utilise Quarkus, le Supersonic Subatomic Java Framework et les microservices sont déployés sous forme de Lambdas Serverless
+Ce projet utilise Quarkus, le Supersonic Subatomic Java Framework et les microservices sont déployés sous forme de
+Lambdas Serverless
 
-| Module                                                            | Version                                                                                                                                           |
-|-------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| [IHM](https://github.com/vzwingma/gestion-budget-ihm)                 | [![GitHub version](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-ihm.svg)](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-ihm)                   |
+| Module                                                            | Version                                                                                                                                               |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [IHM](https://github.com/vzwingma/gestion-budget-ihm)             | [![GitHub version](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-ihm.svg)](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-ihm)               |
 | [Services](https://github.com/vzwingma/gestion-budget-serverless) | [![GitHub version](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-serverless.svg)](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-serverless) |
 
 ### Statut
@@ -24,7 +25,9 @@ Ce projet utilise Quarkus, le Supersonic Subatomic Java Framework et les microse
 ### Frameworks utilisés
 
 - Mutiny ([guide](https://quarkus.io/guides/mutiny)): A reactive programming framework for Java.
-- MongoDB with Panache ([guide](https://quarkus.io/guides/mongodb-panache)): Simplify your persistence code for MongoDB via the active record or the repository pattern
+- MongoDB with Panache ([guide](https://quarkus.io/guides/mongodb-panache)): Simplify your persistence code for MongoDB
+  via the active record or the repository pattern
 - RESTEasy JAX-RS ([guide](https://quarkus.io/guides/rest-json)): REST endpoint framework implementing JAX-RS and more
-- Micrometer metrics ([guide](https://quarkus.io/guides/micrometer)): Instrument the runtime and your application with dimensional metrics using Micrometer.
+- Micrometer metrics ([guide](https://quarkus.io/guides/micrometer)): Instrument the runtime and your application with
+  dimensional metrics using Micrometer.
 

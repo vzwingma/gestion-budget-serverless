@@ -4,18 +4,18 @@ import java.io.Serial;
 
 /**
  * Erreur sur le chargement de données
- * @author vzwingma
  *
+ * @author vzwingma
  */
 public class DataNotFoundException extends AbstractBusinessException {
 
-	@Serial
-	private static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
-	/**
-	 * @param message d'erreur
-	 */
-	public DataNotFoundException(String message) {
-		super(message);
-	}
+    /**
+     * @param message d'erreur
+     */
+    public DataNotFoundException(String message) {
+        super(message);
+    }
 }

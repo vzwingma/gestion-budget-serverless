@@ -7,16 +7,16 @@ import java.io.Serializable;
 
 /**
  * Classe d'objets Sérialisable échangés en REST
- * @author vzwingma
  *
+ * @author vzwingma
  */
 @NoArgsConstructor
 public abstract class AbstractAPIObjectModel implements Serializable {
 
-	/**
-	 *
-	 */
-	@Serial
-	private static final long serialVersionUID = 7048018115641885137L;
+    /**
+     *
+     */
+    @Serial
+    private static final long serialVersionUID = 7048018115641885137L;
 
 }

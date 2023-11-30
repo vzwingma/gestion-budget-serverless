@@ -18,64 +18,55 @@ import java.util.Map;
 
 /**
  * Définition d'un utilisateur de la BDD
- * @author vzwingma
  *
+ * @author vzwingma
  */
 @MongoEntity(collection = "utilisateurs")
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class Utilisateur implements Serializable {
 
-	@Serial
-	private static final long serialVersionUID = 1L;
-	//ID
-	private ObjectId id;
-	// Login
-	private String login;
+    @Serial
+    private static final long serialVersionUID = 1L;
+    //ID
+    private ObjectId id;
+    // Login
+    private String login;
 
-	private LocalDateTime dernierAcces;
+    private LocalDateTime dernierAcces;
 
-	/**
-	 * Préférences
-	 */
-	private Map<UtilisateurPrefsEnum, String> prefsUtilisateur = new EnumMap<>(UtilisateurPrefsEnum.class);
-	/**
-	 * Droits
-	 */
-	private Map<UtilisateurDroitsEnum, Boolean> droits = new EnumMap<>(UtilisateurDroitsEnum.class);
-
-
-	/**
-	 * @param clePreference clé d'une préférence
-	 * @param <T> Type de la préférence
-	 * @return the preferences
-	 */
-	@SuppressWarnings("unchecked")
-	public <T> T getPreference(UtilisateurPrefsEnum clePreference) {
-		return (T)prefsUtilisateur.get(clePreference);
-	}
+    /**
+     * Préférences
+     */
+    private Map<UtilisateurPrefsEnum, String> prefsUtilisateur = new EnumMap<>(UtilisateurPrefsEnum.class);
+    /**
+     * Droits
+     */
+    private Map<UtilisateurDroitsEnum, Boolean> droits = new EnumMap<>(UtilisateurDroitsEnum.class);
 
 
-	/* (non-Javadoc)
-	 * @see java.lang.Object#toString()
-	 */
-	@Override
-	public String toString() {
-		return this.login;
-	}
+    /**
+     * clone d'utilisateur
+     */
+    public Utilisateur(Utilisateur source) {
+        setId(source.getId());
+        setDernierAcces(LocalDateTime.now());
+        setLogin(source.getLogin());
+        setDroits(source.getDroits());
+        setPrefsUtilisateur(source.getPrefsUtilisateur());
+    }
 
-	public String toFullString(){
-		return String.format("Utilisateur [id=%s, dateDernerAcces=%s]", this.login, dernierAcces != null ? BudgetDateTimeUtils.getLibelleDate(dernierAcces) : "nulle");
-	}
 
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        return this.login;
+    }
 
-	/**
-	 * clone d'utilisateur
-	 */
-	public Utilisateur(Utilisateur source){
-		setId(source.getId());
-		setDernierAcces(LocalDateTime.now());
-		setLogin(source.getLogin());
-		setDroits(source.getDroits());
-		setPrefsUtilisateur(source.getPrefsUtilisateur());
-	}
+    public String toFullString() {
+        return String.format("Utilisateur [id=%s, dateDernerAcces=%s]", this.login, dernierAcces != null ? BudgetDateTimeUtils.getLibelleDate(dernierAcces) : "nulle");
+    }
 }

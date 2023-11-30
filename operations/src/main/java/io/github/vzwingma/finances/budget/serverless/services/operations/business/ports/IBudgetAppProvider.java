@@ -1,14 +1,14 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business.ports;
 
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 import java.time.Month;
 
 /**
- *  Application Provider Interface de Budgets
+ * Application Provider Interface de Budgets
  */
 public interface IBudgetAppProvider {
 
@@ -21,7 +21,8 @@ public interface IBudgetAppProvider {
      * @param annee    année
      * @return budget mensuel chargé et initialisé à partir des données précédentes
      */
-    Uni<BudgetMensuel> getBudgetMensuel(String idCompte, Month mois, int annee) ;
+    Uni<BudgetMensuel> getBudgetMensuel(String idCompte, Month mois, int annee);
+
     /**
      * Charger budget
      *
@@ -37,16 +38,18 @@ public interface IBudgetAppProvider {
      * @param idBudget       identifiant de budget
      * @param ligneOperation ligne de dépense
      */
-    Uni<BudgetMensuel> addOrUpdateOperationInBudget(String idBudget, final LigneOperation ligneOperation, String auteur) ;
+    Uni<BudgetMensuel> addOrUpdateOperationInBudget(String idBudget, final LigneOperation ligneOperation, String auteur);
 
     /**
      * Création d'une opération intercompte
-     * @param idBudget id du budget source
-     * @param ligneOperation opération intercompte source
+     *
+     * @param idBudget            id du budget source
+     * @param ligneOperation      opération intercompte source
      * @param idCompteDestination id du compte destination
      * @return budget mensuel source modifié
      */
-    Uni<BudgetMensuel> createOperationsIntercomptes(String idBudget, LigneOperation ligneOperation, String idCompteDestination, String auteur) ;
+    Uni<BudgetMensuel> createOperationsIntercomptes(String idBudget, LigneOperation ligneOperation, String idCompteDestination, String auteur);
+
     /**
      * Suppression d'une opération
      *
@@ -60,10 +63,11 @@ public interface IBudgetAppProvider {
      *
      * @param idBudget budget mensuel
      */
-    Uni<BudgetMensuel> reinitialiserBudgetMensuel(String idBudget) ;
+    Uni<BudgetMensuel> reinitialiserBudgetMensuel(String idBudget);
 
     /**
      * Chargement de l'état du budget du mois courant en consultation
+     *
      * @param idBudget id budget
      * @return budget mensuel chargé et initialisé à partir des données précédentes
      */
@@ -86,8 +90,9 @@ public interface IBudgetAppProvider {
 
     /**
      * Récupération des libelles des opérations
+     *
      * @param idCompte id du compte
-     * @param auteur utilisateur authentifié
+     * @param auteur   utilisateur authentifié
      * @return libelles des opérations
      */
     Multi<String> getLibellesOperations(String idCompte, String auteur);

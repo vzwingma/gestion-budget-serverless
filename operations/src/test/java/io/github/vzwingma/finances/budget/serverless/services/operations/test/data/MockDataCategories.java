@@ -8,29 +8,28 @@ import java.util.Optional;
 public class MockDataCategories {
 
 
-
     /**
-     * @param id id de la catégorie
+     * @param id              id de la catégorie
      * @param listeCategories liste des catégories
      * @return catégorie correspondante
      */
-    public static CategorieOperations getCategorieById(String id, List<CategorieOperations> listeCategories){
+    public static CategorieOperations getCategorieById(String id, List<CategorieOperations> listeCategories) {
         CategorieOperations categorie = null;
-        if(id != null && listeCategories != null && !listeCategories.isEmpty()){
+        if (id != null && listeCategories != null && !listeCategories.isEmpty()) {
             // Recherche parmi les catégories
             Optional<CategorieOperations> cat = listeCategories.parallelStream()
                     .filter(c -> id.equals(c.getId()))
                     .findFirst();
-            if(cat.isPresent()){
+            if (cat.isPresent()) {
                 categorie = cat.get();
             }
             // Sinon les sous catégories
-            else{
+            else {
                 Optional<CategorieOperations> ssCats = listeCategories.parallelStream()
                         .flatMap(c -> c.getListeSSCategories().stream())
                         .filter(ss -> id.equals(ss.getId()))
                         .findFirst();
-                if(ssCats.isPresent()){
+                if (ssCats.isPresent()) {
                     categorie = ssCats.get();
                 }
             }

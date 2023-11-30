@@ -7,14 +7,15 @@ import io.smallrye.mutiny.Uni;
 
 /**
  * Service Provider Interface pour fournir les paramètres
- * @author vzwingma
  *
+ * @author vzwingma
  */
 public interface IComptesRepository extends ReactivePanacheMongoRepository<CompteBancaire> {
 
 
     /**
      * Chargement des comptes
+     *
      * @param idUtilisateur utilisateur
      * @return liste des comptes associés
      */
@@ -23,17 +24,19 @@ public interface IComptesRepository extends ReactivePanacheMongoRepository<Compt
 
     /**
      * Chargement d'un compte par un id
-     * @param idCompte id du compte
+     *
+     * @param idCompte      id du compte
      * @param idUtilisateur utilisateur associé
      * @return compte
      */
-    Uni<CompteBancaire> chargeCompteParId(String idCompte, String idUtilisateur) ;
+    Uni<CompteBancaire> chargeCompteParId(String idCompte, String idUtilisateur);
 
 
     /**
      * Chargement d'un compte par un id
+     *
      * @param idCompte id du compte
      * @return compte actif
      */
-    Uni<Boolean> isCompteActif(String idCompte) ;
+    Uni<Boolean> isCompteActif(String idCompte);
 }

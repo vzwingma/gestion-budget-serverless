@@ -27,15 +27,6 @@ import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
 @QuarkusTest
 class ParametragesResourceTest {
 
-    @Test
-    void testInfoEndpoint() {
-        given()
-          .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
-          .then()
-             .statusCode(200)
-             .body(containsStringIgnoringCase("param"));
-    }
-
     @Inject
     IParametrageAppProvider parametragesService;
 
@@ -45,21 +36,29 @@ class ParametragesResourceTest {
     }
 
     @Test
+    void testInfoEndpoint() {
+        given()
+                .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
+                .then()
+                .statusCode(200)
+                .body(containsStringIgnoringCase("param"));
+    }
+
+    @Test
     void testGetCategories() {
         // Init des données
         Mockito.when(parametragesService.getCategories()).thenReturn(Uni.createFrom().item(MockDataCategoriesOperations.getListeTestCategories()));
         // Test
         given()
-            .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
-        .when().get(ParametragesAPIEnum.PARAMS_BASE + ParametragesAPIEnum.PARAMS_CATEGORIES)
-        .then()
-            .statusCode(200)
-            .body(Matchers.containsString(MockDataCategoriesOperations.getListeTestCategories().get(0).getLibelle()));
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+                .when().get(ParametragesAPIEnum.PARAMS_BASE + ParametragesAPIEnum.PARAMS_CATEGORIES)
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString(MockDataCategoriesOperations.getListeTestCategories().get(0).getLibelle()));
     }
 
 
-
-    private String getTestJWTAuthHeader(){
+    private String getTestJWTAuthHeader() {
         JwtAuthHeader h = new JwtAuthHeader();
         JWTAuthPayload p = new JWTAuthPayload();
         p.setName("Test");

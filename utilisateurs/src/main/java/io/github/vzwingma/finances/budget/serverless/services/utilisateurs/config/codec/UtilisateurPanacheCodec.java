@@ -43,8 +43,7 @@ public class UtilisateurPanacheCodec implements CollectibleCodec<Utilisateur> {
     public BsonValue getDocumentId(Utilisateur utilisateur) {
         if (documentHasId(utilisateur)) {
             return new BsonString(utilisateur.getId().toString());
-        }
-        else{
+        } else {
             generateIdIfAbsentFromDocument(utilisateur);
             return getDocumentId(utilisateur);
         }
@@ -52,7 +51,8 @@ public class UtilisateurPanacheCodec implements CollectibleCodec<Utilisateur> {
 
     /**
      * Décodage de la classe {@link Utilisateur}
-     * @param bsonReader reader du BSON issu de la BDD
+     *
+     * @param bsonReader     reader du BSON issu de la BDD
      * @param decoderContext contexte
      * @return utilisateur lu
      */

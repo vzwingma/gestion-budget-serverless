@@ -13,8 +13,7 @@ import java.util.HashMap;
 public class MockDataUtilisateur {
 
 
-
-    public static Utilisateur getTestUtilisateur(){
+    public static Utilisateur getTestUtilisateur() {
         Utilisateur userOK = new Utilisateur();
         userOK.setId(new ObjectId("54aa7db30bc460e1aeb95596"));
         userOK.setLogin("Test");
@@ -24,7 +23,7 @@ public class MockDataUtilisateur {
         return userOK;
     }
 
-    public static Utilisateur getTestUtilisateurWithDate(){
+    public static Utilisateur getTestUtilisateurWithDate() {
         Utilisateur userOK = getTestUtilisateur();
         userOK.setDernierAcces(LocalDateTime.now());
         return userOK;

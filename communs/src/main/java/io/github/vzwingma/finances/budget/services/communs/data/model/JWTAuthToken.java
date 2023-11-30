@@ -14,8 +14,10 @@ import java.time.ZoneId;
 
 
 @RegisterForReflection
-@JsonDeserialize @JsonSerialize
-@Getter @Setter
+@JsonDeserialize
+@JsonSerialize
+@Getter
+@Setter
 public class JWTAuthToken {
 
     private static final Logger LOG = LoggerFactory.getLogger(JWTAuthToken.class);
@@ -23,34 +25,34 @@ public class JWTAuthToken {
 
     private JWTAuthPayload payload;
 
-    public JWTAuthToken(JwtAuthHeader header, JWTAuthPayload payload){
+    public JWTAuthToken(JwtAuthHeader header, JWTAuthPayload payload) {
         this.header = header;
         this.payload = payload;
     }
 
 
     @JsonIgnore
-    public LocalDateTime issuedAt(){
-        if(this.payload != null && this.payload.getIat() != 0){
+    public LocalDateTime issuedAt() {
+        if (this.payload != null && this.payload.getIat() != 0) {
             return LocalDateTime.ofEpochSecond(this.getPayload().getIat(), 0, ZoneId.of("Europe/Berlin").getRules().getOffset(LocalDateTime.now()));
         }
         return null;
     }
+
     @JsonIgnore
-    public LocalDateTime expiredAt(){
-        if(this.payload != null && this.payload.getExp() != 0){
-            return LocalDateTime.ofEpochSecond(this.getPayload().getExp(),0, ZoneId.of("Europe/Berlin").getRules().getOffset(LocalDateTime.now()));
+    public LocalDateTime expiredAt() {
+        if (this.payload != null && this.payload.getExp() != 0) {
+            return LocalDateTime.ofEpochSecond(this.getPayload().getExp(), 0, ZoneId.of("Europe/Berlin").getRules().getOffset(LocalDateTime.now()));
         }
         return null;
     }
 
     /**
-     *
      * @return l'expiration
      */
-    public boolean isExpired(){
+    public boolean isExpired() {
         LocalDateTime expAt = expiredAt();
-        if(expAt != null){
+        if (expAt != null) {
             return !LocalDateTime.now().isBefore(expAt);
         }
         return false;

@@ -26,6 +26,7 @@ public class BusinessTraceContext {
 
     /**
      * retourne l'instance après raz
+     *
      * @return instance raz
      */
     public static BusinessTraceContext getclear() {
@@ -33,7 +34,30 @@ public class BusinessTraceContext {
     }
 
     /**
+     * Calcul du context business
+     */
+    protected static String calculateBusinessContext(Map<String, String> contextMap) {
+        AtomicReference<String> budgetContextValue = new AtomicReference<>("");
+
+        if (contextMap != null && !contextMap.isEmpty()) {
+            contextMap.forEach((key1, value) -> {
+                if (Arrays.stream(BusinessTraceContextKeyEnum.values())
+                        .map(BusinessTraceContextKeyEnum::getKeyId).anyMatch(key -> key.equals(key1))
+                        && !value.isEmpty()) {
+                    String separator = (budgetContextValue.get() != null && !budgetContextValue.get().isEmpty()) ? "," : "";
+                    budgetContextValue.set(budgetContextValue.get() + separator + key1 + ":" + value);
+                }
+            });
+            if (!budgetContextValue.get().isEmpty()) {
+                return "[" + budgetContextValue.get() + "]";
+            }
+        }
+        return null;
+    }
+
+    /**
      * Contexte raz
+     *
      * @return instance raz
      */
     public BusinessTraceContext clear() {
@@ -42,9 +66,11 @@ public class BusinessTraceContext {
         updateBusinessContext();
         return INSTANCE;
     }
+
     /**
      * Ajout d'une clé métier dans les traces
-     * @param key key métier
+     *
+     * @param key   key métier
      * @param value value métier de la clé
      */
     public BusinessTraceContext put(BusinessTraceContextKeyEnum key, String value) {
@@ -55,6 +81,7 @@ public class BusinessTraceContext {
 
     /**
      * Suppression d'une clé métier dans les traces
+     *
      * @param key clé métier
      */
     public BusinessTraceContext remove(BusinessTraceContextKeyEnum key) {
@@ -63,33 +90,11 @@ public class BusinessTraceContext {
         return INSTANCE;
     }
 
-    private void updateBusinessContext(){
+    private void updateBusinessContext() {
         String budgetContext = calculateBusinessContext(MDC.getCopyOfContextMap());
-        if(budgetContext != null) {
+        if (budgetContext != null) {
             MDC.put("budgetContext", budgetContext);
         }
-    }
-
-    /**
-     * Calcul du context business
-     */
-    protected static String calculateBusinessContext(Map<String, String> contextMap) {
-        AtomicReference<String> budgetContextValue = new AtomicReference<>("");
-
-        if(contextMap != null && !contextMap.isEmpty()){
-            contextMap.forEach((key1, value) -> {
-                if (Arrays.stream(BusinessTraceContextKeyEnum.values())
-                        .map(BusinessTraceContextKeyEnum::getKeyId).anyMatch(key -> key.equals(key1))
-                        && !value.isEmpty()) {
-                    String separator = (budgetContextValue.get() != null && !budgetContextValue.get().isEmpty()) ? "," : "";
-                    budgetContextValue.set(budgetContextValue.get() + separator + key1 + ":" + value);
-                }
-            });
-            if(!budgetContextValue.get().isEmpty()){
-                return "[" + budgetContextValue.get() + "]";
-            }
-        }
-        return null;
     }
 
 }

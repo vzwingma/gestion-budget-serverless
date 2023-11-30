@@ -31,7 +31,7 @@ class ParametragesServiceTest {
     }
 
     @Test
-    void testGetListeCategories(){
+    void testGetListeCategories() {
         // Lancement du test
         List<CategorieOperations> listeCat = parametrageAppProvider.getCategories().await().indefinitely();
         // Vérification
@@ -44,7 +44,7 @@ class ParametragesServiceTest {
 
 
     @Test
-    void testGetCategorieById(){
+    void testGetCategorieById() {
         // Lancement du test
         CategorieOperations cat = parametrageAppProvider.getCategorieById("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a").await().indefinitely();
         // Vérification
@@ -58,7 +58,7 @@ class ParametragesServiceTest {
 
 
     @Test
-    void testGetSsCategorieById(){
+    void testGetSsCategorieById() {
         // Lancement du test
         CategorieOperations cat = parametrageAppProvider.getCategorieById("467496e4-9059-4b9b-8773-21f230c8c5c6").await().indefinitely();
         // Vérification
@@ -71,7 +71,7 @@ class ParametragesServiceTest {
 
 
     @Test
-    void testGetNoCategorieById(){
+    void testGetNoCategorieById() {
         // Lancement du test
         CompletionException exception = assertThrows(CompletionException.class,
                 () -> parametrageAppProvider.getCategorieById("unknown-id").await().indefinitely());
