@@ -65,7 +65,7 @@ public class UtilisateursResource extends AbstractAPIInterceptors {
     @RolesAllowed({UtilisateursAPIEnum.UTILISATEURS_ROLE})
     @Path(UtilisateursAPIEnum.USERS_ACCESS_DATE)
     @Produces(MediaType.APPLICATION_JSON)
-    public Uni<UtilisateurPrefsAPIObject> getLastAccessDateUtilisateur() throws UserAccessForbiddenException {
+    public Uni<UtilisateurPrefsAPIObject> getLastAccessDateUtilisateur() {
         String idProprietaire = super.getAuthenticatedUser();
         BusinessTraceContext.get().clear().put(BusinessTraceContextKeyEnum.USER, idProprietaire);
         if (idProprietaire != null) {
@@ -98,6 +98,7 @@ public class UtilisateursResource extends AbstractAPIInterceptors {
     })
     @GET
     @RolesAllowed({UtilisateursAPIEnum.UTILISATEURS_ROLE})
+    @Produces(MediaType.APPLICATION_JSON)
     @Path(UtilisateursAPIEnum.USERS_PREFS)
     public Uni<UtilisateurPrefsAPIObject> getPreferencesUtilisateur() {
         String idProprietaire = super.getAuthenticatedUser();

@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -153,23 +154,6 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
         }
     }
 
-    @JsonIgnore
-    @BsonIgnore
-    // Pour ne pas avoir de pb avec Panache, les méthodes "techniques" n'utilisent pas les mots clés "get" et "set"
-    public Double retrieveValeurToSaisie() {
-        return Math.abs(this.valeur);
-    }
-
-    /**
-     * @return dateMaj
-     */
-    @JsonIgnore
-    @BsonIgnore
-    // Pour ne pas avoir de pb avec Panache, les méthodes "techniques" n'utilisent pas les mots clés "get" et "set"
-    public LocalDateTime retrieveDateMaj() {
-        return getAutresInfos() != null ? getAutresInfos().getDateMaj() : null;
-    }
-
     /**
      * @return dateOpération
      */
@@ -190,15 +174,13 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
     }
 
     @Override
-    public int compareTo(LigneOperation o) {
-        if (o != null) {
-            LocalDateTime dateC = this.getAutresInfos() != null && this.getAutresInfos().getDateCreate() != null ?
+    public int compareTo(@NotNull LigneOperation o) {
+
+        LocalDateTime dateC = this.getAutresInfos() != null && this.getAutresInfos().getDateCreate() != null ?
                     this.getAutresInfos().getDateCreate() : LocalDateTime.MIN;
-            LocalDateTime dateCo = o.getAutresInfos() != null && o.getAutresInfos().getDateCreate() != null ?
+        LocalDateTime dateCo = o.getAutresInfos() != null && o.getAutresInfos().getDateCreate() != null ?
                     o.getAutresInfos().getDateCreate() : LocalDateTime.MIN;
-            return dateC.compareTo(dateCo);
-        }
-        return 0;
+        return dateC.compareTo(dateCo);
     }
 
     @Override

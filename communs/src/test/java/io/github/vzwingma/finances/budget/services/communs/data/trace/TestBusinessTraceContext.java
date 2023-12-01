@@ -12,10 +12,10 @@ class TestBusinessTraceContext {
     @Test
     void testTraceContext() {
 
-        Map<String, String> contextMap = null;
-        Assertions.assertNull(BusinessTraceContext.calculateBusinessContext(contextMap));
 
-        contextMap = new HashMap<>();
+        Assertions.assertNull(BusinessTraceContext.calculateBusinessContext(null));
+
+        Map<String, String> contextMap = new HashMap<>();
         Assertions.assertNull(BusinessTraceContext.calculateBusinessContext(contextMap));
 
         contextMap.put("id1", "value1");

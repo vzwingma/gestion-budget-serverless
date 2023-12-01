@@ -1,7 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.ports;
 
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.model.Utilisateur;
-import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.UserAccessForbiddenException;
 import io.smallrye.mutiny.Uni;
 
 import java.time.LocalDateTime;
@@ -25,7 +24,6 @@ public interface IUtilisateursAppProvider {
      *
      * @param idUtilisateur login de l'utilisateur
      * @return date de dernier accès
-     * @throws UserAccessForbiddenException erreur d'accès
      */
-    Uni<LocalDateTime> getLastAccessDate(String idUtilisateur) throws UserAccessForbiddenException;
+    Uni<LocalDateTime> getLastAccessDate(String idUtilisateur);
 }

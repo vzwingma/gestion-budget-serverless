@@ -53,9 +53,7 @@ class UtilisateursServiceTest {
     @Test
     void testGetUtilisateurKO() {
         // Lancement du test
-        Assertions.assertThrows(CompletionException.class, () -> {
-            Utilisateur utilisateur = appProvider.getUtilisateur("Test2").await().indefinitely();
-        });
+        Assertions.assertThrows(CompletionException.class, () -> appProvider.getUtilisateur("Test2").await().indefinitely());
 
         //Vérification
         Mockito.verify(serviceDataProvider, Mockito.times(1)).chargeUtilisateur(Mockito.anyString());
@@ -64,7 +62,7 @@ class UtilisateursServiceTest {
 
 
     @Test
-    void testGetLastAccessUtilisateur() throws UserAccessForbiddenException {
+    void testGetLastAccessUtilisateur() {
         // Lancement du test
         LocalDateTime lastAccess = appProvider.getLastAccessDate("Test").await().indefinitely();
         // Vérification

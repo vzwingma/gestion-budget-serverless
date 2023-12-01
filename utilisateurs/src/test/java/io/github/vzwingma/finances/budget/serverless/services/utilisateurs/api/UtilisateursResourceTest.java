@@ -47,7 +47,7 @@ class UtilisateursResourceTest {
     }
 
     @Test
-    void testGetLastAccessDate() throws UserAccessForbiddenException {
+    void testGetLastAccessDate() {
         // Init des données
         Utilisateur utilisateurExpected = MockDataUtilisateur.getTestUtilisateurWithDate();
         Mockito.when(utilisateurService.getLastAccessDate(Mockito.anyString()))
@@ -81,7 +81,7 @@ class UtilisateursResourceTest {
 
 
     @Test
-    void testForUtilisateurUnkown() throws UserAccessForbiddenException {
+    void testForUtilisateurUnkown() {
         // Init des données
         Mockito.when(utilisateurService.getLastAccessDate(Mockito.anyString()))
                 .thenReturn(Uni.createFrom().nullItem());

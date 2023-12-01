@@ -29,7 +29,7 @@ public class AbstractBusinessException extends IOException {
      */
     public AbstractBusinessException(String libelleErreur) {
         this.libelle = libelleErreur;
-        logErreur(libelleErreur, null);
+        logErreur(null);
     }
 
     /**
@@ -40,19 +40,18 @@ public class AbstractBusinessException extends IOException {
      */
     public AbstractBusinessException(String libelleErreur, Throwable e) {
         this.libelle = libelleErreur;
-        logErreur(libelleErreur, e);
+        logErreur(e);
     }
 
     /**
-     * @param libelleErreur libellé Erreur
      * @param ex            exception
      */
-    private void logErreur(String libelleErreur, Throwable ex) {
+    private void logErreur(Throwable ex) {
         Logger logger = LoggerFactory.getLogger(this.getClass());
         if (ex != null) {
-            logger.error("{}", libelleErreur, ex);
+            logger.error("{}", this.libelle, ex);
         } else {
-            logger.error("{}", libelleErreur);
+            logger.error("{}", this.libelle);
         }
     }
 

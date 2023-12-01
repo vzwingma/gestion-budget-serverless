@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serial;
 import java.util.Set;
@@ -106,11 +107,8 @@ public class CategorieOperations extends AbstractAPIObjectModel implements Compa
      * @see java.lang.Comparable#compareTo(java.lang.Object)
      */
     @Override
-    public int compareTo(CategorieOperations o) {
-        if (o != null) {
-            return this.libelle.compareTo(o.getLibelle());
-        }
-        return 0;
+    public int compareTo(@NotNull CategorieOperations o) {
+        return this.libelle.compareTo(o.getLibelle());
     }
 
     @Getter

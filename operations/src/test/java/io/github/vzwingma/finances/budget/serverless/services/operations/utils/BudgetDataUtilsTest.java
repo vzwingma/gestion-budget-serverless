@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.Month;
-import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -56,7 +55,7 @@ class BudgetDataUtilsTest {
         List<LigneOperation> depenses = new ArrayList<>(Arrays.asList(depense1, depense2, depense3));
         LocalDate cd = BudgetDataUtils.getMaxDateListeOperations(depenses);
 
-        assertEquals(Month.OCTOBER.getValue(), cd.get(ChronoField.MONTH_OF_YEAR));
+        assertEquals(Month.OCTOBER.getValue(), cd.getMonth().getValue());
     }
 
 

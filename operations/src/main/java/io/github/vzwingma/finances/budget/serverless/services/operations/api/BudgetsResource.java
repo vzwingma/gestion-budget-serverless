@@ -242,6 +242,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
     @RolesAllowed({OperationsAPIEnum.OPERATIONS_ROLE})
     @Path(value = OperationsAPIEnum.BUDGET_ETAT)
     @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
     public Uni<BudgetMensuel> setBudgetActif(
             @RestPath("idBudget") String idBudget,
             @RestQuery(value = "actif") Boolean actif) {
