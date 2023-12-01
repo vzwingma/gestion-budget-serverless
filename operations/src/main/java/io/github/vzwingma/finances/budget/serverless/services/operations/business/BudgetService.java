@@ -232,8 +232,7 @@ public class BudgetService implements IBudgetAppProvider {
      *
      * @param budget budget à calculer
      */
-    @Override
-    public void recalculSoldes(BudgetMensuel budget) {
+    protected void recalculSoldes(BudgetMensuel budget) {
 
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, budget.getId());
         LOGGER.info("(Re)Calcul des soldes du budget");
@@ -554,11 +553,10 @@ public class BudgetService implements IBudgetAppProvider {
 
     /**
      * @param idCompte id du compte
-     * @param auteur   utilisateur authentifié
      * @return liste des libellés d'opérations
      */
     @Override
-    public Multi<String> getLibellesOperations(String idCompte, String auteur) {
+    public Multi<String> getLibellesOperations(String idCompte) {
         return this.operationsAppProvider.getLibellesOperations(idCompte);
     }
 }

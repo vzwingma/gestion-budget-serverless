@@ -26,10 +26,9 @@ public interface IComptesRepository extends ReactivePanacheMongoRepository<Compt
      * Chargement d'un compte par un id
      *
      * @param idCompte      id du compte
-     * @param idUtilisateur utilisateur associé
      * @return compte
      */
-    Uni<CompteBancaire> chargeCompteParId(String idCompte, String idUtilisateur);
+    Uni<CompteBancaire> chargeCompteParId(String idCompte);
 
 
     /**

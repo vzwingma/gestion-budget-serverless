@@ -50,9 +50,9 @@ public class AbstractBusinessException extends IOException {
     private void logErreur(String libelleErreur, Throwable ex) {
         Logger logger = LoggerFactory.getLogger(this.getClass());
         if (ex != null) {
-            logger.error("{}", libelleErreur);
-        } else {
             logger.error("{}", libelleErreur, ex);
+        } else {
+            logger.error("{}", libelleErreur);
         }
     }
 

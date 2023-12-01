@@ -91,7 +91,7 @@ public class ComptesResource extends AbstractAPIInterceptors {
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser()).put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
 
         LOG.trace("getCompteUtilisateur");
-        return this.services.getCompteById(idCompte, super.getAuthenticatedUser())
+        return this.services.getCompteById(idCompte)
                 .invoke(compte -> LOG.info("Compte chargé : [{}]", compte != null ? compte.getLibelle() : "-1"));
     }
 

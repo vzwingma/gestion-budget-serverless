@@ -47,10 +47,9 @@ public class ComptesDatabaseAdaptator implements IComptesRepository {
      * Chargement d'un compte par un id
      *
      * @param idCompte      id du compte
-     * @param idUtilisateur utilisateur associé
      * @return compte
      */
-    public Uni<CompteBancaire> chargeCompteParId(String idCompte, String idUtilisateur) {
+    public Uni<CompteBancaire> chargeCompteParId(String idCompte) {
         try {
             LOGGER.info("Chargement du compte");
             return find("_id", idCompte)

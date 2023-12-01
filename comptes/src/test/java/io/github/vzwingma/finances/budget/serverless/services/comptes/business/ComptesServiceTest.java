@@ -41,9 +41,9 @@ class ComptesServiceTest {
     @Test
     void testGetCompteById() {
 
-        Mockito.when(comptesRepository.chargeCompteParId(Mockito.eq("A3"), Mockito.anyString())).thenReturn(Uni.createFrom().item(MockDataComptes.getCompte1()));
+        Mockito.when(comptesRepository.chargeCompteParId(Mockito.eq("A3"))).thenReturn(Uni.createFrom().item(MockDataComptes.getCompte1()));
 
-        CompteBancaire compte = comptesAppProvider.getCompteById("A3", "test").await().indefinitely();
+        CompteBancaire compte = comptesAppProvider.getCompteById("A3").await().indefinitely();
         Assertions.assertNotNull(compte);
         Assertions.assertEquals("Libelle1", compte.getLibelle());
 

@@ -23,10 +23,9 @@ public interface IComptesAppProvider {
      * Recherche du compte par id
      *
      * @param idCompte      id du compte
-     * @param idUtilisateur utilisateur
      * @return compteBancaire
      */
-    Uni<CompteBancaire> getCompteById(String idCompte, String idUtilisateur);
+    Uni<CompteBancaire> getCompteById(String idCompte);
 
 
     /**

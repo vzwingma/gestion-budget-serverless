@@ -44,8 +44,8 @@ public class ComptesService implements IComptesAppProvider {
     }
 
     @Override
-    public Uni<CompteBancaire> getCompteById(String idCompte, String idUtilisateur) {
-        return dataComptes.chargeCompteParId(idCompte, idUtilisateur);
+    public Uni<CompteBancaire> getCompteById(String idCompte) {
+        return dataComptes.chargeCompteParId(idCompte);
     }
 
     @Override

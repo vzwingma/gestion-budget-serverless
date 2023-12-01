@@ -434,7 +434,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
 
         if (idCompte != null) {
             BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
-            return budgetService.getLibellesOperations(idCompte, super.getAuthenticatedUser());
+            return budgetService.getLibellesOperations(idCompte);
         } else {
             return Multi.createFrom().failure(new BadParametersException("Le paramètre idCompte est obligatoire"));
         }

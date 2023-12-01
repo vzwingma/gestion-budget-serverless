@@ -80,20 +80,11 @@ public interface IBudgetAppProvider {
      */
     Uni<BudgetMensuel> setBudgetActif(String idBudgetMensuel, boolean budgetActif);
 
-
-    /**
-     * Calcul du résumé
-     *
-     * @param budget budget à calculer
-     */
-    void recalculSoldes(BudgetMensuel budget);
-
     /**
      * Récupération des libelles des opérations
      *
      * @param idCompte id du compte
-     * @param auteur   utilisateur authentifié
      * @return libelles des opérations
      */
-    Multi<String> getLibellesOperations(String idCompte, String auteur);
+    Multi<String> getLibellesOperations(String idCompte);
 }
