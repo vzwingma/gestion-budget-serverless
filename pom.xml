@@ -29,9 +29,9 @@
 
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-        <quarkus.platform.version>3.6.0</quarkus.platform.version>
+        <quarkus.platform.version>3.6.6</quarkus.platform.version>
         <lombok.version>1.18.30</lombok.version>
-        <surefire-plugin.version>3.1.2</surefire-plugin.version>
+        <surefire-plugin.version>3.2.5</surefire-plugin.version>
         <jacoco.version>0.8.11</jacoco.version>
         <sonar.core.codeCoveragePlugin>jacoco</sonar.core.codeCoveragePlugin>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
