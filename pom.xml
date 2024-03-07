@@ -29,7 +29,7 @@
 
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-        <quarkus.platform.version>3.6.6</quarkus.platform.version>
+        <quarkus.platform.version>3.8.1</quarkus.platform.version>
         <lombok.version>1.18.30</lombok.version>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
         <jacoco.version>0.8.11</jacoco.version>
@@ -238,7 +238,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.7.0</version>
+            <version>5.11.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
