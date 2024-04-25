@@ -430,7 +430,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
     @Produces(MediaType.APPLICATION_JSON)
     public Multi<String> libellesOperationsCompte(@RestPath("idCompte") String idCompte) {
 
-        LOG.info("Libelles des opérations du Compte " + idCompte);
+        LOG.info("Libelles des opérations du Compte [{}]", idCompte);
 
         if (idCompte != null) {
             BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());

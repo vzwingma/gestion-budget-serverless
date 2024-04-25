@@ -96,13 +96,13 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
         return mongoCollection()
                 .aggregate(
                         Arrays.asList(new Document("$match",
-                                        new Document("idCompteBancaire", idCompte)),
+                                        new Document(ATTRIBUT_COMPTE_ID, idCompte)),
                                 // Petit trick : on projete le libellé sur un document dont l'attribut sera un String dans BudgetMensuel
                                 new Document("$project",
-                                        new Document("idCompteBancaire", "$listeOperations.libelle")),
+                                        new Document(ATTRIBUT_COMPTE_ID, "$listeOperations.libelle")),
                                 // et on le remappe sur un des attributs String  idCompteBancaire dans BudgetMensuel
                                 new Document("$unwind",
-                                        new Document("path", "$idCompteBancaire")
+                                        new Document("path", "$" + ATTRIBUT_COMPTE_ID)
                                                 .append("includeArrayIndex", "string")
                                                 .append("preserveNullAndEmptyArrays", false))
                         )
