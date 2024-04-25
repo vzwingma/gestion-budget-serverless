@@ -51,12 +51,12 @@ jobs:
       - name: Find and Replace in Serverless Application Manager
         run: sed -e "s/__ENV__/QUA/g" -e "s/__VERSION__/SNAPSHOT/g" -e "s/__DATABASE_URL__/${{ secrets.DATABASE_URL }}/g" -e "s/__DATABASE_NAME__/${{ secrets.DATABASE_NAME }}/g" -e "s/__APP_CONFIG_URL_IHM__/${{ vars.APP_CONFIG_URL_IHM }}/g" -e "s/__APP_CONFIG_URL_BACKENDS__/${{ vars.APP_CONFIG_URL_BACKENDS }}/g" -e "s/__QUARKUS_LOG_LEVEL__/${{ vars.QUARKUS_LOG_LEVEL }}/g" -e "s/__MONGODB_LOG_LEVEL__/${{ vars.MONGODB_LOG_LEVEL }}/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Upload SAM Function Configuration
         with:
           name: function-sam
           path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Upload SAM Configuration
         with:
           name: sam
@@ -253,7 +253,7 @@ jobs:
         name: Configure SAM
         with:
           use-installer: true
-      - uses: aws-actions/configure-aws-credentials@v2
+      - uses: aws-actions/configure-aws-credentials@v4
         name: Configure AWS Access
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
