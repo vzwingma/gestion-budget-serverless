@@ -28,7 +28,7 @@ import java.util.Map;
 public class Utilisateur implements Serializable {
 
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -1019487824881674829L;
     //ID
     private ObjectId id;
     // Login

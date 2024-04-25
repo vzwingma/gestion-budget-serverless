@@ -26,7 +26,7 @@ import java.util.UUID;
 public class CategorieOperations extends AbstractAPIObjectModel implements Comparable<CategorieOperations> { //
 
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -2116580840329551756L;
     /**
      * Identifiant
      */

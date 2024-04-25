@@ -10,7 +10,7 @@ import java.io.Serial;
 public class UserNotAuthorizedException extends AbstractBusinessException {
 
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 7870508429588228326L;
 
     /**
      * Message d'erreur
