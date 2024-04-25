@@ -104,7 +104,7 @@ jobs:
         run: mvn versions:commit
       # Runs a single command using the runners shell
       - name: Build Parametrage Native App with Maven
-        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 --file parametrages/pom.xml
+        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:24.0-jdk-22 --file parametrages/pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
@@ -146,7 +146,7 @@ jobs:
         run: mvn versions:commit
       # Runs a single command using the runners shell
       - name: Build Utilisateurs Native App with Maven
-        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 --file utilisateurs/pom.xml
+        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:24.0-jdk-22 --file utilisateurs/pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
@@ -188,7 +188,7 @@ jobs:
         run: mvn versions:commit
       # Runs a single command using the runners shell
       - name: Build Comptes Native App with Maven
-        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 --file comptes/pom.xml
+        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:24.0-jdk-22 --file comptes/pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
@@ -230,7 +230,7 @@ jobs:
         run: mvn versions:commit
       # Runs a single command using the runners shell
       - name: Build Opérations Native App with Maven
-        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 --file operations/pom.xml
+        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:24.0-jdk-22 --file operations/pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
