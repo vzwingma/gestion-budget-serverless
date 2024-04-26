@@ -10,7 +10,7 @@ import java.io.Serial;
 public class BudgetNotFoundException extends AbstractBusinessException {
 
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -5125561371557130522L;
 
     /**
      * Exception Budget introuvable

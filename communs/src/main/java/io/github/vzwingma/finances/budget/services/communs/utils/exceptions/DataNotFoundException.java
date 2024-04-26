@@ -10,7 +10,7 @@ import java.io.Serial;
 public class DataNotFoundException extends AbstractBusinessException {
 
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -5401848015230960673L;
 
     /**
      * @param message d'erreur

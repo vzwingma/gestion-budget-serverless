@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.vzwingma.finances.budget.serverless</groupId>
         <artifactId>services</artifactId>
-        <version>19.4.0-SNAPSHOT</version>
+        <version>21.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>operations</artifactId>
@@ -63,7 +63,7 @@
         <dependency>
             <groupId>io.github.vzwingma.finances.budget.serverless</groupId>
             <artifactId>communs</artifactId>
-            <version>19.4.0-SNAPSHOT</version>
+            <version>21.0.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>
