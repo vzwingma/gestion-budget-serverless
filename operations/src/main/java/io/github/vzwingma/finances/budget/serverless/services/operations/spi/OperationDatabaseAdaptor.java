@@ -7,6 +7,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBanc
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
+import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -82,6 +83,24 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                 .invoke(budget -> LOGGER.debug("-> Réception du budget {}. {} opérations", budget.getId(), budget.getListeOperations().size()));
     }
 
+    /**
+     * Chargement des budgets mensuels du compte
+     *
+     * @param idCompte compte bancaire
+     * @return budgets mensuels : flux de budgets mensuels correspondants au compte
+     */
+    @Override
+    public Multi<BudgetMensuel> chargeBudgetsMensuels(String idCompte){
+        LOGGER.info("Chargement des budgets ");
+        return find(ATTRIBUT_COMPTE_ID + "=?1", idCompte, Sort.by("id"))
+                .stream()
+                .onFailure()
+                    .transform(e -> {
+                        LOGGER.error("Erreur lors du chargement des budgets de {}", idCompte, e);
+                        return new BudgetNotFoundException("Erreur lors du chargement des budgets " + idCompte);
+                    })
+                .invoke(budget -> LOGGER.debug("-> {} : {} opérations", budget.getId(), budget.getListeOperations().size()));
+    }
 
     /**
      * Liste des libellés des opérations d'un compte
