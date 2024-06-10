@@ -91,6 +91,15 @@ public class BudgetService implements IBudgetAppProvider {
     }
 
 
+    public Multi<BudgetMensuel> getBudgetsMensuels(String idCompte) {
+        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
+        LOGGER.debug("Chargement des budgets");
+        return this.comptesService.getCompteById(idCompte)
+                .invoke(compte -> LOGGER.debug("-> Compte correspondant : {}", compte))
+                .onItem().ifNotNull()
+                .transformToMulti(this::chargerBudgetsMensuelsSurCompte);
+    }
+
     /**
      * Chargement du budget mensuel
      *
@@ -193,6 +202,18 @@ public class BudgetService implements IBudgetAppProvider {
     }
 
 
+    /**
+     * Chargement des budgets du compte
+     *
+     * @param compteBancaire compte bancaire
+     * @return budgets mensuels chargés à partir des données précédentes
+     */
+    private Multi<BudgetMensuel> chargerBudgetsMensuelsSurCompte(CompteBancaire compteBancaire) {
+        LOGGER.debug(" Chargement des budgets du compte");
+
+        // Chargement du budget précédent
+        return this.dataOperationsProvider.chargeBudgetsMensuels(compteBancaire.getId());
+    }
     /************************************
      *  			CALCULS
      ***********************************/

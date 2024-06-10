@@ -42,6 +42,13 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
     Uni<BudgetMensuel> chargeBudgetMensuel(String idBudget);
 
     /**
+     * Chargement des budgets mensuels du compte
+     *
+     * @param idCompte compte bancaire
+     * @return budgets mensuels : flux de budgets mensuels correspondants au compte
+     */
+    Multi<BudgetMensuel> chargeBudgetsMensuels(String idCompte);
+    /**
      * Sauvegarde du budget mensuel
      *
      * @param budget budget à sauvegarder
