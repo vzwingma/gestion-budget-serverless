@@ -3,12 +3,12 @@ package io.github.vzwingma.finances.budget.services.communs.data.model;
 import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractAPIObjectModel;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.smallrye.common.constraint.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.Serial;
 import java.util.Set;
