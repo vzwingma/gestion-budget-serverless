@@ -53,17 +53,17 @@ class BudgetsResourceTest {
      * POST Set Actif OperationsApiUrlEnum.BUDGET_ETAT
      */
     @Test
-    void tesSetEtatActif() {
+    void testSetEtatActif() {
         // Init des données
         Mockito.when(budgetService.setBudgetActif(anyString(), anyBoolean()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
         // Test
         String url = OperationsAPIEnum.BUDGET_BASE
-                + OperationsAPIEnum.BUDGET_ETAT.replace(OperationsAPIEnum.PARAM_ID_BUDGET, "1")
-                + "?actif=true";
+                + OperationsAPIEnum.BUDGET_ETAT.replace(OperationsAPIEnum.PARAM_ID_BUDGET, "1") + "?actif=true";
 
         given()
                 .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
+                .body("{}")
                 .when().post(url)
                 .then()
                 .statusCode(200)
