@@ -39,7 +39,6 @@ public class ComptesResource extends AbstractAPIInterceptors {
 
     private static final Logger LOG = LoggerFactory.getLogger(ComptesResource.class);
 
-
     @Inject
     IComptesAppProvider services;
 
@@ -67,6 +66,7 @@ public class ComptesResource extends AbstractAPIInterceptors {
         return this.services.getComptesUtilisateur(super.getAuthenticatedUser())
                 .invoke(listeComptes -> LOG.info("{} comptes chargés", listeComptes != null ? listeComptes.size() : "-1"));
     }
+
 
     /**
      * Retourne le compte

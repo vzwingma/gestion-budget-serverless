@@ -23,15 +23,15 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout sources
-        uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          java-version: 17
+          java-version: 21
           distribution: 'temurin'
           cache: 'maven'
       - name: Cache Maven packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
@@ -58,12 +58,12 @@ jobs:
       - name: Find and Replace in Serverless Application Manager
         run: sed -e "s/__ENV__/PROD/g" -e "s/__VERSION__/${{ steps.get_version.outputs.VERSION }}/g" -e "s/__DATABASE_URL__/${{ secrets.DATABASE_URL }}/g" -e "s/__DATABASE_NAME__/${{ secrets.DATABASE_NAME }}/g" -e "s/__APP_CONFIG_URL_IHM__/${{ vars.APP_CONFIG_URL_IHM }}/g" -e "s/__APP_CONFIG_URL_BACKENDS__/${{ vars.APP_CONFIG_URL_BACKENDS }}/g" -e "s/__QUARKUS_LOG_LEVEL__/${{ vars.QUARKUS_LOG_LEVEL }}/g" -e "s/__MONGODB_LOG_LEVEL__/${{ vars.MONGODB_LOG_LEVEL }}/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Upload SAM Function Configuration
         with:
           name: function-sam
           path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Upload SAM Configuration
         with:
           name: sam
@@ -80,15 +80,15 @@ jobs:
     needs: build-communs
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          java-version: 17
+          java-version: 21
           distribution: 'temurin'
           cache: 'maven'
       # Step that does that actual cache save and restore
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -104,11 +104,11 @@ jobs:
         run: mvn versions:commit
       # Runs a single command using the runners shell
       - name: Build Parametrage Native App with Maven
-        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 --file parametrages/pom.xml
+        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:24.0-jdk-22 --file parametrages/pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Upload Fonction serverless Paramétrages
         with:
           name: parametrages-function
@@ -122,15 +122,15 @@ jobs:
     needs: build-communs
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          java-version: 17
+          java-version: 21
           distribution: 'temurin'
           cache: 'maven'
       # Step that does that actual cache save and restore
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -146,11 +146,11 @@ jobs:
         run: mvn versions:commit
       # Runs a single command using the runners shell
       - name: Build Utilisateurs Native App with Maven
-        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 --file utilisateurs/pom.xml
+        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:24.0-jdk-22 --file utilisateurs/pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Upload Fonction serverless Utilisateurs
         with:
           name: utilisateurs-function
@@ -164,15 +164,15 @@ jobs:
     needs: build-communs
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          java-version: 17
+          java-version: 21
           distribution: 'temurin'
           cache: 'maven'
       # Step that does that actual cache save and restore
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -188,11 +188,11 @@ jobs:
         run: mvn versions:commit
       # Runs a single command using the runners shell
       - name: Build Comptes Native App with Maven
-        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 --file comptes/pom.xml
+        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:24.0-jdk-22 --file comptes/pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Upload Fonction serverless Comptes
         with:
           name: comptes-function
@@ -206,15 +206,15 @@ jobs:
     needs: build-communs
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          java-version: 17
+          java-version: 21
           distribution: 'temurin'
           cache: 'maven'
       # Step that does that actual cache save and restore
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -230,11 +230,11 @@ jobs:
         run: mvn versions:commit
       # Runs a single command using the runners shell
       - name: Build Opérations Native App with Maven
-        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17 --file operations/pom.xml
+        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:24.0-jdk-22 --file operations/pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Upload Fonction serverless Opérations
         with:
           name: operations-function
@@ -264,37 +264,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-3
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: downloadServiceParametrage
         name: Download Service Paramétrages
         with:
           name: parametrages-function
           path: parametrages
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: downloadServiceUtilisateurs
         name: Download Service Utilisateurs
         with:
           name: utilisateurs-function
           path: utilisateurs
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: downloadServiceComptes
         name: Download Service Comptes
         with:
           name: comptes-function
           path: comptes
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: downloadServiceOperations
         name: Download Service Opérations
         with:
           name: operations-function
           path: operations
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: downloadSAMFunction
         name: Download SAM Function
         with:
           name: function-sam
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: downloadSAM
         name: Download SAM Config
         with:

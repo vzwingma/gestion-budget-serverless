@@ -68,7 +68,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
     @RolesAllowed({OperationsAPIEnum.OPERATIONS_ROLE})
     @Path(value = OperationsAPIEnum.BUDGET_QUERY)
     @Produces(MediaType.APPLICATION_JSON)
-    public Uni<BudgetMensuel> getBudget(
+    public Multi<BudgetMensuel> getBudget(
             @RestQuery("idCompte") String idCompte,
             @RestQuery("mois") Integer mois,
             @RestQuery("annee") Integer annee) {
@@ -76,16 +76,21 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("getBudget {}/{}", mois, annee);
 
-        if (mois != null && annee != null) {
+        if (idCompte != null && mois != null && annee != null) {
             try {
                 String idBudget = BudgetDataUtils.getBudgetId(idCompte, Month.of(mois), annee);
                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
-                return budgetService.getBudgetMensuel(idCompte, Month.of(mois), annee);
+                return Multi.createFrom().uni(budgetService.getBudgetMensuel(idCompte, Month.of(mois), annee));
             } catch (NumberFormatException e) {
-                return Uni.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
+                return Multi.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
             }
         }
-        return Uni.createFrom().failure(new BadParametersException("Mois et année doivent être renseignés"));
+        else if(idCompte != null){
+            return budgetService.getBudgetsMensuels(idCompte);
+        }
+        else {
+            return Multi.createFrom().failure(new BadParametersException("IdCompte et/ou Mois et année doivent être renseignés"));
+        }
     }
 
 
@@ -431,7 +436,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
     @Produces(MediaType.APPLICATION_JSON)
     public Multi<String> libellesOperationsCompte(@RestPath("idCompte") String idCompte) {
 
-        LOG.info("Libelles des opérations du Compte " + idCompte);
+        LOG.info("Libelles des opérations du Compte [{}]", idCompte);
 
         if (idCompte != null) {
             BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());

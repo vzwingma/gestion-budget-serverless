@@ -24,7 +24,7 @@ import java.io.Serializable;
 public class CompteBancaire extends AbstractAPIObjectModel {
 
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -5529248923494509860L;
 
 
     //Id
@@ -111,7 +111,7 @@ public class CompteBancaire extends AbstractAPIObjectModel {
     @NoArgsConstructor
     public static class Proprietaire implements Serializable {
         @Serial
-        private static final long serialVersionUID = 1L;
+        private static final long serialVersionUID = -5548729525207008917L;
         //Id
         private ObjectId id;
         // Login

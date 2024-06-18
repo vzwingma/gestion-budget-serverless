@@ -23,6 +23,13 @@ public interface IBudgetAppProvider {
      */
     Uni<BudgetMensuel> getBudgetMensuel(String idCompte, Month mois, int annee);
 
+
+    /**
+     * Chargement des budgets mensuels du compte
+     * @param idCompte id du compte
+     * @return budgets mensuels
+     */
+    Multi<BudgetMensuel> getBudgetsMensuels(String idCompte);
     /**
      * Charger budget
      *
