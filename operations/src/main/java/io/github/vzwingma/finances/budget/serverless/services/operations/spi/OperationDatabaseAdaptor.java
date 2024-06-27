@@ -98,8 +98,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                     .transform(e -> {
                         LOGGER.error("Erreur lors du chargement des budgets de {}", idCompte, e);
                         return new BudgetNotFoundException("Erreur lors du chargement des budgets " + idCompte);
-                    })
-                .invoke(budget -> LOGGER.debug("-> {} : {} opérations", budget.getId(), budget.getListeOperations().size()));
+                    });
     }
 
     /**
