@@ -56,14 +56,14 @@ public class BudgetService implements IBudgetAppProvider {
     IOperationsRepository dataOperationsProvider;
 
     @RestClient
-    @Inject
+    @ApplicationScoped
     IComptesServiceProvider comptesService;
 
     @Inject
     IOperationsAppProvider operationsAppProvider;
 
     @RestClient
-    @Inject
+    @ApplicationScoped
     IParametragesServiceProvider parametragesService;
 
     /**

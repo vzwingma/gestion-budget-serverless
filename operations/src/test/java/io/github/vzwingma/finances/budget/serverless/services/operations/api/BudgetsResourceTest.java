@@ -62,7 +62,10 @@ class BudgetsResourceTest {
                 + OperationsAPIEnum.BUDGET_ETAT.replace(OperationsAPIEnum.PARAM_ID_BUDGET, "1") + "?actif=true";
 
         given()
-                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+                    .header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
+                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .header(HttpHeaders.ACCEPT, "application/json")
                 .body("{}")
                 .when().post(url)
                 .then()
