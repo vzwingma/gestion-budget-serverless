@@ -304,7 +304,7 @@ class BudgetServiceTest {
         BudgetMensuel budgetDesactive = budgetAppProvider.setBudgetActif(budgetADesactiver.getId(), false).await().indefinitely();
 
         assertFalse(budgetDesactive.isActif());
-        assertEquals(OperationEtatEnum.REPORTEE, budgetDesactive.getListeOperations().get(0).getEtat());
+        assertEquals(OperationEtatEnum.REPORTEE, budgetDesactive.getListeOperations().getFirst().getEtat());
 
         Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(budgetDesactive);
     }
