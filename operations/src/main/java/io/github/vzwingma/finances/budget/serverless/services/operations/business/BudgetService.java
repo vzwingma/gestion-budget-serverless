@@ -11,6 +11,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IComptesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
@@ -91,14 +92,6 @@ public class BudgetService implements IBudgetAppProvider {
     }
 
 
-    public Multi<BudgetMensuel> getBudgetsMensuels(String idCompte) {
-        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
-        LOGGER.debug("Chargement des budgets");
-        return this.comptesService.getCompteById(idCompte)
-                .invoke(compte -> LOGGER.debug("-> Compte correspondant : {}", compte))
-                .onItem().ifNotNull()
-                .transformToMulti(this::chargerBudgetsMensuelsSurCompte);
-    }
 
     /**
      * Chargement du budget mensuel
@@ -112,7 +105,17 @@ public class BudgetService implements IBudgetAppProvider {
         return this.dataOperationsProvider.chargeBudgetMensuel(idBudget);
     }
 
-
+    /**
+     * Retourne le solde et les totaux par catégorie pour un budget mensuel (ou la liste des budgets mensuels) pour un compte et une année donnée
+     * @param idCompte identifiant du compte
+     * @param mois mois (facultatif)
+     * @param annee année
+     * @return liste des soldes et totaux par catégorie
+     */
+    Multi<ProjectionBudgetSoldes> getSoldesBudgetMensuel(String idCompte, Month mois, int annee){
+        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
+        return this.dataOperationsProvider.chargeSoldesBudget(idCompte, mois, annee);
+    }
     /**
      * Chargement du budget et du compte en double Uni
      *
@@ -170,12 +173,13 @@ public class BudgetService implements IBudgetAppProvider {
 
 
     /**
-     * Chargement du budget du dernier mois connu pour le compte inactif
+     * Cette méthode est utilisée pour charger le budget mensuel d'un compte bancaire inactif pour un mois et une année spécifiques.
+     * Elle utilise le service de fournisseur de données d'opérations pour récupérer le budget mensuel.
      *
-     * @param compteBancaire compte bancaire
-     * @param mois           mois
-     * @param annee          année
-     * @return budget mensuel chargé à partir des données précédentes
+     * @param compteBancaire Le compte bancaire inactif pour lequel le budget mensuel doit être chargé.
+     * @param mois Le mois pour lequel le budget mensuel doit être chargé.
+     * @param annee L'année pour laquelle le budget mensuel doit être chargé.
+     * @return Un objet Uni contenant le budget mensuel si trouvé, ou une exception BudgetNotFoundException s'il n'est pas trouvé.
      */
     private Uni<BudgetMensuel> chargerBudgetMensuelSurCompteInactif(CompteBancaire compteBancaire, Month mois, int annee) {
         LOGGER.debug(" Chargement du budget sur compte inactif de {}/{}", mois, annee);
@@ -202,18 +206,7 @@ public class BudgetService implements IBudgetAppProvider {
     }
 
 
-    /**
-     * Chargement des budgets du compte
-     *
-     * @param compteBancaire compte bancaire
-     * @return budgets mensuels chargés à partir des données précédentes
-     */
-    private Multi<BudgetMensuel> chargerBudgetsMensuelsSurCompte(CompteBancaire compteBancaire) {
-        LOGGER.debug(" Chargement des budgets du compte");
 
-        // Chargement du budget précédent
-        return this.dataOperationsProvider.chargeBudgetsMensuels(compteBancaire.getId());
-    }
     /************************************
      *  			CALCULS
      ***********************************/

@@ -68,26 +68,7 @@ class BudgetServiceTest {
 
 
 
-    /**
-     * Test d'un chargement des budgets d'un compte
-     */
-    @Test
-    void testGetBudgetsOfCompte() {
 
-        // Initialisation
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
-                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
-
-        Mockito.when(mockOperationDataProvider.chargeBudgetsMensuels(anyString()))
-                .thenReturn(Multi.createFrom().items(
-                        MockDataBudgets.getBudgetInactifCompteC1(),
-                        MockDataBudgets.getBudgetActifCompteC1et1operationPrevue(),
-                        MockDataBudgets.getBudgetActifCompteC2et0operationPrevue()));
-
-        // Test
-        List<BudgetMensuel> budgets = budgetAppProvider.getBudgetsMensuels("C1").collect().asList().await().indefinitely();
-        assertEquals(3, budgets.size());
-    }
 
 
     /**
