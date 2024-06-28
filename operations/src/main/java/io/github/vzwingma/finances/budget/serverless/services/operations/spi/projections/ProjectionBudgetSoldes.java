@@ -12,8 +12,7 @@ import java.util.Map;
 
 
 @ProjectionFor(BudgetMensuel.class)
-@Getter
-@Setter
+@Getter @Setter
 public class ProjectionBudgetSoldes {
 
 
@@ -43,6 +42,9 @@ public class ProjectionBudgetSoldes {
      * Résultats Totaux
      */
     private BudgetMensuel.Soldes soldes = new BudgetMensuel.Soldes();
+    /**
+     * Totaux par catégories
+     */
     private Map<String, TotauxCategorie> totauxParCategories = new HashMap<>();
-    private Map<String, TotauxCategorie> totauxParSSCategories = new HashMap<>();
+
 }
