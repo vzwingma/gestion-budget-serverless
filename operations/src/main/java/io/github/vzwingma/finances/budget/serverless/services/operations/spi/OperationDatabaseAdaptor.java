@@ -51,7 +51,6 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
      * @param mois Le mois pour lequel le budget doit être chargé.
      * @param annee L'année pour laquelle le budget doit être chargé.
      * @return Un objet Uni contenant le budget mensuel s'il est trouvé, ou une exception BudgetNotFoundException s'il n'est pas trouvé.
-     * @throws BudgetNotFoundException Si le budget n'est pas trouvé dans la base de données.
      */
     @Override
     public Uni<BudgetMensuel> chargeBudgetMensuel(CompteBancaire compte, Month mois, int annee) {

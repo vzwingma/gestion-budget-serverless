@@ -112,9 +112,10 @@ public class BudgetService implements IBudgetAppProvider {
      * @param annee année
      * @return liste des soldes et totaux par catégorie
      */
-    Multi<ProjectionBudgetSoldes> getSoldesBudgetMensuel(String idCompte, Month mois, int annee){
+    @Override
+    public Multi<ProjectionBudgetSoldes> getSoldesBudgetMensuel(String idCompte, Month mois, int annee){
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
-        return this.dataOperationsProvider.chargeSoldesBudget(idCompte, mois, annee);
+        return this.dataOperationsProvider.chargeSoldesBudgetMensuel(idCompte, mois, annee);
     }
     /**
      * Chargement du budget et du compte en double Uni
@@ -206,9 +207,8 @@ public class BudgetService implements IBudgetAppProvider {
     }
 
 
-
-    /************************************
-     *  			CALCULS
+    /** **********************************
+                    CALCULS
      ***********************************/
 
 
