@@ -16,6 +16,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.ArrayList;
@@ -117,7 +119,6 @@ public class BudgetMensuel extends AbstractAPIObjectModel implements Serializabl
      * Totaux
      */
     @Getter
-    @Setter
     @NoArgsConstructor
     @Schema(description = "Soldes")
     public static class Soldes implements Serializable {
@@ -130,6 +131,22 @@ public class BudgetMensuel extends AbstractAPIObjectModel implements Serializabl
         private Double soldeAtMaintenant = 0D;
         @Schema(description = "Solde à la fin du mois courant")
         private Double soldeAtFinMoisCourant = 0D;
+
+
+        public void setSoldeAtFinMoisPrecedent(Double soldeAtFinMoisPrecedent) {
+            BigDecimal bd = BigDecimal.valueOf(soldeAtFinMoisPrecedent).setScale(2, RoundingMode.HALF_UP);
+            this.soldeAtFinMoisPrecedent = bd.doubleValue();
+        }
+
+        public void setSoldeAtMaintenant(Double soldeAtMaintenant) {
+            BigDecimal bd = BigDecimal.valueOf(soldeAtMaintenant).setScale(2, RoundingMode.HALF_UP);
+            this.soldeAtMaintenant = bd.doubleValue();
+        }
+
+        public void setSoldeAtFinMoisCourant(Double soldeAtFinMoisCourant) {
+            BigDecimal bd = BigDecimal.valueOf(soldeAtFinMoisCourant).setScale(2, RoundingMode.HALF_UP);
+            this.soldeAtFinMoisCourant = bd.doubleValue();
+        }
 
         @Override
         public String toString() {
