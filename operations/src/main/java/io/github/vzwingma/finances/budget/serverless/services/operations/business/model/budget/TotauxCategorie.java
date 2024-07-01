@@ -13,7 +13,7 @@ import java.io.Serializable;
  *
  * @author vzwingma
  */
-@Getter
+@Getter @Setter
 @NoArgsConstructor
 @Schema(description = "Totaux par catégorie")
 public class TotauxCategorie implements Serializable {

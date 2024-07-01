@@ -115,7 +115,7 @@ class BudgetsResourceTest {
     }
 
     @Test
-    void testGetBudgetById() {
+    void testGetBudgetsUtilisateurById() {
         // Init des données
         Mockito.when(budgetService.getBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
@@ -134,7 +134,7 @@ class BudgetsResourceTest {
 
 
     @Test
-    void testGetBudgetByParams() {
+    void testGetBudgetsUtilisateurByParams() {
         // Init des données
         Mockito.when(budgetService.getBudgetMensuel(anyString(), any(Month.class), anyInt()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
@@ -152,7 +152,7 @@ class BudgetsResourceTest {
 
 
     @Test
-    void testGetBudgetByParamsKO() {
+    void testGetBudgetsUtilisateurByParamsKO() {
         // Test
         String url = OperationsAPIEnum.BUDGET_BASE + OperationsAPIEnum.BUDGET_QUERY;
 

@@ -5,6 +5,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIInterceptors;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
@@ -68,7 +69,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
     @RolesAllowed({OperationsAPIEnum.OPERATIONS_ROLE})
     @Path(value = OperationsAPIEnum.BUDGET_QUERY)
     @Produces(MediaType.APPLICATION_JSON)
-    public Multi<BudgetMensuel> getBudget(
+    public Uni<BudgetMensuel> getBudgetUtilisateur(
             @RestQuery("idCompte") String idCompte,
             @RestQuery("mois") Integer mois,
             @RestQuery("annee") Integer annee) {
@@ -80,16 +81,13 @@ public class BudgetsResource extends AbstractAPIInterceptors {
             try {
                 String idBudget = BudgetDataUtils.getBudgetId(idCompte, Month.of(mois), annee);
                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
-                return Multi.createFrom().uni(budgetService.getBudgetMensuel(idCompte, Month.of(mois), annee));
+                return budgetService.getBudgetMensuel(idCompte, Month.of(mois), annee);
             } catch (NumberFormatException e) {
-                return Multi.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
+                return Uni.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
             }
         }
-        else if(idCompte != null){
-            return budgetService.getBudgetsMensuels(idCompte);
-        }
         else {
-            return Multi.createFrom().failure(new BadParametersException("IdCompte et/ou Mois et année doivent être renseignés"));
+            return Uni.createFrom().failure(new BadParametersException("IdCompte et Mois et année doivent être renseignés"));
         }
     }
 
@@ -114,7 +112,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
     @RolesAllowed({OperationsAPIEnum.OPERATIONS_ROLE})
     @Path(value = OperationsAPIEnum.BUDGET_SOLDES)
     @Produces(MediaType.APPLICATION_JSON)
-    public Uni<BudgetMensuel.Soldes> getBudgetSolde(
+    public Multi<ProjectionBudgetSoldes> getBudgetSoldes(
             @RestQuery("idCompte") String idCompte,
             @RestQuery("mois") Integer mois,
             @RestQuery("annee") Integer annee) {
@@ -126,12 +124,14 @@ public class BudgetsResource extends AbstractAPIInterceptors {
             try {
                 String idBudget = BudgetDataUtils.getBudgetId(idCompte, Month.of(mois), annee);
                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
-                return budgetService.getBudgetMensuel(idCompte, Month.of(mois), annee).map(BudgetMensuel::getSoldes);
+                return budgetService.getSoldesBudgetMensuel(idCompte, Month.of(mois), annee);
             } catch (NumberFormatException e) {
-                return Uni.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
+                return Multi.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
             }
+        } else if (annee != null) {
+            return budgetService.getSoldesBudgetMensuel(idCompte, null, annee);
         }
-        return Uni.createFrom().failure(new BadParametersException("Mois et année doivent être renseignés"));
+        return Multi.createFrom().failure(new BadParametersException("Mois et année doivent être renseignés"));
     }
 
 
@@ -153,7 +153,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
     @RolesAllowed({OperationsAPIEnum.OPERATIONS_ROLE})
     @Path(value = OperationsAPIEnum.BUDGET_ID)
     @Produces(MediaType.APPLICATION_JSON)
-    public Uni<BudgetMensuel> getBudget(@RestPath("idBudget") String idBudget) {
+    public Uni<BudgetMensuel> getBudgetsUtilisateur(@RestPath("idBudget") String idBudget) {
 
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("chargeBudget");

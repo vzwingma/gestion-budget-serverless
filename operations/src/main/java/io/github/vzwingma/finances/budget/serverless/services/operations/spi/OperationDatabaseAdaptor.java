@@ -2,6 +2,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
@@ -39,6 +40,18 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     private static final String ATTRIBUT_ANNEE = "annee";
     private static final String ATTRIBUT_MOIS = "mois";
 
+
+    /**
+     * Cette méthode est utilisée pour charger le budget mensuel pour un compte bancaire spécifique, un mois et une année donnés.
+     * Elle commence par enregistrer l'ID du budget dans le contexte de trace métier.
+     * Ensuite, elle tente de trouver le budget dans la base de données en utilisant l'ID du compte, le mois et l'année.
+     * Si le budget est trouvé, il est renvoyé. Sinon, une exception BudgetNotFoundException est levée.
+     *
+     * @param compte Le compte bancaire pour lequel le budget doit être chargé.
+     * @param mois Le mois pour lequel le budget doit être chargé.
+     * @param annee L'année pour laquelle le budget doit être chargé.
+     * @return Un objet Uni contenant le budget mensuel s'il est trouvé, ou une exception BudgetNotFoundException s'il n'est pas trouvé.
+     */
     @Override
     public Uni<BudgetMensuel> chargeBudgetMensuel(CompteBancaire compte, Month mois, int annee) {
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, BudgetDataUtils.getBudgetId(compte.getId(), mois, annee));
@@ -53,6 +66,33 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                 })
                 .invoke(budget -> LOGGER.debug("-> Réception du budget {}. {} opérations", budget.getId(), budget.getListeOperations().size()));
     }
+
+
+    /**
+     * Retourne le solde et les totaux par catégorie pour un budget mensuel (ou la liste des budgets mensuels) pour un compte et une année donnée
+     * @param idCompte identifiant du compte
+     * @param mois mois (facultatif)
+     * @param annee année
+     * @return liste des soldes et totaux par catégorie
+     */
+    @Override
+    public Multi<ProjectionBudgetSoldes> chargeSoldesBudgetMensuel(String idCompte, Month mois, int annee){
+        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
+        LOGGER.info("Chargement des soldes {}/{} du compte {} ", mois, annee, idCompte);
+        String query = ATTRIBUT_COMPTE_ID + " = ?1 and " + ATTRIBUT_ANNEE + " = ?2";
+        if(mois != null){
+            query += " and " + ATTRIBUT_MOIS + " = ?3";
+        }
+        return find(query, idCompte, annee, mois, Sort.by("id"))
+                .project(ProjectionBudgetSoldes.class)
+                .stream()
+                .onFailure()
+                .transform(e -> {
+                    LOGGER.error("Erreur lors du chargement des budgets de {}", idCompte, e);
+                    return new BudgetNotFoundException("Erreur lors du chargement des budgets " + idCompte);
+                });
+    }
+
 
     /**
      * @param idBudget id budget
@@ -83,23 +123,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                 .invoke(budget -> LOGGER.debug("-> Réception du budget {}. {} opérations", budget.getId(), budget.getListeOperations().size()));
     }
 
-    /**
-     * Chargement des budgets mensuels du compte
-     *
-     * @param idCompte compte bancaire
-     * @return budgets mensuels : flux de budgets mensuels correspondants au compte
-     */
-    @Override
-    public Multi<BudgetMensuel> chargeBudgetsMensuels(String idCompte){
-        LOGGER.info("Chargement des budgets ");
-        return find(ATTRIBUT_COMPTE_ID + "=?1", idCompte, Sort.by("id"))
-                .stream()
-                .onFailure()
-                    .transform(e -> {
-                        LOGGER.error("Erreur lors du chargement des budgets de {}", idCompte, e);
-                        return new BudgetNotFoundException("Erreur lors du chargement des budgets " + idCompte);
-                    });
-    }
+
 
     /**
      * Liste des libellés des opérations d'un compte
