@@ -134,17 +134,17 @@ public class BudgetMensuel extends AbstractAPIObjectModel implements Serializabl
 
 
         public void setSoldeAtFinMoisPrecedent(Double soldeAtFinMoisPrecedent) {
-            BigDecimal bd = new BigDecimal(soldeAtFinMoisPrecedent).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal bd = BigDecimal.valueOf(soldeAtFinMoisPrecedent).setScale(2, RoundingMode.HALF_UP);
             this.soldeAtFinMoisPrecedent = bd.doubleValue();
         }
 
         public void setSoldeAtMaintenant(Double soldeAtMaintenant) {
-            BigDecimal bd = new BigDecimal(soldeAtMaintenant).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal bd = BigDecimal.valueOf(soldeAtMaintenant).setScale(2, RoundingMode.HALF_UP);
             this.soldeAtMaintenant = bd.doubleValue();
         }
 
         public void setSoldeAtFinMoisCourant(Double soldeAtFinMoisCourant) {
-            BigDecimal bd = new BigDecimal(soldeAtFinMoisCourant).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal bd = BigDecimal.valueOf(soldeAtFinMoisCourant).setScale(2, RoundingMode.HALF_UP);
             this.soldeAtFinMoisCourant = bd.doubleValue();
         }
 

@@ -38,7 +38,7 @@ public class TotauxCategorie implements Serializable {
      * @param montantAAjouter Le montant à ajouter au total actuel.
      */
     public void ajouterATotalAtMaintenant(Double montantAAjouter) {
-        BigDecimal bd = new BigDecimal(this.totalAtMaintenant + montantAAjouter).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal bd = BigDecimal.valueOf(this.totalAtMaintenant + montantAAjouter).setScale(2, RoundingMode.HALF_UP);
         this.totalAtMaintenant = bd.doubleValue();
     }
 
@@ -49,7 +49,7 @@ public class TotauxCategorie implements Serializable {
      * @param montantAAjouter Le montant à ajouter au total actuel.
      */
     public void ajouterATotalAtFinMoisCourant(Double montantAAjouter) {
-        BigDecimal bd = new BigDecimal(this.totalAtFinMoisCourant+ montantAAjouter).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal bd = BigDecimal.valueOf(this.totalAtFinMoisCourant+ montantAAjouter).setScale(2, RoundingMode.HALF_UP);
         this.totalAtFinMoisCourant = bd.doubleValue();
     }
 
