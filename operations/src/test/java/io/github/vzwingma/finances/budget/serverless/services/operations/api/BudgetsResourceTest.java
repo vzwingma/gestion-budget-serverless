@@ -27,18 +27,25 @@ import java.time.Month;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+
 
 @QuarkusTest
 class BudgetsResourceTest {
 
     @Inject
     IBudgetAppProvider budgetService;
+    @Inject
+    BudgetsResource budgetsResource;
+
 
     @BeforeAll
     public static void init() {
         QuarkusMock.installMockForType(Mockito.mock(BudgetService.class), BudgetService.class);
         QuarkusMock.installMockForType(Mockito.mock(OperationsService.class), OperationsService.class);
     }
+
 
     @Test
     void testInfoEndpoint() {
