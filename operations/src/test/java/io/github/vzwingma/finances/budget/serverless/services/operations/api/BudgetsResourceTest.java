@@ -6,9 +6,9 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JwtAuthHeader;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
@@ -197,6 +197,8 @@ class BudgetsResourceTest {
         p.setGiven_name("Test");
         p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
         p.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
-        return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p));
+        p.setIss("https://accounts.google.com");
+        p.setAud("test.apps.googleusercontent.com");
+        return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p, null));
     }
 }

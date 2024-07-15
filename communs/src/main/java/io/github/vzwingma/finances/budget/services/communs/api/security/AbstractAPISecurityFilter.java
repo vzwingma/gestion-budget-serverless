@@ -1,6 +1,7 @@
 package io.github.vzwingma.finances.budget.services.communs.api.security;
 
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.vertx.core.json.DecodeException;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -18,12 +19,27 @@ import java.util.Optional;
 /**
  * Filtre HTTP de sécurité des API, vérification du token JWT et des rôles
  */
-public class AbstractAPISecurityFilter implements ContainerRequestFilter {
+public abstract class AbstractAPISecurityFilter implements ContainerRequestFilter {
 
 
     public static final String HTTP_HEADER_API_KEY = "X-Api-Key";
     private final Logger logger = LoggerFactory.getLogger(AbstractAPISecurityFilter.class);
 
+    private JwtValidationParams jwtValidationParams;
+    /**
+     * Récupération des paramètres de validation du token JWT
+     *
+     * @return les paramètres de validation du token JWT
+     */
+    public JwtValidationParams getJwtValidationParams() {
+        if(jwtValidationParams == null) {
+            jwtValidationParams = new JwtValidationParams();
+            jwtValidationParams.setIdAppUserContent(getIdAppUserContent());
+        }
+        return jwtValidationParams;
+    }
+
+    public abstract String getIdAppUserContent();
     /**
      * Filtre de sécurité sur JWT
      *
@@ -36,10 +52,14 @@ public class AbstractAPISecurityFilter implements ContainerRequestFilter {
         String auth = getAuthBearerFromHeaders(requestContext.getHeaders().get(HttpHeaders.AUTHORIZATION.toLowerCase(Locale.ROOT)));
         if (auth != null && !auth.isEmpty() && !"null".equals(auth)) {
             try {
-
-                JWTAuthToken idToken = JWTUtils.decodeJWT(auth);
-                requestContext.setSecurityContext(new SecurityOverrideContext(idToken, auth));
-                return;
+                JWTAuthToken jwToken = JWTUtils.decodeJWT(auth);
+                if(jwToken.isValid(getJwtValidationParams())){
+                    requestContext.setSecurityContext(new SecurityOverrideContext(jwToken, auth));
+                    return;
+                }
+                else {
+                    logger.error("Token JWT invalide : {}", auth);
+                }
             } catch (DecodeException e) {
                 logger.error("Erreur lors du décodage du token JWT : {}", auth);
             }

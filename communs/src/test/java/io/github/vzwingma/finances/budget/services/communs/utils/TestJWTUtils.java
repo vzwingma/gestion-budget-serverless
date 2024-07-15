@@ -1,6 +1,7 @@
 package io.github.vzwingma.finances.budget.services.communs.utils;
 
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.vertx.core.json.DecodeException;
@@ -22,12 +23,26 @@ class TestJWTUtils {
 
     private static final String ID_TOKEN_2 = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjhlMGFjZjg5MWUwOTAwOTFlZjFhNWU3ZTY0YmFiMjgwZmQxNDQ3ZmEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDAxMDI1MjcyMjA5NTAwNzY2ODgiLCJlbWFpbCI6InZpbmNlbnQuendpbmdtYW5uQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiZDUtbUJGU1RUaUNEaS1lYlFpZ3pyUSIsIm5hbWUiOiJWaW5jZW50IFp3aW5nbWFubiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BRWRGVHA0VjVITGx1dktDNWdJYW9GRFU4a1Q0emJmSk94dE5lRmNYTjM4NnA1bz1zOTYtYyIsImdpdmVuX25hbWUiOiJWaW5jZW50IiwiZmFtaWx5X25hbWUiOiJad2luZ21hbm4iLCJsb2NhbGUiOiJmciIsImlhdCI6MTY3Mjk1NzE1MSwiZXhwIjoxNjcyOTYwNzUxfQ.qEVb34k3vQsKG0cJ7rYxEC8tlm_T4oOpu3hav4jTNK4R1Sp1yNljlpIgjP34PhaJf2Zzxn9Om1pn2la1gzpTqdEQpT-f9xHKOhEKf2J9GK72LeLYXdAVS-MfyigY1Vq91oUiCVNg58w4oqRC2kiobKaxrYakMhLdgte4iWTo1qP0PnaqiT_x9rh7pPu7qs_gq1ervT-qQpG504mO31CaMV8NxldBWOyRbFIy5_zUiKH0mcZ2GfCPKSeP3UpN_YBxzkBwd9CmhTawg3dBXgMwOpogtfeL7cn9DHevMNEsfX59ZdFN4rGkMcDAYNve7pGjDr3QPa0TobzFKd7HpKql7w";
 
+
+    private static final String ID_TOKEN_BAD_ISS = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjhlMGFjZjg5MWUwOTAwOTFlZjFhNWU3ZTY0YmFiMjgwZmQxNDQ3ZmEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL05PVC5nb29nbGUuY29tIiwiYXpwIjoiNTUwNDMxOTI4MTM4LWVkZXN0ajI4cms1YTBlbWs1NDZwN2lpMjhkbDVib2M1LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiNTUwNDMxOTI4MTM4LWVkZXN0ajI4cms1YTBlbWs1NDZwN2lpMjhkbDVib2M1LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTAwMTAyNTI3MjIwOTUwMDc2Njg4IiwiZW1haWwiOiJ2aW5jZW50Lnp3aW5nbWFubkBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiYXRfaGFzaCI6Iks2QTY0X1JScjJuSm1ZNWFjQWp1Y3ciLCJuYW1lIjoiVmluY2VudCBad2luZ21hbm4iLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUVkRlRwNFY1SExsdXZLQzVnSWFvRkRVOGtUNHpiZkpPeHROZUZjWE4zODZwNW89czk2LWMiLCJnaXZlbl9uYW1lIjoiVmluY2VudCIsImZhbWlseV9uYW1lIjoiWndpbmdtYW5uIiwibG9jYWxlIjoiZnIiLCJpYXQiOjE2NzI2NjAwMDIsImV4cCI6MTY3MjY2MzYwMn0=";
+
+    private static final String ID_TOKEN_BAD_APP = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjhlMGFjZjg5MWUwOTAwOTFlZjFhNWU3ZTY0YmFiMjgwZmQxNDQ3ZmEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiJlZGVzdGoyOHJrNWEwZW1rNTQ2cDdpaTI4ZGw1Ym9jNS5hcHBzLk5PVC5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDAxMDI1MjcyMjA5NTAwNzY2ODgiLCJlbWFpbCI6InZpbmNlbnQuendpbmdtYW5uQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiSzZBNjRfUlJyMm5KbVk1YWNBanVjdyIsIm5hbWUiOiJWaW5jZW50IFp3aW5nbWFubiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BRWRGVHA0VjVITGx1dktDNWdJYW9GRFU4a1Q0emJmSk94dE5lRmNYTjM4NnA1bz1zOTYtYyIsImdpdmVuX25hbWUiOiJWaW5jZW50IiwiZmFtaWx5X25hbWUiOiJad2luZ21hbm4iLCJsb2NhbGUiOiJmciIsImlhdCI6MTY3MjY2MDAwMiwiZXhwIjoxNjcyNjYzNjAyfQ";
+
+    private static final String ID_TOKEN_SIGNED = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjBlMzQ1ZmQ3ZTRhOTcyNzFkZmZhOTkxZjVhODkzY2QxNmI4ZTA4MjciLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDAxMDI1MjcyMjA5NTAwNzY2ODgiLCJlbWFpbCI6InZpbmNlbnQuendpbmdtYW5uQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiVmlOWU1xVUV6M3E1bktxRVBESlIzZyIsIm5hbWUiOiJWaW5jZW50IFp3aW5nbWFubiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NKbDRTOThXdU85NVo3OHJtTURzVGVMMFBpTHVjMHFFTk91YjViVjNfMkRuZE53REFmZWVRPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6IlZpbmNlbnQiLCJmYW1pbHlfbmFtZSI6Ilp3aW5nbWFubiIsImlhdCI6MTcyMTA0ODM5OCwiZXhwIjoxNzIxMDUxOTk4fQ.GYfoBFeXZimAgGG6YLVSZR_axUn7ZvZh1NyKYv_U9-PKwLGPu8k8eKC4xRLAbX-C_miw5Igy2uHcgTj9VNAyppk-MNWJie_WzNUb42TgGKdnInJeurIe-VndL6xM3yAP7DMFnmLSEjHNe5umMVRhJu_dWONFscfb_o-rfw0BQFjMXr5RJ9dvrl_4fUWpQmbBu0M4a9LMao4x9kIVlgLAg4HU92YX-RtOWpl7KQyi0HZuwOknVYFJvjRhZtXmILwKdcjhkmP7guoeous_uWxzHV9_xueTXG8C1VCg_smPtivVnpAn1WS-VlraYDOnG7Gy2Q5AjyD4pqMJSRZDIPO8OQ";
+
+
     static String generateValidToken() {
         JWTAuthToken token = JWTUtils.decodeJWT(ID_TOKEN);
 
         token.getPayload().setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
         token.getPayload().setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
         return JWTUtils.encodeJWT(token);
+    }
+
+    static JwtValidationParams generateValidParams(){
+        JwtValidationParams params = new JwtValidationParams();
+        params.setIdAppUserContent(JWTUtils.decodeJWT(ID_TOKEN).getPayload().getAud().replace(".apps.googleusercontent.com", ""));
+        return params;
     }
 
     @Test
@@ -47,14 +62,14 @@ class TestJWTUtils {
 
         LOG.info(LocalDateTime.now().toString());
         LOG.info(token.expiredAt().toString());
-        assertTrue(token.isExpired());
+        assertFalse(token.isValid(null));
 
         JWTUtils.encodeJWT(token);
 
     }
 
     @Test
-    void testDecode2() {
+    void testDecodeToken2() {
 
         JWTAuthToken token = JWTUtils.decodeJWT(ID_TOKEN_2);
         assertNotNull(token);
@@ -78,12 +93,41 @@ class TestJWTUtils {
         assertEquals("eyJhbGciOiJSUzI1NiIsImtpZCI6IjhlMGFjZjg5MWUwOTAwOTFlZjFhNWU3ZTY0YmFiMjgwZmQxNDQ3ZmEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDAxMDI1MjcyMjA5NTAwNzY2ODgiLCJlbWFpbCI6InZpbmNlbnQuendpbmdtYW5uQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiSzZBNjRfUlJyMm5KbVk1YWNBanVjdyIsIm5hbWUiOiJWaW5jZW50IFp3aW5nbWFubiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BRWRGVHA0VjVITGx1dktDNWdJYW9GRFU4a1Q0emJmSk94dE5lRmNYTjM4NnA1bz1zOTYtYyIsImdpdmVuX25hbWUiOiJWaW5jZW50IiwiZmFtaWx5X25hbWUiOiJad2luZ21hbm4iLCJsb2NhbGUiOiJmciIsImlhdCI6MTY3MjY2MDAwMiwiZXhwIjoxNjcyNjYzNjAyfQ", encode);
     }
 
+
+    @Test
+    void testInvalidAppTokenApp() {
+        String rawToken = ID_TOKEN_BAD_APP;
+        assertNotNull(rawToken);
+        JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
+        assertFalse(token.isValid(generateValidParams()));
+    }
+
+
+    @Test
+    void testInvalidAppTokenIss() {
+        String rawToken = ID_TOKEN_BAD_ISS;
+        assertNotNull(rawToken);
+        JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
+
+        assertFalse(token.isValid(generateValidParams()));
+    }
+
+
+    @Test
+    void testValidSignature(){
+        String rawToken = ID_TOKEN_SIGNED;
+        assertNotNull(rawToken);
+        JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
+        assertFalse(token.isSigned());
+    }
+
     @Test
     void testValidToken() {
         String rawToken = generateValidToken();
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertFalse(token.isExpired());
+
+        assertTrue(token.isValid(generateValidParams()));
     }
 
 }

@@ -1,4 +1,4 @@
-package io.github.vzwingma.finances.budget.services.communs.data.model;
+package io.github.vzwingma.finances.budget.services.communs.data.model.jwt;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.Getter;
