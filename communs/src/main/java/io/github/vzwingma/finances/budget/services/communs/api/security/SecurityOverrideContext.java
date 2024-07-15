@@ -59,7 +59,7 @@ public class SecurityOverrideContext implements SecurityContext {
      */
     @Override
     public boolean isUserInRole(String role) {
-        if (jwtValidatedToken != null) {
+        if (jwtValidatedToken == null) {
             LOG.warn("L'utilisateur [{}] n'a pas de token JWT valide", getUserPrincipal().getName());
             return false;
         }

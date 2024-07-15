@@ -40,7 +40,16 @@ public class JWTUtils {
             String[] chunks = base64JWT.split("\\.");
             String header = new String(decoder.decode(chunks[0]));
             String payload = new String(decoder.decode(chunks[1]));
-            return new JWTAuthToken(Json.decodeValue(header, JwtAuthHeader.class), Json.decodeValue(payload, JWTAuthPayload.class));
+            String signature = null;
+            if(chunks.length > 3){
+                signature = new String(decoder.decode(chunks[2]));
+            }
+            LOG.info("Header : {}", header);
+            LOG.info("Payload : {}", payload);
+            LOG.info("Signature : {}", signature);
+            return new JWTAuthToken(Json.decodeValue(header, JwtAuthHeader.class),
+                                    Json.decodeValue(payload, JWTAuthPayload.class),
+                                    signature);
         } catch (Exception e) {
             LOG.error("Erreur lors du décodage du token [{}]", base64JWT, e);
             throw new DecodeException("Erreur lors du décodage du token");
