@@ -1,20 +1,22 @@
 package io.github.vzwingma.finances.budget.services.communs.api.security;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKeys;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.DecodeException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 
 
 /**
@@ -27,18 +29,25 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
     private final Logger logger = LoggerFactory.getLogger(AbstractAPISecurityFilter.class);
 
     private JwtValidationParams jwtValidationParams;
+
+    public abstract Uni<JwksAuthKeys> getJwtAuthSigningKeyServiceProvider();
+
     /**
-     * Récupération des paramètres de validation du token JWT
-     *
-     * @return les paramètres de validation du token JWT
+     * Initialisation des clés de signature JWT
      */
     public JwtValidationParams getJwtValidationParams() {
         if(jwtValidationParams == null) {
             jwtValidationParams = new JwtValidationParams();
             jwtValidationParams.setIdAppUserContent(getIdAppUserContent().get().isPresent() ? getIdAppUserContent().get().get() : null);
+            List<JwksAuthKey> listJwksAuthKey = new ArrayList<>();
+            getJwtAuthSigningKeyServiceProvider().subscribe().with(jwksAuthKeys -> {
+                listJwksAuthKey.addAll(Arrays.asList(jwksAuthKeys.getKeys()));
+            });
+            jwtValidationParams.setJwksAuthKeys(listJwksAuthKey);
         }
         return jwtValidationParams;
     }
+
 
     public abstract Instance<Optional<String>> getIdAppUserContent();
     /**

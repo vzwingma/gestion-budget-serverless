@@ -13,6 +13,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
+import java.util.List;
 
 /**
  * Classe utilitaire pour le décodage et l'encodage des tokens JWT ID_TOKEN de Google.
@@ -22,28 +23,6 @@ public class JWTUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(JWTUtils.class);
 
-
-    protected static final String JWKS_GOOGLE_KEYS = """
-            {
-              "keys": [
-                {
-                  "e": "AQAB",
-                  "n": "nzGsrziOYrMVYMpvUZOwkKNiPWcOPTYRYlDSdRW4UpAHdWPbPlyqaaphYhoMB5DXrVxI3bdvm7DOlo-sHNnulmAFQa-7TsQMxrZCvVdAbyXGID9DZYEqf8mkCV1Ohv7WY5lDUqlybIk1OSHdK7-1et0QS8nn-5LojGg8FK4ssLf3mV1APpujl27D1bDhyRb1MGumXYElwlUms7F9p9OcSp5pTevXCLmXs9MJJk4o9E1zzPpQ9Ko0lH9l_UqFpA7vwQhnw0nbh73rXOX2TUDCUqL4ThKU5Z9Pd-eZCEOatKe0mJTpQ00XGACBME_6ojCdfNIJr84Y_IpGKvkAEksn9w",
-                  "alg": "RS256",
-                  "kty": "RSA",
-                  "kid": "87bbe0815b064e6d449cac999f0e50e72a3e4374",
-                  "use": "sig"
-                },
-                {
-                  "kid": "0e345fd7e4a97271dffa991f5a893cd16b8e0827",
-                  "use": "sig",
-                  "alg": "RS256",
-                  "kty": "RSA",
-                  "e": "AQAB",
-                  "n": "rv95jmy91hibD7cb_BCA25jv5HrX7WoqHv-fh8wrOR5aYcM8Kvsc3mbzs2w1vCUlMRv7NdEGVBEnOZ6tHvUzGLon4ythd5XsX-wTvAtIHPkyHdo5zGpTgATO9CEn78Y-f1E8By63ttv14kXe_RMjt5aKttK4yqqUyzWUexSs7pET2zWiigd0_bGhJGYYEJlEk_JsOBFvloIBaycMfDjK--kgqnlRA8SWUkP3pEJIAo9oHzmvX6uXZTEJK10a1YNj0JVR4wZY3k60NaUX-KCroreU85iYgnecyxSdL-trpKdkg0-2OYks-_2Isymu7jPX-uKVyi-zKyaok3N64mERRQ"
-                }
-              ]
-            }""";
     public static final String SHA_256_WITH_RSA = "SHA256withRSA";
 
 
@@ -107,10 +86,9 @@ public class JWTUtils {
      * @param jwtRawContent Le contenu brut du token JWT à vérifier.
      * @return true si la signature est valide, false sinon.
      */
-    public static boolean isTokenSigValid(String jwtRawContent){
-        JwksAuthKeys authKeys = Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class);
-
-        for(JwksAuthKey key : authKeys.getKeys()){
+    public static boolean isTokenSigValid(String jwtRawContent, List<JwksAuthKey> authKeys){
+        LOG.trace("Vérification de la signature du Token JWT : {}", jwtRawContent);
+        for(JwksAuthKey key : authKeys){
             try {
                 RSAPublicKey publicKey = (RSAPublicKey) getPublicKey(key.getN(), key.getE());
 

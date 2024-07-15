@@ -26,9 +26,9 @@ public class RequestJWTHeaderFactory implements ClientHeadersFactory {
     public MultivaluedMap<String, String> update(MultivaluedMap<String, String> incomingHeaders, MultivaluedMap<String, String> clientOutgoingHeaders) {
         MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();
 
-        String rawAuthJWT = getValidJWTToken(securityContext.getAuthenticationScheme());
-        if (rawAuthJWT != null) {
-            headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + rawAuthJWT);
+        JWTAuthToken jwToken = getValidJWTToken(securityContext.getAuthenticationScheme());
+        if (jwToken != null) {
+            headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + jwToken.getRawContent());
         } else {
             LOG.warn("L'appel n'est pas authentifié : JWT Token est null");
         }
@@ -54,13 +54,13 @@ public class RequestJWTHeaderFactory implements ClientHeadersFactory {
      *
      * @param rawAuthJWT rawtJwt
      */
-    private String getValidJWTToken(String rawAuthJWT) {
+    private JWTAuthToken getValidJWTToken(String rawAuthJWT) {
 
         // Revalidation de la validité du token
         if (rawAuthJWT != null) {
             JWTAuthToken jwToken = JWTUtils.decodeJWT(rawAuthJWT);
             if (!jwToken.isValid(securityOverrideFilter.getJwtValidationParams())) {
-                return rawAuthJWT;
+                return jwToken;
             }
         }
         return null;

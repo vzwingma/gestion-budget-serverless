@@ -76,7 +76,7 @@ public class JWTAuthToken {
      * @return true si le token est valide selon les critères ci-dessus, false sinon.
      */
     public boolean isValid(JwtValidationParams validationParams){
-        return isFromGoogle() && isFromUserAppContent(validationParams) && isSigned() && !isExpired() ;
+        return isFromGoogle() && isFromUserAppContent(validationParams) && isSigned(validationParams) && !isExpired() ;
     }
 
     /**
@@ -130,25 +130,13 @@ public class JWTAuthToken {
      * Vérifie si le token JWT est signé en utilisant les clés publiques de Google.
      * @return true si la signature est valide, false sinon.
      */
-    public boolean isSigned() {
+    public boolean isSigned(JwtValidationParams validationParams) {
         if(this.rawContent != null){
-            return JWTUtils.isTokenSigValid(this.rawContent);
+            return JWTUtils.isTokenSigValid(this.rawContent, validationParams.getJwksAuthKeys());  // Vérifie la signature du token JWT
         }
         else{
             LOG.warn("Le token n'est pas signé");
         }
         return false;
-    }
-
-
-
-
-    @Override
-    public String toString() {
-        return "JWTIdToken{" +
-                ", payload=" + payload +
-                ", isExpired=" + isExpired() +
-                ", isValid=" + isSigned() +
-                '}';
     }
 }
