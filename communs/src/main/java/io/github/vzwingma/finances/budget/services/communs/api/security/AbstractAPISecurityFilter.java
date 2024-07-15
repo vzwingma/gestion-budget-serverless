@@ -4,6 +4,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAut
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.vertx.core.json.DecodeException;
+import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -34,12 +35,12 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
     public JwtValidationParams getJwtValidationParams() {
         if(jwtValidationParams == null) {
             jwtValidationParams = new JwtValidationParams();
-            jwtValidationParams.setIdAppUserContent(getIdAppUserContent());
+            jwtValidationParams.setIdAppUserContent(getIdAppUserContent().get().isPresent() ? getIdAppUserContent().get().get() : null);
         }
         return jwtValidationParams;
     }
 
-    public abstract String getIdAppUserContent();
+    public abstract Instance<Optional<String>> getIdAppUserContent();
     /**
      * Filtre de sécurité sur JWT
      *

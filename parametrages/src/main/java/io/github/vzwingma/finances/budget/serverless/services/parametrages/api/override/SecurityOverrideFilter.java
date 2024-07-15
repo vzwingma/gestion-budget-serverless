@@ -2,6 +2,7 @@ package io.github.vzwingma.finances.budget.serverless.services.parametrages.api.
 
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
+import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.PreMatching;
@@ -10,6 +11,7 @@ import lombok.Getter;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @Getter
 @Provider
@@ -18,7 +20,7 @@ public class SecurityOverrideFilter extends AbstractAPISecurityFilter implements
 
 
     @ConfigProperty(name = "oidc.jwt.id.appusercontent")
-    String idAppUserContent;
+    Instance<Optional<String>> idAppUserContent;
 
 
     @Override
