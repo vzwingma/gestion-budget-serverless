@@ -12,24 +12,25 @@ import org.slf4j.LoggerFactory;
 import java.util.Base64;
 
 /**
- * Classe utilitaire de décodage du token JWT ID_TOKEN de Google
+ * Classe utilitaire pour le décodage et l'encodage des tokens JWT ID_TOKEN de Google.
+ * Fournit des méthodes statiques pour transformer un token JWT de/vers sa représentation en Base64.
  */
 public class JWTUtils {
-
 
     private static final Logger LOG = LoggerFactory.getLogger(JWTUtils.class);
 
     /**
-     * Constructeur privé
+     * Constructeur privé pour empêcher l'instanciation de la classe utilitaire.
      */
     private JWTUtils() {
     }
 
     /**
-     * Décodage d'un token JWT
+     * Décodage d'un token JWT à partir d'une chaîne en Base64.
      *
-     * @param base64JWT token en Base64
-     * @throws DecodeException de décodage si le token n'est pas bien formé
+     * @param base64JWT Le token JWT encodé en Base64 à décoder.
+     * @return Un objet {@link JWTAuthToken} représentant le token JWT décodé.
+     * @throws DecodeException Si le token n'est pas bien formé ou si une erreur de décodage survient.
      */
     public static JWTAuthToken decodeJWT(String base64JWT) throws DecodeException {
         LOG.trace("Décodage du Token JWT : {}", base64JWT);
@@ -46,7 +47,13 @@ public class JWTUtils {
         }
     }
 
-
+    /**
+     * Encodage d'un objet {@link JWTAuthToken} en une chaîne JWT en Base64.
+     *
+     * @param jwt L'objet {@link JWTAuthToken} à encoder.
+     * @return La chaîne JWT encodée en Base64.
+     * @throws EncodeException Si une erreur d'encodage survient.
+     */
     public static String encodeJWT(JWTAuthToken jwt) throws DecodeException {
         LOG.trace("Encodage du Token JWT : {}", jwt);
 

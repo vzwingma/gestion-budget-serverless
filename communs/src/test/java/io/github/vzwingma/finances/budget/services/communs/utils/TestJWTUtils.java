@@ -47,7 +47,7 @@ class TestJWTUtils {
 
         LOG.info(LocalDateTime.now().toString());
         LOG.info(token.expiredAt().toString());
-        assertTrue(token.isExpired());
+        assertFalse(token.isValid());
 
         JWTUtils.encodeJWT(token);
 
@@ -83,7 +83,7 @@ class TestJWTUtils {
         String rawToken = generateValidToken();
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertFalse(token.isExpired());
+        assertTrue(token.isValid());
     }
 
 }

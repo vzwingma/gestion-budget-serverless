@@ -12,7 +12,10 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-
+/**
+ * Modèle représentant un token JWT (JSON Web Token) avec en-tête et charge utile.
+ * Permet de gérer les informations d'authentification et de session.
+ */
 @RegisterForReflection
 @JsonDeserialize
 @JsonSerialize
@@ -21,16 +24,23 @@ import java.time.ZoneId;
 public class JWTAuthToken {
 
     private static final Logger LOG = LoggerFactory.getLogger(JWTAuthToken.class);
-    private JwtAuthHeader header;
+    private JwtAuthHeader header; // L'en-tête du token JWT
+    private JWTAuthPayload payload; // La charge utile du token JWT
 
-    private JWTAuthPayload payload;
-
+    /**
+     * Constructeur pour créer un token JWT avec un en-tête et une charge utile spécifiques.
+     * @param header L'en-tête du token JWT.
+     * @param payload La charge utile du token JWT.
+     */
     public JWTAuthToken(JwtAuthHeader header, JWTAuthPayload payload) {
         this.header = header;
         this.payload = payload;
     }
 
-
+    /**
+     * Calcule la date et l'heure de délivrance du token à partir de la charge utile.
+     * @return La date et l'heure de délivrance du token, ou null si non applicable.
+     */
     @JsonIgnore
     public LocalDateTime issuedAt() {
         if (this.payload != null && this.payload.getIat() != 0) {
@@ -39,6 +49,10 @@ public class JWTAuthToken {
         return null;
     }
 
+    /**
+     * Calcule la date et l'heure d'expiration du token à partir de la charge utile.
+     * @return La date et l'heure d'expiration du token, ou null si non applicable.
+     */
     @JsonIgnore
     public LocalDateTime expiredAt() {
         if (this.payload != null && this.payload.getExp() != 0) {
@@ -48,9 +62,18 @@ public class JWTAuthToken {
     }
 
     /**
-     * @return l'expiration
+     * Vérifie si le token est toujours valide en comparant la date et l'heure actuelles à la date d'expiration.
+     * @return Vrai si le token n'est pas expiré, faux sinon.
      */
-    public boolean isExpired() {
+    public boolean isValid(){
+        return !isExpired();
+    }
+
+    /**
+     * Vérifie si le token est expiré en comparant la date et l'heure actuelles à la date d'expiration.
+     * @return Vrai si le token est expiré, faux sinon.
+     */
+    private boolean isExpired() {
         LocalDateTime expAt = expiredAt();
         if (expAt != null) {
             return !LocalDateTime.now().isBefore(expAt);

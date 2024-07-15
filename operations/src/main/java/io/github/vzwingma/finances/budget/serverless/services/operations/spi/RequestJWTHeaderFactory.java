@@ -58,8 +58,8 @@ public class RequestJWTHeaderFactory implements ClientHeadersFactory {
 
         // Revalidation de la validité du token
         if (rawAuthJWT != null) {
-            JWTAuthToken idToken = JWTUtils.decodeJWT(rawAuthJWT);
-            if (!idToken.isExpired()) {
+            JWTAuthToken jwToken = JWTUtils.decodeJWT(rawAuthJWT);
+            if (!jwToken.isValid()) {
                 return rawAuthJWT;
             }
         }

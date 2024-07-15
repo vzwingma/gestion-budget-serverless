@@ -36,10 +36,14 @@ public class AbstractAPISecurityFilter implements ContainerRequestFilter {
         String auth = getAuthBearerFromHeaders(requestContext.getHeaders().get(HttpHeaders.AUTHORIZATION.toLowerCase(Locale.ROOT)));
         if (auth != null && !auth.isEmpty() && !"null".equals(auth)) {
             try {
-
-                JWTAuthToken idToken = JWTUtils.decodeJWT(auth);
-                requestContext.setSecurityContext(new SecurityOverrideContext(idToken, auth));
-                return;
+                JWTAuthToken jwToken = JWTUtils.decodeJWT(auth);
+                if(jwToken.isValid()){
+                    requestContext.setSecurityContext(new SecurityOverrideContext(jwToken, auth));
+                    return;
+                }
+                else {
+                    logger.error("Token JWT invalide : {}", auth);
+                }
             } catch (DecodeException e) {
                 logger.error("Erreur lors du décodage du token JWT : {}", auth);
             }
