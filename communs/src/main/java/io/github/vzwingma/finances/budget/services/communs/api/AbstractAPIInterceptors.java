@@ -42,6 +42,10 @@ public abstract class AbstractAPIInterceptors {
         LOG.debug("[HTTP] < [{} - {}]", responseContext.getStatus(), responseContext.getStatusInfo().getReasonPhrase());
     }
 
+    /**
+     * Retourne le nom de l'utilisateur authentifié
+     * @return le nom de l'utilisateur authentifié
+     */
     public String getAuthenticatedUser() {
         if (securityContext != null && securityContext.getUserPrincipal() != null) {
             return securityContext.getUserPrincipal().getName();

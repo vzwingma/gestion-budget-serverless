@@ -4,9 +4,9 @@ import io.github.vzwingma.finances.budget.serverless.data.MockDataCategoriesOper
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.api.enums.ParametragesAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JwtAuthHeader;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;

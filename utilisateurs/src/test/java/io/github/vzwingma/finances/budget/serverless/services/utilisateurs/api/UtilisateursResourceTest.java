@@ -5,9 +5,9 @@ import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.busin
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.model.Utilisateur;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.ports.IUtilisateursAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.data.MockDataUtilisateur;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JwtAuthHeader;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.UserAccessForbiddenException;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;

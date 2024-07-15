@@ -1,4 +1,4 @@
-package io.github.vzwingma.finances.budget.services.communs.data.model;
+package io.github.vzwingma.finances.budget.services.communs.data.model.jwt;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -61,12 +61,19 @@ public class JWTAuthToken {
         return null;
     }
 
+
     /**
-     * Vérifie si le token est toujours valide en comparant la date et l'heure actuelles à la date d'expiration.
-     * @return Vrai si le token n'est pas expiré, faux sinon.
+     * Vérifie la validité du token JWT en fonction des paramètres de validation fournis.
+     * Cette méthode effectue plusieurs vérifications pour s'assurer que le token est toujours valide :
+     * - Le token ne doit pas être expiré.
+     * - Le token doit provenir de Google.
+     * - Le token doit être destiné à l'application utilisateur spécifiée dans les paramètres de validation.
+     *
+     * @param validationParams Les paramètres de validation du token, incluant l'identifiant de l'application utilisateur.
+     * @return true si le token est valide selon les critères ci-dessus, false sinon.
      */
-    public boolean isValid(){
-        return !isExpired();
+    public boolean isValid(JwtValidationParams validationParams){
+        return !isExpired() && isFromGoogle() && isFromUserAppContent(validationParams);
     }
 
     /**
@@ -80,6 +87,29 @@ public class JWTAuthToken {
         }
         return false;
     }
+
+    /**
+     * Vérifie si le token provient de Google.
+     * @return Vrai si le token provient de Google, faux sinon.
+     */
+    private boolean isFromGoogle() {
+        return this.payload != null && this.payload.getIss() != null && this.payload.getIss().contains("accounts.google.com");
+    }
+
+    /**
+     * Vérifie si le token provient de l'application utilisateur.
+     * @param validationParams Paramètres de validation du token.
+     * @return Vrai si le token provient de l'application utilisateur, faux sinon.
+     */
+    private boolean isFromUserAppContent(JwtValidationParams validationParams){
+        if(validationParams == null || validationParams.getIdAppUserContent() == null){
+            return false;
+        }
+        String userContent = validationParams.getIdAppUserContent() + ".apps.googleusercontent.com";
+        return this.payload != null && this.payload.getAud() != null && this.payload.getAud().equals(userContent);
+
+    }
+
 
     @Override
     public String toString() {

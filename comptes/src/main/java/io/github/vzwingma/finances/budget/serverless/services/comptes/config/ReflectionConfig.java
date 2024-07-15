@@ -1,9 +1,9 @@
 package io.github.vzwingma.finances.budget.serverless.services.comptes.config;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JwtAuthHeader;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**

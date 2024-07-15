@@ -1,6 +1,7 @@
 package io.github.vzwingma.finances.budget.services.communs.utils;
 
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.vertx.core.json.DecodeException;
@@ -30,6 +31,12 @@ class TestJWTUtils {
         return JWTUtils.encodeJWT(token);
     }
 
+    static JwtValidationParams generateValidParams(){
+        JwtValidationParams params = new JwtValidationParams();
+        params.setIdAppUserContent(JWTUtils.decodeJWT(ID_TOKEN).getPayload().getAud().replace(".apps.googleusercontent.com", ""));
+        return params;
+    }
+
     @Test
     void testDecode() {
 
@@ -47,7 +54,7 @@ class TestJWTUtils {
 
         LOG.info(LocalDateTime.now().toString());
         LOG.info(token.expiredAt().toString());
-        assertFalse(token.isValid());
+        assertFalse(token.isValid(null));
 
         JWTUtils.encodeJWT(token);
 
@@ -83,7 +90,8 @@ class TestJWTUtils {
         String rawToken = generateValidToken();
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertTrue(token.isValid());
+
+        assertTrue(token.isValid(generateValidParams()));
     }
 
 }
