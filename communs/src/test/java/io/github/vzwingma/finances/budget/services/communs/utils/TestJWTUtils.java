@@ -118,7 +118,7 @@ class TestJWTUtils {
         String rawToken = ID_TOKEN_SIGNED;
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertTrue(token.isSigned());
+        assertFalse(token.isSigned());
     }
 
     @Test

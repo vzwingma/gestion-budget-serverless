@@ -44,9 +44,6 @@ public class JWTUtils {
             if(chunks.length > 3){
                 signature = new String(decoder.decode(chunks[2]));
             }
-            LOG.info("Header : {}", header);
-            LOG.info("Payload : {}", payload);
-            LOG.info("Signature : {}", signature);
             return new JWTAuthToken(Json.decodeValue(header, JwtAuthHeader.class),
                                     Json.decodeValue(payload, JWTAuthPayload.class),
                                     signature);
