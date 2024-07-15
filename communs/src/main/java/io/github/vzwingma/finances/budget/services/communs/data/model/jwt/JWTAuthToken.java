@@ -82,11 +82,7 @@ public class JWTAuthToken {
      * @return true si le token est valide selon les critères ci-dessus, false sinon.
      */
     public boolean isValid(JwtValidationParams validationParams){
-        boolean c = isFromGoogle() && isFromUserAppContent(validationParams) && !isExpired() ;
-        if(!c) {
-            LOG.warn("Le token n'est pas");
-        }
-        return c;
+        return isFromGoogle() && isFromUserAppContent(validationParams) && !isExpired() ;
     }
 
     /**
