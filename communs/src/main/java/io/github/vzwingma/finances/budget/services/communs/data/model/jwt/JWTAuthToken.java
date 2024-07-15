@@ -73,7 +73,7 @@ public class JWTAuthToken {
      * @return true si le token est valide selon les critères ci-dessus, false sinon.
      */
     public boolean isValid(JwtValidationParams validationParams){
-        return !isExpired() && isFromGoogle() && isFromUserAppContent(validationParams);
+        return isFromGoogle() && isFromUserAppContent(validationParams) && !isExpired() ;
     }
 
     /**
@@ -81,11 +81,15 @@ public class JWTAuthToken {
      * @return Vrai si le token est expiré, faux sinon.
      */
     private boolean isExpired() {
+        boolean isExpired = true;
         LocalDateTime expAt = expiredAt();
         if (expAt != null) {
-            return !LocalDateTime.now().isBefore(expAt);
+            isExpired = !LocalDateTime.now().isBefore(expAt);
         }
-        return false;
+        if(isExpired){
+            LOG.warn("Le token est expiré depuis {}", expAt);
+        }
+        return isExpired;
     }
 
     /**
@@ -93,7 +97,11 @@ public class JWTAuthToken {
      * @return Vrai si le token provient de Google, faux sinon.
      */
     private boolean isFromGoogle() {
-        return this.payload != null && this.payload.getIss() != null && this.payload.getIss().contains("accounts.google.com");
+        boolean isIssGood =  getPayload() != null && getPayload().getIss() != null && getPayload().getIss().contains("accounts.google.com");
+        if(!isIssGood){
+            LOG.warn("Le token n'est pas émis par le bon issuer (iss) : {}", getPayload() != null ? this.getPayload().getIss() : null);
+        }
+        return isIssGood;
     }
 
     /**
@@ -103,11 +111,15 @@ public class JWTAuthToken {
      */
     private boolean isFromUserAppContent(JwtValidationParams validationParams){
         if(validationParams == null || validationParams.getIdAppUserContent() == null){
+            LOG.warn("L'identifiant de l'application est nul - (Paramètre oidc.jwt.id.appusercontent)");
             return false;
         }
         String userContent = validationParams.getIdAppUserContent() + ".apps.googleusercontent.com";
-        return this.payload != null && this.payload.getAud() != null && this.payload.getAud().equals(userContent);
-
+        boolean isGoodAud = this.payload != null && this.payload.getAud() != null && this.payload.getAud().equals(userContent);
+        if(!isGoodAud){
+            LOG.warn("Le token n'est pas généré depuis l'application utilisateur [{}] : {}", validationParams.getIdAppUserContent(), this.payload != null ? this.payload.getAud() : null);
+        }
+        return isGoodAud;
     }
 
 
