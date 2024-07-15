@@ -66,6 +66,8 @@ class ParametragesResourceTest {
         p.setGiven_name("Test");
         p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
         p.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
+        p.setIss("https://accounts.google.com");
+        p.setAud("test.apps.googleusercontent.com");
         return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p, null));
     }
 }
