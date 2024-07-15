@@ -197,6 +197,6 @@ class BudgetsResourceTest {
         p.setGiven_name("Test");
         p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
         p.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
-        return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p));
+        return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p, null));
     }
 }
