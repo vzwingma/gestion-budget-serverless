@@ -2,6 +2,7 @@ package io.github.vzwingma.finances.budget.serverless.business;
 
 import io.github.vzwingma.finances.budget.serverless.data.MockDataCategoriesOperations;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
+import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IJwtSigningKeyRepository;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametragesRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
@@ -25,7 +26,8 @@ class ParametragesServiceTest {
     @BeforeEach
     public void setup() {
         parametrageServiceProvider = Mockito.mock(IParametragesRepository.class);
-        parametrageAppProvider = Mockito.spy(new ParametragesService(parametrageServiceProvider));
+        IJwtSigningKeyRepository signingKeyRepository = Mockito.mock(IJwtSigningKeyRepository.class);
+        parametrageAppProvider = Mockito.spy(new ParametragesService(parametrageServiceProvider, signingKeyRepository));
 
         Mockito.when(parametrageServiceProvider.chargeCategories()).thenReturn(Multi.createFrom().items(MockDataCategoriesOperations.getListeTestCategories().stream()));
     }
@@ -39,7 +41,7 @@ class ParametragesServiceTest {
         assertEquals(1, listeCat.size());
         // 1 seul appel à la BDD
         Mockito.verify(parametrageServiceProvider, Mockito.times(1)).chargeCategories();
-        assertEquals(1, listeCat.get(0).getListeSSCategories().size());
+        assertEquals(1, listeCat.getFirst().getListeSSCategories().size());
     }
 
 

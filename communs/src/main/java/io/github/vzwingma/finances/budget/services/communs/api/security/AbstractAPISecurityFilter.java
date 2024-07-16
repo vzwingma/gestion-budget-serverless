@@ -2,16 +2,13 @@ package io.github.vzwingma.finances.budget.services.communs.api.security;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKeys;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
-import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.DecodeException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
-import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +27,6 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
 
     private JwtValidationParams jwtValidationParams;
 
-    public abstract Uni<JwksAuthKeys> getJwtAuthSigningKeyServiceProvider();
-
     /**
      * Initialisation des clés de signature JWT
      */
@@ -40,9 +35,11 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
             jwtValidationParams = new JwtValidationParams();
             jwtValidationParams.setIdAppUserContent(getIdAppUserContent().get().isPresent() ? getIdAppUserContent().get().get() : null);
             List<JwksAuthKey> listJwksAuthKey = new ArrayList<>();
+            /*
             getJwtAuthSigningKeyServiceProvider().subscribe().with(jwksAuthKeys -> {
                 listJwksAuthKey.addAll(Arrays.asList(jwksAuthKeys.getKeys()));
             });
+             */
             jwtValidationParams.setJwksAuthKeys(listJwksAuthKey);
         }
         return jwtValidationParams;

@@ -1,20 +1,21 @@
 package io.github.vzwingma.finances.budget.serverless.services.parametrages.business;
 
 
+import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IJwtSigningKeyRepository;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametragesRepository;
+import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.IJwtAuthSigningKeyServiceProvider;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.NoArgsConstructor;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -37,8 +38,28 @@ public class ParametragesService implements IParametrageAppProvider {
     @Inject
     IParametragesRepository dataParams;
 
-    public ParametragesService(IParametragesRepository parametrageRepository) {
+    @Inject
+    IJwtSigningKeyRepository signingKeyRepository;
+
+    @Inject
+    @RestClient
+    IJwtAuthSigningKeyServiceProvider jwtAuthSigningKeyServiceProvider; // Service fournissant les clés de signature JWT.
+
+
+    public ParametragesService(IParametragesRepository parametrageRepository, IJwtSigningKeyRepository signingKeyRepository){
         this.dataParams = parametrageRepository;
+        this.signingKeyRepository = signingKeyRepository;
+    }
+
+
+    /**
+     * Initialisation des clés de signature JWT de Google
+     */
+    public Uni<Void> refreshSignKey() {
+        LOGGER.info("Initialisation des clés de signature JWT");
+        return jwtAuthSigningKeyServiceProvider.getJwksAuthKeys()
+                .map(jwksAuthKeys -> Arrays.stream(jwksAuthKeys.getKeys()).toList())
+                .flatMap(jwksAuthKeys -> signingKeyRepository.saveJwksAuthKeys(jwksAuthKeys));
     }
 
 

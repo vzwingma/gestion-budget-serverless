@@ -7,7 +7,7 @@ import lombok.Setter;
 
 
 /**
- * Header d'un token JWT
+ * Liste des Clés de signature des tokens JWT
  */
 @RegisterForReflection
 @Setter
