@@ -10,6 +10,8 @@ import jakarta.ws.rs.container.PreMatching;
 import jakarta.ws.rs.ext.Provider;
 import lombok.Getter;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +27,9 @@ import java.util.Optional;
 @PreMatching
 public class SecurityOverrideFilter extends AbstractAPISecurityFilter implements ContainerRequestFilter {
 
+    private final Logger logger = LoggerFactory.getLogger(AbstractAPISecurityFilter.class);
+
+
     @ConfigProperty(name = "oidc.jwt.id.appusercontent")
     Instance<Optional<String>> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
 
@@ -36,6 +41,6 @@ public class SecurityOverrideFilter extends AbstractAPISecurityFilter implements
      */
     @Override
     public List<JwksAuthKey> getJwksAuthKeys() {
-        return jwtSigningKeyRepository.get().getJwksSigningAuthKeys().subscribe().asStream().toList();
+        return jwtSigningKeyRepository.get().getJwksSigningAuthKeys().toList();
     }
 }

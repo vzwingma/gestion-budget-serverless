@@ -1,4 +1,4 @@
-package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
+package io.github.vzwingma.finances.budget.serverless.services.comptes.spi;
 
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;

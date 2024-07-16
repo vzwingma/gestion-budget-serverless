@@ -1,7 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.comptes.api.override;
 
-import io.github.vzwingma.finances.budget.serverless.services.comptes.business.ports.IJwtSigningKeyRepository;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -29,13 +29,13 @@ public class SecurityOverrideFilter extends AbstractAPISecurityFilter {
 
 
     @Inject
-    Instance<IJwtSigningKeyRepository> jwtSigningKeyRepository;
+    Instance<IJwtSigningKeyReadRepository> jwtSigningKeyRepository;
 
     /**
      * @return les clés de signature JWT
      */
     @Override
     public List<JwksAuthKey> getJwksAuthKeys() {
-        return jwtSigningKeyRepository.get().getJwksSigningAuthKeys().subscribe().asStream().toList();
+        return jwtSigningKeyRepository.get().getJwksSigningAuthKeys().toList();
     }
 }

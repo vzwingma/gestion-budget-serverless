@@ -65,7 +65,10 @@ public class ParametragesService implements IParametrageAppProvider {
         LOGGER.info("Initialisation des clés de signature JWT");
         return jwtAuthSigningKeyServiceProvider.getJwksAuthKeys()
                 .map(jwksAuthKeys -> Arrays.stream(jwksAuthKeys.getKeys()).toList())
-                .flatMap(jwksAuthKeys -> signingKeyRepository.saveJwksAuthKeys(jwksAuthKeys));
+                .flatMap(jwksAuthKeys -> {
+                    signingKeyRepository.saveJwksAuthKeys(jwksAuthKeys);
+                    return Uni.createFrom().voidItem();
+                });
     }
 
 

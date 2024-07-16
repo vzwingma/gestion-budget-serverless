@@ -35,6 +35,6 @@ public class SecurityOverrideFilter extends AbstractAPISecurityFilter {
      */
     @Override
     public List<JwksAuthKey> getJwksAuthKeys() {
-        return jwtSigningKeyRepository.get().getJwksSigningAuthKeys().subscribe().asStream().toList();
+        return jwtSigningKeyRepository.get().getJwksSigningAuthKeys().toList();
     }
 }

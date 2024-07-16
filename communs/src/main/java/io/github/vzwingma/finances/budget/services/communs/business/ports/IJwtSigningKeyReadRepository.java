@@ -1,15 +1,10 @@
 package io.github.vzwingma.finances.budget.services.communs.business.ports;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
+import java.util.stream.Stream;
 
 /**
- * Service de données en MongoDB fournissant les clés de signature des JWT
+ * Service de données en lecture en MongoDB fournissant les clés de signature des JWT
  * Adapteur du port {@link IJwtSigningKeyReadRepository}
  *
  * @author vzwingma
@@ -17,16 +12,10 @@ import java.util.List;
 
 public interface IJwtSigningKeyReadRepository {
 
-
-    /**
-     * Logger
-     */
-     Logger LOGGER = LoggerFactory.getLogger(IJwtSigningKeyReadRepository.class);
-
     /**
      * Récupération des clés de signature des tokens JWT
      *
      * @return les clés de signature des tokens JWT
      */
-    Multi<JwksAuthKey> getJwksSigningAuthKeys() ;
+    Stream<JwksAuthKey> getJwksSigningAuthKeys() ;
 }

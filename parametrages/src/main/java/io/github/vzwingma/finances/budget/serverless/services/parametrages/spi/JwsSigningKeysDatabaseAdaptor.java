@@ -3,12 +3,11 @@ package io.github.vzwingma.finances.budget.serverless.services.parametrages.spi;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyWriteRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
-import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
+import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Service de données en MongoDB fournissant les clés de signature des JWT
@@ -17,18 +16,16 @@ import java.util.List;
  * @author vzwingma
  */
 @ApplicationScoped
-public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyReadRepository, IJwtSigningKeyWriteRepository, ReactivePanacheMongoRepository<JwksAuthKey> {
+public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyReadRepository, IJwtSigningKeyWriteRepository, PanacheMongoRepository<JwksAuthKey> {
 
     /**
      * Sauvegarde des clés de signature des tokens JWT
      *
      * @param jwksAuthKeys les clés de signature des tokens JWT
-     * @return une {@link Uni} vide résultat de l'opération
      */
     @Override
-    public Uni<Void> saveJwksAuthKeys(List<JwksAuthKey> jwksAuthKeys) {
-        LOGGER.info("Sauvegarde des {} clés de signature JWT", jwksAuthKeys.size());
-        return persistOrUpdate(jwksAuthKeys.stream());
+    public void saveJwksAuthKeys(List<JwksAuthKey> jwksAuthKeys) {
+        persistOrUpdate(jwksAuthKeys.stream());
     }
 
     /**
@@ -37,8 +34,7 @@ public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyReadReposito
      * @return les clés de signature des tokens JWT
      */
     @Override
-    public Multi<JwksAuthKey> getJwksSigningAuthKeys() {
-        LOGGER.info("Récupération des clés de signature JWT");
+    public Stream<JwksAuthKey> getJwksSigningAuthKeys() {
         return streamAll();
     }
 }

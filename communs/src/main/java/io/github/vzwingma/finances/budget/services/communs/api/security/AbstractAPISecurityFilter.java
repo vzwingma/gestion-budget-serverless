@@ -32,11 +32,9 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
      */
     public JwtValidationParams getJwtValidationParams() {
         if(jwtValidationParams == null) {
-
             jwtValidationParams = new JwtValidationParams();
-            jwtValidationParams.setIdAppUserContent(getIdAppUserContent().get().isPresent() ? getIdAppUserContent().get().get() : null);
+            jwtValidationParams.setIdAppUserContent(getIdAppUserContent().get());
             jwtValidationParams.setJwksAuthKeys(getJwksAuthKeys());
-            logger.debug("Initialisation des {} clés de signature JWT : {}", jwtValidationParams.getJwksAuthKeys().size(), jwtValidationParams.getIdAppUserContent());
         }
         return jwtValidationParams;
     }
@@ -46,7 +44,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
      * Retourne le service fournissant les clés de signature JWT
      * @return l'id de appContent
      */
-    public abstract Instance<Optional<String>> getIdAppUserContent();
+    public abstract Instance<String> getIdAppUserContent();
 
     /**
      * Retourne le service fournissant les clés de signature JWT
@@ -72,7 +70,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
                     return;
                 }
                 else {
-                    logger.error("Token JWT invalide : {}", auth);
+                    logger.error("Token JWT invalide");
                 }
             } catch (DecodeException e) {
                 logger.error("Erreur lors du décodage du token JWT : {}", auth);
