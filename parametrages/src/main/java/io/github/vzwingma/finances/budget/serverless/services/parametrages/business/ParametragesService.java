@@ -1,7 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.parametrages.business;
 
 
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyRepository;
+import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IJwtSigningKeyRepository;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametragesRepository;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.IJwtAuthSigningKeyServiceProvider;
@@ -46,6 +46,12 @@ public class ParametragesService implements IParametrageAppProvider {
     IJwtAuthSigningKeyServiceProvider jwtAuthSigningKeyServiceProvider; // Service fournissant les clés de signature JWT.
 
 
+    /**
+     * Constructeur
+     *
+     * @param parametrageRepository le repository des paramètres
+     * @param signingKeyRepository le repository des clés de signature
+     */
     public ParametragesService(IParametragesRepository parametrageRepository, IJwtSigningKeyRepository signingKeyRepository){
         this.dataParams = parametrageRepository;
         this.signingKeyRepository = signingKeyRepository;
@@ -55,7 +61,7 @@ public class ParametragesService implements IParametrageAppProvider {
     /**
      * Initialisation des clés de signature JWT de Google
      */
-    public Uni<Void> refreshSignKey() {
+    public Uni<Void> refreshJwksSigningKeys() {
         LOGGER.info("Initialisation des clés de signature JWT");
         return jwtAuthSigningKeyServiceProvider.getJwksAuthKeys()
                 .map(jwksAuthKeys -> Arrays.stream(jwksAuthKeys.getKeys()).toList())

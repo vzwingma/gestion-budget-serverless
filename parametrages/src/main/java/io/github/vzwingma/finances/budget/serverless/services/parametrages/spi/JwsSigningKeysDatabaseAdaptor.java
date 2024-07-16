@@ -1,12 +1,10 @@
-package io.github.vzwingma.finances.budget.services.communs.spi;
+package io.github.vzwingma.finances.budget.serverless.services.parametrages.spi;
 
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyRepository;
+import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IJwtSigningKeyRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -19,18 +17,11 @@ import java.util.List;
 @ApplicationScoped
 public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyRepository {
 
-
     /**
-     * Logger
-     */
-    private static final Logger LOGGER = LoggerFactory.getLogger(JwsSigningKeysDatabaseAdaptor.class);
-
-
-    /**
-     * Sauvegarde des clés de signature JWT
+     * Sauvegarde des clés de signature des tokens JWT
      *
-     * @param jwksAuthKeys les clés de signature JWT
-     * @return une {@link Uni} vide
+     * @param jwksAuthKeys les clés de signature des tokens JWT
+     * @return une {@link Uni} vide résultat de l'opération
      */
     @Override
     public Uni<Void> saveJwksAuthKeys(List<JwksAuthKey> jwksAuthKeys) {
@@ -39,8 +30,9 @@ public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyRepository {
     }
 
     /**
-     * Récupération des clés de signature JWT
-     * @return les clés de signature JWT
+     * Récupération des clés de signature des tokens JWT
+     *
+     * @return les clés de signature des tokens JWT
      */
     @Override
     public Multi<JwksAuthKey> getJwksSigningAuthKeys() {

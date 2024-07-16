@@ -27,6 +27,10 @@ public class RootAPIResource extends AbstractAPIResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Override
     public Uni<Info> info() {
-        return Uni.combine().all().unis(super.info(), service.refreshSignKey()).asTuple().map(Tuple2::getItem1);
+        return Uni.combine()
+                .all()
+                .unis(super.info(), service.refreshJwksSigningKeys())
+                .asTuple()
+                .map(Tuple2::getItem1);
     }
 }

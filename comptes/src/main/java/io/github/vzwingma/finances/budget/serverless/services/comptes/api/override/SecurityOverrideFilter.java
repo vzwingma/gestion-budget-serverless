@@ -1,15 +1,16 @@
 package io.github.vzwingma.finances.budget.serverless.services.comptes.api.override;
 
+import io.github.vzwingma.finances.budget.serverless.services.comptes.business.ports.IJwtSigningKeyRepository;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import jakarta.enterprise.inject.Instance;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.container.PreMatching;
 import jakarta.ws.rs.ext.Provider;
 import lombok.Getter;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -21,20 +22,20 @@ import java.util.Optional;
 @Getter
 @Provider
 @PreMatching
-public class SecurityOverrideFilter extends AbstractAPISecurityFilter implements ContainerRequestFilter {
+public class SecurityOverrideFilter extends AbstractAPISecurityFilter {
 
     @ConfigProperty(name = "oidc.jwt.id.appusercontent")
     Instance<Optional<String>> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
 
 
+    @Inject
+    Instance<IJwtSigningKeyRepository> jwtSigningKeyRepository;
+
     /**
-     * Filtre les requêtes entrantes pour appliquer la sécurité.
-     * Cette méthode est appelée automatiquement pour chaque requête entrante.
-     * @param requestContext Contexte de la requête, permettant d'accéder aux détails de la requête et de manipuler la réponse.
-     * @throws IOException Peut être lancée lors de la manipulation du contexte de la requête.
+     * @return les clés de signature JWT
      */
     @Override
-    public void filter(ContainerRequestContext requestContext) throws IOException {
-        super.filter(requestContext); // Appelle la méthode de filtrage de la classe parente pour appliquer la logique de sécurité.
+    public List<JwksAuthKey> getJwksAuthKeys() {
+        return jwtSigningKeyRepository.get().getJwksSigningAuthKeys().subscribe().asStream().toList();
     }
 }

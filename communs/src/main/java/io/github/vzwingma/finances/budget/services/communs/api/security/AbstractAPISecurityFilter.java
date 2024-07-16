@@ -32,21 +32,24 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
      */
     public JwtValidationParams getJwtValidationParams() {
         if(jwtValidationParams == null) {
+
             jwtValidationParams = new JwtValidationParams();
             jwtValidationParams.setIdAppUserContent(getIdAppUserContent().get().isPresent() ? getIdAppUserContent().get().get() : null);
-            List<JwksAuthKey> listJwksAuthKey = new ArrayList<>();
-            /*
-            getJwtAuthSigningKeyServiceProvider().subscribe().with(jwksAuthKeys -> {
-                listJwksAuthKey.addAll(Arrays.asList(jwksAuthKeys.getKeys()));
-            });
-             */
-            jwtValidationParams.setJwksAuthKeys(listJwksAuthKey);
+            jwtValidationParams.setJwksAuthKeys(getJwksAuthKeys());
+            logger.debug("Initialisation des {} clés de signature JWT : {}", jwtValidationParams.getJwksAuthKeys().size(), jwtValidationParams.getIdAppUserContent());
         }
         return jwtValidationParams;
     }
 
 
+    /**
+     * Retourne le service fournissant les clés de signature JWT
+     * @return l'id de appContent
+     */
     public abstract Instance<Optional<String>> getIdAppUserContent();
+
+    public abstract List<JwksAuthKey> getJwksAuthKeys();
+
     /**
      * Filtre de sécurité sur JWT
      *
