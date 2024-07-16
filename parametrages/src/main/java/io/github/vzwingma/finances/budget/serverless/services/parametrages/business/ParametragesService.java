@@ -1,10 +1,10 @@
 package io.github.vzwingma.finances.budget.serverless.services.parametrages.business;
 
 
-import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IJwtSigningKeyRepository;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametragesRepository;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.IJwtAuthSigningKeyServiceProvider;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyWriteRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.smallrye.mutiny.Uni;
@@ -39,7 +39,7 @@ public class ParametragesService implements IParametrageAppProvider {
     IParametragesRepository dataParams;
 
     @Inject
-    IJwtSigningKeyRepository signingKeyRepository;
+    IJwtSigningKeyWriteRepository signingKeyRepository;
 
     @Inject
     @RestClient
@@ -52,7 +52,7 @@ public class ParametragesService implements IParametrageAppProvider {
      * @param parametrageRepository le repository des paramètres
      * @param signingKeyRepository le repository des clés de signature
      */
-    public ParametragesService(IParametragesRepository parametrageRepository, IJwtSigningKeyRepository signingKeyRepository){
+    public ParametragesService(IParametragesRepository parametrageRepository, IJwtSigningKeyWriteRepository signingKeyRepository){
         this.dataParams = parametrageRepository;
         this.signingKeyRepository = signingKeyRepository;
     }

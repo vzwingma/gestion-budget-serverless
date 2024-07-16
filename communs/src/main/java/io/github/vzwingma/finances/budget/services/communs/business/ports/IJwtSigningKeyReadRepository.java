@@ -1,7 +1,6 @@
-package io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.ports;
+package io.github.vzwingma.finances.budget.services.communs.business.ports;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
-import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.slf4j.Logger;
@@ -11,18 +10,18 @@ import java.util.List;
 
 /**
  * Service de données en MongoDB fournissant les clés de signature des JWT
- * Adapteur du port {@link IJwtSigningKeyRepository}
+ * Adapteur du port {@link IJwtSigningKeyReadRepository}
  *
  * @author vzwingma
  */
 
-public interface IJwtSigningKeyRepository extends ReactivePanacheMongoRepository<JwksAuthKey>  {
+public interface IJwtSigningKeyReadRepository {
 
 
     /**
      * Logger
      */
-     Logger LOGGER = LoggerFactory.getLogger(IJwtSigningKeyRepository.class);
+     Logger LOGGER = LoggerFactory.getLogger(IJwtSigningKeyReadRepository.class);
 
     /**
      * Récupération des clés de signature des tokens JWT

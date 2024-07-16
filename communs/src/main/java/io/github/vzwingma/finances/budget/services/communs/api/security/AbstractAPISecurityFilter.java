@@ -48,6 +48,10 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
      */
     public abstract Instance<Optional<String>> getIdAppUserContent();
 
+    /**
+     * Retourne le service fournissant les clés de signature JWT
+     * @return les clés de signature JWT
+     */
     public abstract List<JwksAuthKey> getJwksAuthKeys();
 
     /**
