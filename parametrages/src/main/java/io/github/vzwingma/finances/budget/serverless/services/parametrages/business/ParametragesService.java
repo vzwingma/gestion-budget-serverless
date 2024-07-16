@@ -1,7 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.parametrages.business;
 
 
-import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IJwtSigningKeyRepository;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyRepository;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametragesRepository;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.IJwtAuthSigningKeyServiceProvider;
