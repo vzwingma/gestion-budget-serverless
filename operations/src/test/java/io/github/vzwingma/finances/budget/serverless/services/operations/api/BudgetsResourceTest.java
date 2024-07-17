@@ -4,6 +4,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.api.enu
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.BudgetService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.OperationsService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
@@ -42,6 +43,7 @@ class BudgetsResourceTest {
     public static void init() {
         QuarkusMock.installMockForType(Mockito.mock(BudgetService.class), BudgetService.class);
         QuarkusMock.installMockForType(Mockito.mock(OperationsService.class), OperationsService.class);
+        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
 
@@ -92,7 +94,8 @@ class BudgetsResourceTest {
                 + "?actif=true";
 
         given()
-                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+                .header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
                 .when()
                 .get(url)
                 .then()
@@ -179,7 +182,8 @@ class BudgetsResourceTest {
                 + OperationsAPIEnum.BUDGET_ID.replace(OperationsAPIEnum.PARAM_ID_BUDGET, "1");
 
         given()
-                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+                .header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
                 .when().delete(url)
                 .then()
                 .statusCode(200)

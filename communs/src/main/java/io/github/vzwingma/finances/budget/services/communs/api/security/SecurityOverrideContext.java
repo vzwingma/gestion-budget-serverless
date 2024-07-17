@@ -39,13 +39,14 @@ public class SecurityOverrideContext implements SecurityContext {
      */
     @Override
     public Principal getUserPrincipal() {
-        if (jwtValidatedToken != null) {
+        if (jwtValidatedToken != null && jwtValidatedToken.getPayload() != null) {
             JWTAuthPayload p = this.jwtValidatedToken.getPayload();
-            if (p != null) {
-                String g = p.getGiven_name() != null && !p.getGiven_name().isEmpty() ? p.getGiven_name().substring(0, 1).toLowerCase() : "";
-                String f = p.getFamily_name() != null && !p.getFamily_name().isEmpty() ? p.getFamily_name().substring(0, Math.min(p.getFamily_name().length(), 7)).toLowerCase() : "";
-                return new UserPrincipal(g + f);
-            }
+            String g = p.getGiven_name() != null && !p.getGiven_name().isEmpty() ? p.getGiven_name().substring(0, 1).toLowerCase() : "";
+            String f = p.getFamily_name() != null && !p.getFamily_name().isEmpty() ? p.getFamily_name().substring(0, Math.min(p.getFamily_name().length(), 7)).toLowerCase() : "";
+            return new UserPrincipal(g + f);
+        }
+        else{
+            LOG.warn("L'utilisateur n'a pas de token JWT valide");
         }
         return null;
     }
@@ -62,6 +63,9 @@ public class SecurityOverrideContext implements SecurityContext {
         if (jwtValidatedToken == null) {
             LOG.warn("L'utilisateur [{}] n'a pas de token JWT valide", getUserPrincipal().getName());
             return false;
+        }
+        else {
+            LOG.warn("L'utilisateur [{}] n'a pas de rôle [{}]", getUserPrincipal().getName(), role);
         }
         return true;
     }
