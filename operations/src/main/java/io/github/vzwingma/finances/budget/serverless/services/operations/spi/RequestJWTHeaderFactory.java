@@ -22,6 +22,12 @@ public class RequestJWTHeaderFactory implements ClientHeadersFactory {
     @Inject
     SecurityOverrideFilter securityOverrideFilter;
 
+    /**
+     * Injection des headers
+     * @param incomingHeaders incomingHeaders
+     * @param clientOutgoingHeaders clientOutgoingHeaders
+     * @return headers
+     */
     @Override
     public MultivaluedMap<String, String> update(MultivaluedMap<String, String> incomingHeaders, MultivaluedMap<String, String> clientOutgoingHeaders) {
         MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();

@@ -5,7 +5,6 @@ import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSi
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.PreMatching;
 import jakarta.ws.rs.ext.Provider;
 import lombok.Getter;
@@ -24,7 +23,7 @@ import java.util.List;
 @Getter
 @Provider
 @PreMatching
-public class SecurityOverrideFilter extends AbstractAPISecurityFilter implements ContainerRequestFilter {
+public class SecurityOverrideFilter extends AbstractAPISecurityFilter {
 
     private final Logger logger = LoggerFactory.getLogger(AbstractAPISecurityFilter.class);
 
