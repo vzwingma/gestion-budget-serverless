@@ -25,8 +25,12 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
     public static final String HTTP_HEADER_API_KEY = "X-Api-Key";
     private final Logger logger = LoggerFactory.getLogger(AbstractAPISecurityFilter.class);
 
+    /**
+     * Paramètres de validation JWT
+     */
     private JwtValidationParams jwtValidationParams;
 
+    private final String AUTH_BEARER = "Bearer ";
     /**
      * Initialisation des clés de signature JWT
      */
@@ -61,19 +65,19 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
 
-        String auth = getAuthBearerFromHeaders(requestContext.getHeaders().get(HttpHeaders.AUTHORIZATION.toLowerCase(Locale.ROOT)));
-        if (auth != null && !auth.isEmpty() && !"null".equals(auth)) {
+        String rawJWTToken = getAuthBearerFromHeaders(requestContext.getHeaders().get(HttpHeaders.AUTHORIZATION.toLowerCase(Locale.ROOT)));
+        if (rawJWTToken != null && !rawJWTToken.isEmpty() && !"null".equals(rawJWTToken)) {
             try {
-                JWTAuthToken jwToken = JWTUtils.decodeJWT(auth);
+                JWTAuthToken jwToken = JWTUtils.decodeJWT(rawJWTToken);
                 if(jwToken.isValid(getJwtValidationParams())){
-                    requestContext.setSecurityContext(new SecurityOverrideContext(jwToken, auth));
+                    requestContext.setSecurityContext(new SecurityOverrideContext(jwToken, rawJWTToken));
                     return;
                 }
                 else {
                     logger.error("Token JWT invalide");
                 }
             } catch (DecodeException e) {
-                logger.error("Erreur lors du décodage du token JWT : {}", auth);
+                logger.error("Erreur lors du décodage du token JWT : {}", rawJWTToken);
             }
         }
         requestContext.setSecurityContext(new AnonymousSecurityContext());
@@ -89,8 +93,8 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
     protected String getAuthBearerFromHeaders(List<String> authBearer) {
         if (authBearer != null && !authBearer.isEmpty()) {
             Optional<String> accessToken = authBearer.stream()
-                    .filter(a -> a.startsWith("Bearer "))
-                    .map(a -> a.replace("Bearer ", ""))
+                    .filter(a -> a.startsWith(AUTH_BEARER))
+                    .map(a -> a.replace(AUTH_BEARER, ""))
                     .findFirst();
             return accessToken.orElse(null);
         } else {
