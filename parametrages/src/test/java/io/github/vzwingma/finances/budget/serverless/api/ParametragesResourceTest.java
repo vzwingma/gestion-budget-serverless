@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.serverless.api;
 import io.github.vzwingma.finances.budget.serverless.data.MockDataCategoriesOperations;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.api.enums.ParametragesAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
+import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
@@ -32,6 +33,7 @@ class ParametragesResourceTest {
     @BeforeAll
     public static void init() {
         QuarkusMock.installMockForType(Mockito.mock(ParametragesService.class), ParametragesService.class);
+        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
     @Test
