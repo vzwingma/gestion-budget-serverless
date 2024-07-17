@@ -49,6 +49,7 @@ public class JWTUtils {
             String payload = new String(decoder.decode(chunks[1]));
             return new JWTAuthToken(Json.decodeValue(header, JwtAuthHeader.class),
                                     Json.decodeValue(payload, JWTAuthPayload.class),
+                                    chunks.length > 2,
                                     base64JWT);
         } catch (Exception e) {
             LOG.error("Erreur lors du décodage du token [{}]", base64JWT, e);
@@ -86,8 +87,12 @@ public class JWTUtils {
      * @param jwtRawContent Le contenu brut du token JWT à vérifier.
      * @return true si la signature est valide, false sinon.
      */
-    public static boolean isTokenSigValid(String jwtRawContent, List<JwksAuthKey> authKeys){
+    public static boolean isTokenSignatureValid(String jwtRawContent, List<JwksAuthKey> authKeys){
         LOG.trace("Vérification de la signature du Token JWT : {}", jwtRawContent);
+        if(authKeys == null || authKeys.isEmpty()){
+            LOG.error("Aucune clé publique n'a été fournie pour vérifier la signature du token JWT");
+            return false;
+        }
         for(JwksAuthKey key : authKeys){
             try {
                 RSAPublicKey publicKey = (RSAPublicKey) getPublicKey(key.getN(), key.getE());

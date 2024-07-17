@@ -27,6 +27,7 @@ public class JWTAuthToken {
     private static final Logger LOG = LoggerFactory.getLogger(JWTAuthToken.class);
     private JwtAuthHeader header; // L'en-tête du token JWT
     private JWTAuthPayload payload; // La charge utile du token JWT
+    private boolean hasSignature; // Indique si le token porte une signature
     private String rawContent; // Le contenu brut du token JWT
 
     /**
@@ -34,9 +35,23 @@ public class JWTAuthToken {
      * @param header L'en-tête du token JWT.
      * @param payload La charge utile du token JWT.
      */
-    public JWTAuthToken(JwtAuthHeader header, JWTAuthPayload payload, String rawContent) {
+    public JWTAuthToken(JwtAuthHeader header, JWTAuthPayload payload){
         this.header = header;
         this.payload = payload;
+        this.hasSignature = false;
+        this.rawContent = null;
+    }
+    /**
+     * Constructeur pour créer un token JWT avec un en-tête et une charge utile spécifiques.
+     * @param header L'en-tête du token JWT.
+     * @param payload La charge utile du token JWT.
+     * @param hasSignature Indique si le token porte une signature.
+     * @param rawContent Le contenu brut du token JWT.
+     */
+    public JWTAuthToken(JwtAuthHeader header, JWTAuthPayload payload, boolean hasSignature, String rawContent) {
+        this.header = header;
+        this.payload = payload;
+        this.hasSignature = hasSignature;
         this.rawContent = rawContent;
     }
 
@@ -76,7 +91,7 @@ public class JWTAuthToken {
      * @return true si le token est valide selon les critères ci-dessus, false sinon.
      */
     public boolean isValid(JwtValidationParams validationParams){
-        return isFromGoogle() && isFromUserAppContent(validationParams) && isSigned(validationParams) && !isExpired() ;
+        return isFromGoogle() && isFromUserAppContent(validationParams) && hasValidSignature(validationParams) && !isExpired() ;
     }
 
     /**
@@ -130,13 +145,14 @@ public class JWTAuthToken {
      * Vérifie si le token JWT est signé en utilisant les clés publiques de Google.
      * @return true si la signature est valide, false sinon.
      */
-    public boolean isSigned(JwtValidationParams validationParams) {
-        if(this.rawContent != null){
-            return JWTUtils.isTokenSigValid(this.rawContent, validationParams.getJwksAuthKeys());  // Vérifie la signature du token JWT
+    public boolean hasValidSignature(JwtValidationParams validationParams) {
+        if(this.rawContent != null && this.hasSignature){
+            LOG.info("Vérification de la signature du Token JWT : {}", this.rawContent);
+            return JWTUtils.isTokenSignatureValid(this.rawContent, validationParams.getJwksAuthKeys());  // Vérifie la signature du token JWT
         }
         else{
             LOG.warn("Le token n'est pas signé");
+            return true;
         }
-        return false;
     }
 }

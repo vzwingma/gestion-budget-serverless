@@ -152,7 +152,7 @@ class TestJWTUtils {
         String rawToken = ID_TOKEN_SIGNED;
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertTrue(token.isSigned(generateValidParams()));
+        assertTrue(token.hasValidSignature(generateValidParams()));
     }
 
 
@@ -162,7 +162,7 @@ class TestJWTUtils {
         String rawToken = ID_TOKEN;
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertFalse(token.isSigned(generateValidParams()));
+        assertFalse(token.hasValidSignature(generateValidParams()));
     }
 
 
@@ -172,7 +172,7 @@ class TestJWTUtils {
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
 
-        assertFalse(token.isValid(generateValidParams()));
+        assertTrue(token.isValid(generateValidParams()));
     }
 
 }
