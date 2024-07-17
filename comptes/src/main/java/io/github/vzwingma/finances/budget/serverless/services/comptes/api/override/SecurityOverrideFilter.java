@@ -11,7 +11,6 @@ import lombok.Getter;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
-import java.util.Optional;
 
 
 /**
@@ -25,7 +24,7 @@ import java.util.Optional;
 public class SecurityOverrideFilter extends AbstractAPISecurityFilter {
 
     @ConfigProperty(name = "oidc.jwt.id.appusercontent")
-    Instance<Optional<String>> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
+    Instance<String> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
 
 
     @Inject

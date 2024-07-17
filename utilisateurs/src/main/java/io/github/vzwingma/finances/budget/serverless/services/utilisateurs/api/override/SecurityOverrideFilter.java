@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Optional;
 
 
 /**
@@ -31,7 +30,7 @@ public class SecurityOverrideFilter extends AbstractAPISecurityFilter implements
 
 
     @ConfigProperty(name = "oidc.jwt.id.appusercontent")
-    Instance<Optional<String>> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
+    Instance<String> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
 
     @Inject
     Instance<IJwtSigningKeyReadRepository> jwtSigningKeyRepository;

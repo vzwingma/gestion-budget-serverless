@@ -13,7 +13,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 
 /**
@@ -29,7 +28,7 @@ public class SecurityOverrideFilter extends AbstractAPISecurityFilter {
     String apiKey; // Clé API extraite de l'en-tête de la requête.
 
     @ConfigProperty(name = "oidc.jwt.id.appusercontent")
-    Instance<Optional<String>> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
+    Instance<String> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
 
     @Inject
     Instance<IJwtSigningKeyReadRepository> jwtSigningKeyRepository;
