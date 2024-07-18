@@ -21,6 +21,7 @@ public abstract class AbstractAPIInterceptors {
     @Inject
     IJwtSecurityContext securityContext;
 
+    private long startTime;
     /**
      * Logger requête
      *
@@ -33,6 +34,8 @@ public abstract class AbstractAPIInterceptors {
         String jwt = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
         LOG.debug("[HTTP] > [uri:{} {}]", requestContext.getMethod(), path);
         LOG.trace("[HTTP] > [api-key:{}][jwt:{}]", apiKey, jwt);
+
+        startTime = System.currentTimeMillis();
     }
 
     /**
@@ -43,7 +46,7 @@ public abstract class AbstractAPIInterceptors {
     public void postMatchingFilter(ContainerResponseContext responseContext) {
 
         BusinessTraceContext.getclear();
-        LOG.debug("[HTTP] < [{} - {}]", responseContext.getStatus(), responseContext.getStatusInfo().getReasonPhrase());
+        LOG.debug("[HTTP] < [{} - {}][t:{} ms]", responseContext.getStatus(), responseContext.getStatusInfo().getReasonPhrase(), System.currentTimeMillis() - startTime);
     }
 
     /**
