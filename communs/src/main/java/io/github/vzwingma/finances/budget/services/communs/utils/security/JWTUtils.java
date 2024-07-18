@@ -105,7 +105,7 @@ public class JWTUtils {
                 sig.initVerify(publicKey);
                 sig.update(signedData.getBytes());
                 if(sig.verify(signature)){
-                    LOG.debug("Le token est signé avec la clé publique : {}", key.getKid());
+                    LOG.trace("Le token est signé avec la clé publique : {}", key.getKid());
                     return true;
                 }
             } catch (GeneralSecurityException e) {

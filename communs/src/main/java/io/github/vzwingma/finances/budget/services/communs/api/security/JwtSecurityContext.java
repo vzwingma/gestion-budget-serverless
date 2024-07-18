@@ -1,35 +1,53 @@
 package io.github.vzwingma.finances.budget.services.communs.api.security;
 
 import com.sun.security.auth.UserPrincipal;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.core.SecurityContext;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.Principal;
+import java.util.List;
 
 /**
  * Implémentation personnalisée de {@link SecurityContext} pour gérer la sécurité basée sur les tokens JWT OIDC de Google.
  * Cette classe permet de définir le contexte de sécurité en fonction d'un token JWT.
  */
-public class SecurityOverrideContext implements SecurityContext {
+@RequestScoped
+@Setter
+@Getter
+@NoArgsConstructor
+public class JwtSecurityContext implements IJwtSecurityContext {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SecurityOverrideContext.class);
-
-    private final JWTAuthToken jwtValidatedToken;
-    private final String rawBase64Token;
+    private static final Logger LOG = LoggerFactory.getLogger(JwtSecurityContext.class);
 
     /**
-     * Constructeur de SecurityOverrideContext.
-     *
-     * @param jwtValidatedToken       Le token JWT utilisé pour l'authentification de l'utilisateur.
-     * @param rawBase64Token Le token JWT sous forme de chaîne en Base64.
+     * Le token JWT validé.
      */
-    public SecurityOverrideContext(JWTAuthToken jwtValidatedToken, String rawBase64Token) {
-        this.jwtValidatedToken = jwtValidatedToken;
-        this.rawBase64Token = rawBase64Token;
-    }
+    private JWTAuthToken jwtValidatedToken;
+    /**
+     * L'API Key.
+     */
+    private String apiKey;
+    /**
+     * Paramètres de validation JWT
+     */
+    private JwtValidationParams jwtValidationParams;
+
+    @ConfigProperty(name = "oidc.jwt.id.appusercontent")
+    Instance<String> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
+
 
     /**
      * Récupère le principal de l'utilisateur à partir du token JWT.
@@ -71,23 +89,40 @@ public class SecurityOverrideContext implements SecurityContext {
     }
 
     /**
-     * Indique si la connexion est sécurisée.
-     *
-     * @return l'état de la connexion
+     * @return l'indicateur de sécurité
      */
     @Override
     public boolean isSecure() {
-        return false;
+        return true;
     }
 
     /**
-     * Récupère le schéma d'authentification utilisé.
-     * Dans cette implémentation, retourne le token JWT en Base64.
-     *
-     * @return Le token JWT en Base64.
+     * @return le schéma d'authentification
      */
     @Override
     public String getAuthenticationScheme() {
-        return this.rawBase64Token;
+        return jwtValidatedToken != null ? jwtValidatedToken.getHeader().toString() : null;
+    }
+
+
+    @Inject
+    Instance<IJwtSigningKeyReadRepository> jwtSigningKeyRepository;
+
+    /**
+     * @return les clés de signature JWT
+     */
+    public List<JwksAuthKey> getJwksAuthKeys() {
+        return jwtSigningKeyRepository.get().getJwksSigningAuthKeys().toList();
+    }
+    /**
+     * Initialisation des clés de signature JWT
+     */
+    public JwtValidationParams getJwtValidationParams() {
+        if(jwtValidationParams == null) {
+            jwtValidationParams = new JwtValidationParams();
+            jwtValidationParams.setIdAppUserContent(this.idAppUserContent.get());
+            jwtValidationParams.setJwksAuthKeys(getJwksAuthKeys());
+        }
+        return jwtValidationParams;
     }
 }

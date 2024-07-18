@@ -91,14 +91,14 @@ public class JWTAuthToken {
      * @return true si le token est valide selon les critères ci-dessus, false sinon.
      */
     public boolean isValid(JwtValidationParams validationParams){
-        return isFromGoogle() && isFromUserAppContent(validationParams) && hasValidSignature(validationParams) && !isExpired() ;
+        return isFromGoogle() && isFromUserAppContent(validationParams) && hasValidSignature(validationParams) && isNotExpired();
     }
 
     /**
      * Vérifie si le token est expiré en comparant la date et l'heure actuelles à la date d'expiration.
      * @return Vrai si le token est expiré, faux sinon.
      */
-    private boolean isExpired() {
+    public boolean isNotExpired() {
         boolean isExpired = true;
         LocalDateTime expAt = expiredAt();
         if (expAt != null) {
@@ -107,7 +107,7 @@ public class JWTAuthToken {
         if(isExpired){
             LOG.warn("Le token est expiré depuis {}", expAt);
         }
-        return isExpired;
+        return !isExpired;
     }
 
     /**
@@ -147,7 +147,6 @@ public class JWTAuthToken {
      */
     public boolean hasValidSignature(JwtValidationParams validationParams) {
         if(this.rawContent != null && this.hasSignature){
-            LOG.info("Vérification de la signature du Token JWT : {}", this.rawContent);
             return JWTUtils.isTokenSignatureValid(this.rawContent, validationParams.getJwksAuthKeys());  // Vérifie la signature du token JWT
         }
         else{

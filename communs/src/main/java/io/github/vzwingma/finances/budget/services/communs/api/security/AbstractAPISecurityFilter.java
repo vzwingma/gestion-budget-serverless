@@ -1,18 +1,15 @@
 package io.github.vzwingma.finances.budget.services.communs.api.security;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.vertx.core.json.DecodeException;
-import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 
 
@@ -25,53 +22,26 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
     public static final String HTTP_HEADER_API_KEY = "X-Api-Key";
     private final Logger logger = LoggerFactory.getLogger(AbstractAPISecurityFilter.class);
 
-    /**
-     * Paramètres de validation JWT
-     */
-    private JwtValidationParams jwtValidationParams;
-
-    private final String AUTH_BEARER = "Bearer ";
-    /**
-     * Initialisation des clés de signature JWT
-     */
-    public JwtValidationParams getJwtValidationParams() {
-        if(jwtValidationParams == null) {
-            jwtValidationParams = new JwtValidationParams();
-            jwtValidationParams.setIdAppUserContent(getIdAppUserContent().get());
-            jwtValidationParams.setJwksAuthKeys(getJwksAuthKeys());
-        }
-        return jwtValidationParams;
-    }
-
-
-    /**
-     * Retourne le service fournissant les clés de signature JWT
-     * @return l'id de appContent
-     */
-    public abstract Instance<String> getIdAppUserContent();
-
-    /**
-     * Retourne le service fournissant les clés de signature JWT
-     * @return les clés de signature JWT
-     */
-    public abstract List<JwksAuthKey> getJwksAuthKeys();
+    @Inject
+    JwtSecurityContext securityContext;
 
     /**
      * Filtre de sécurité sur JWT
      *
      * @param requestContext requête
-     * @throws DecodeException erreur de décodage
      */
     @Override
-    public void filter(ContainerRequestContext requestContext) throws IOException {
+    public void filter(ContainerRequestContext requestContext) {
 
-        String rawJWTToken = getAuthBearerFromHeaders(requestContext.getHeaders().get(HttpHeaders.AUTHORIZATION.toLowerCase(Locale.ROOT)));
+
+        String apiKey = requestContext.getHeaders().getFirst(HTTP_HEADER_API_KEY);
+        String rawJWTToken = getAuthBearerFromHeaders(requestContext.getHeaders().getFirst(HttpHeaders.AUTHORIZATION.toLowerCase(Locale.ROOT)));
+
         if (rawJWTToken != null && !rawJWTToken.isEmpty() && !"null".equals(rawJWTToken)) {
             try {
                 JWTAuthToken jwToken = JWTUtils.decodeJWT(rawJWTToken);
-                if(jwToken.isValid(getJwtValidationParams())){
-                    requestContext.setSecurityContext(new SecurityOverrideContext(jwToken, rawJWTToken));
-                    return;
+                if(jwToken.isValid(securityContext.getJwtValidationParams())){
+                    securityContext.setJwtValidatedToken(jwToken);
                 }
                 else {
                     logger.error("Token JWT invalide");
@@ -80,7 +50,16 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
                 logger.error("Erreur lors du décodage du token JWT : {}", rawJWTToken);
             }
         }
-        requestContext.setSecurityContext(new AnonymousSecurityContext());
+        else {
+            logger.warn("Token JWT non trouvé. Accès anonyme.");
+        }
+        if(apiKey == null || apiKey.isEmpty()){
+            logger.warn("Clé API non trouvée");
+        }
+        else {
+            securityContext.setApiKey(apiKey);
+        }
+        requestContext.setSecurityContext(securityContext);
     }
 
 
@@ -90,13 +69,10 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
      * @param authBearer liste des entêtes
      * @return l'auth Bearer si elle existe
      */
-    protected String getAuthBearerFromHeaders(List<String> authBearer) {
+    private String getAuthBearerFromHeaders(String authBearer) {
         if (authBearer != null && !authBearer.isEmpty()) {
-            Optional<String> accessToken = authBearer.stream()
-                    .filter(a -> a.startsWith(AUTH_BEARER))
-                    .map(a -> a.replace(AUTH_BEARER, ""))
-                    .findFirst();
-            return accessToken.orElse(null);
+            String AUTH_BEARER = "Bearer ";
+            return authBearer.replace(AUTH_BEARER, "");
         } else {
             logger.trace("Auth is null");
             return null;
