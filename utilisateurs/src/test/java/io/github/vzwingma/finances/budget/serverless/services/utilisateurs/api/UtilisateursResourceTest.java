@@ -74,9 +74,6 @@ class UtilisateursResourceTest {
         Utilisateur utilisateurExpected = MockDataUtilisateur.getTestUtilisateurWithDate();
         Mockito.when(utilisateurService.getUtilisateur(Mockito.anyString()))
                 .thenReturn(Uni.createFrom().item(utilisateurExpected));
-
-        System.out.println(getTestJWTAuthHeader());
-    //    Mockito.when(JwsSigningKeysDatabaseAdaptor.getJwksSigningAuthKeys()).thenReturn(Stream.of(new JwksAuthKey()));
         // Test
         given()
                 .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())

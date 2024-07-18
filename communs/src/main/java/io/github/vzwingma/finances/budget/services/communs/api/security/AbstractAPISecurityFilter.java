@@ -71,8 +71,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
      */
     private String getAuthBearerFromHeaders(String authBearer) {
         if (authBearer != null && !authBearer.isEmpty()) {
-            String AUTH_BEARER = "Bearer ";
-            return authBearer.replace(AUTH_BEARER, "");
+            return authBearer.replace("Bearer ", "");
         } else {
             logger.trace("Auth is null");
             return null;

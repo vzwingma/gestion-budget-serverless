@@ -10,7 +10,6 @@ import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.Data
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import lombok.NoArgsConstructor;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author vzwingma
  */
 @ApplicationScoped
-@NoArgsConstructor
 public class ParametragesService implements IParametrageAppProvider {
 
 
@@ -35,11 +33,10 @@ public class ParametragesService implements IParametrageAppProvider {
     /**
      * Service Provider Interface des données
      */
-    @Inject
-    IParametragesRepository dataParams;
 
-    @Inject
-    IJwtSigningKeyWriteRepository signingKeyRepository;
+    private final IParametragesRepository dataParams;
+
+    private final IJwtSigningKeyWriteRepository signingKeyRepository;
 
     @Inject
     @RestClient
@@ -52,11 +49,11 @@ public class ParametragesService implements IParametrageAppProvider {
      * @param parametrageRepository le repository des paramètres
      * @param signingKeyRepository le repository des clés de signature
      */
+    @Inject
     public ParametragesService(IParametragesRepository parametrageRepository, IJwtSigningKeyWriteRepository signingKeyRepository){
         this.dataParams = parametrageRepository;
         this.signingKeyRepository = signingKeyRepository;
     }
-
 
     /**
      * Initialisation des clés de signature JWT de Google

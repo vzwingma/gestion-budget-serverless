@@ -18,9 +18,12 @@ import jakarta.ws.rs.core.MediaType;
 @Path(ParametragesAPIEnum.PARAMS_BASE)
 public class RootAPIResource extends AbstractAPIResource {
 
+    private final ParametragesService service;
 
     @Inject
-    ParametragesService service;
+    public RootAPIResource(ParametragesService service) {
+        this.service = service;
+    }
 
     @GET
     @Path("_info")

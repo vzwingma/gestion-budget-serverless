@@ -17,6 +17,7 @@ public abstract class AbstractAPIInterceptors {
 
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractAPIInterceptors.class);
+
     @Inject
     IJwtSecurityContext securityContext;
 
