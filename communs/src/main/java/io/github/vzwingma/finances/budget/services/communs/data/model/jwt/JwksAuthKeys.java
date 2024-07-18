@@ -5,21 +5,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
 
+/**
+ * Liste des Clés de signature des tokens JWT
+ */
 @RegisterForReflection
 @Setter
 @Getter
 @NoArgsConstructor
-public class JwtValidationParams {
-
-    /**
-     * L'identifiant de l'application cliente.
-     */
-    private String idAppUserContent;
-
-    /**
-     * Les clés de signature JWT.
-     */
-    private List<JwksAuthKey> jwksAuthKeys;
+public class JwksAuthKeys {
+    private JwksAuthKey[] keys;
 }

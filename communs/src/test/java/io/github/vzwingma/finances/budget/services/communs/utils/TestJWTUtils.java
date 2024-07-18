@@ -1,15 +1,18 @@
 package io.github.vzwingma.finances.budget.services.communs.utils;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKeys;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.Json;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,6 +34,32 @@ class TestJWTUtils {
     private static final String ID_TOKEN_SIGNED = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjBlMzQ1ZmQ3ZTRhOTcyNzFkZmZhOTkxZjVhODkzY2QxNmI4ZTA4MjciLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDAxMDI1MjcyMjA5NTAwNzY2ODgiLCJlbWFpbCI6InZpbmNlbnQuendpbmdtYW5uQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiVmlOWU1xVUV6M3E1bktxRVBESlIzZyIsIm5hbWUiOiJWaW5jZW50IFp3aW5nbWFubiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NKbDRTOThXdU85NVo3OHJtTURzVGVMMFBpTHVjMHFFTk91YjViVjNfMkRuZE53REFmZWVRPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6IlZpbmNlbnQiLCJmYW1pbHlfbmFtZSI6Ilp3aW5nbWFubiIsImlhdCI6MTcyMTA0ODM5OCwiZXhwIjoxNzIxMDUxOTk4fQ.GYfoBFeXZimAgGG6YLVSZR_axUn7ZvZh1NyKYv_U9-PKwLGPu8k8eKC4xRLAbX-C_miw5Igy2uHcgTj9VNAyppk-MNWJie_WzNUb42TgGKdnInJeurIe-VndL6xM3yAP7DMFnmLSEjHNe5umMVRhJu_dWONFscfb_o-rfw0BQFjMXr5RJ9dvrl_4fUWpQmbBu0M4a9LMao4x9kIVlgLAg4HU92YX-RtOWpl7KQyi0HZuwOknVYFJvjRhZtXmILwKdcjhkmP7guoeous_uWxzHV9_xueTXG8C1VCg_smPtivVnpAn1WS-VlraYDOnG7Gy2Q5AjyD4pqMJSRZDIPO8OQ";
 
 
+    protected static final String JWKS_GOOGLE_KEYS = """
+            {
+              "keys": [
+                {
+                  "e": "AQAB",
+                  "n": "nzGsrziOYrMVYMpvUZOwkKNiPWcOPTYRYlDSdRW4UpAHdWPbPlyqaaphYhoMB5DXrVxI3bdvm7DOlo-sHNnulmAFQa-7TsQMxrZCvVdAbyXGID9DZYEqf8mkCV1Ohv7WY5lDUqlybIk1OSHdK7-1et0QS8nn-5LojGg8FK4ssLf3mV1APpujl27D1bDhyRb1MGumXYElwlUms7F9p9OcSp5pTevXCLmXs9MJJk4o9E1zzPpQ9Ko0lH9l_UqFpA7vwQhnw0nbh73rXOX2TUDCUqL4ThKU5Z9Pd-eZCEOatKe0mJTpQ00XGACBME_6ojCdfNIJr84Y_IpGKvkAEksn9w",
+                  "alg": "RS256",
+                  "kty": "RSA",
+                  "kid": "87bbe0815b064e6d449cac999f0e50e72a3e4374",
+                  "use": "sig"
+                },
+                {
+                  "kid": "0e345fd7e4a97271dffa991f5a893cd16b8e0827",
+                  "use": "sig",
+                  "alg": "RS256",
+                  "kty": "RSA",
+                  "e": "AQAB",
+                  "n": "rv95jmy91hibD7cb_BCA25jv5HrX7WoqHv-fh8wrOR5aYcM8Kvsc3mbzs2w1vCUlMRv7NdEGVBEnOZ6tHvUzGLon4ythd5XsX-wTvAtIHPkyHdo5zGpTgATO9CEn78Y-f1E8By63ttv14kXe_RMjt5aKttK4yqqUyzWUexSs7pET2zWiigd0_bGhJGYYEJlEk_JsOBFvloIBaycMfDjK--kgqnlRA8SWUkP3pEJIAo9oHzmvX6uXZTEJK10a1YNj0JVR4wZY3k60NaUX-KCroreU85iYgnecyxSdL-trpKdkg0-2OYks-_2Isymu7jPX-uKVyi-zKyaok3N64mERRQ"
+                }
+              ]
+            }""";
+
+    /**
+     * Génère un token valide
+     * @return le token généré
+     */
     static String generateValidToken() {
         JWTAuthToken token = JWTUtils.decodeJWT(ID_TOKEN);
 
@@ -39,9 +68,14 @@ class TestJWTUtils {
         return JWTUtils.encodeJWT(token);
     }
 
+    /**
+     * Génère des paramètres de validation valides
+     * @return les paramètres de validation
+     */
     static JwtValidationParams generateValidParams(){
         JwtValidationParams params = new JwtValidationParams();
         params.setIdAppUserContent(JWTUtils.decodeJWT(ID_TOKEN).getPayload().getAud().replace(".apps.googleusercontent.com", ""));
+        params.setJwksAuthKeys(Arrays.asList(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys()));
         return params;
     }
 
@@ -118,8 +152,19 @@ class TestJWTUtils {
         String rawToken = ID_TOKEN_SIGNED;
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertFalse(token.isSigned());
+        assertTrue(token.hasValidSignature(generateValidParams()));
     }
+
+
+
+    @Test
+    void testInvalidSignature(){
+        String rawToken = ID_TOKEN;
+        assertNotNull(rawToken);
+        JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
+        assertFalse(token.hasValidSignature(generateValidParams()));
+    }
+
 
     @Test
     void testValidToken() {

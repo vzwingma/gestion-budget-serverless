@@ -16,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
         info = @Info(
                 title = "Gestion de Budgets : µService des utilisateurs",
                 description = "API du service d'utilisateurs",
-                version = "17.0.0",
+                version = "21.1.0",
                 contact = @Contact(
                         name = "Vincent Zwingmann",
                         email = "vincent.zwingmann@github.com"),

@@ -1,11 +1,11 @@
 package io.github.vzwingma.finances.budget.serverless.services.utilisateurs.api;
 
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.api.enums.UtilisateursAPIEnum;
-import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.api.override.SecurityOverrideFilter;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.UtilisateursService;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.model.Utilisateur;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.ports.IUtilisateursAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.data.MockDataUtilisateur;
+import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
@@ -17,7 +17,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -38,6 +37,8 @@ class UtilisateursResourceTest {
     @BeforeAll
     public static void init() {
         QuarkusMock.installMockForType(Mockito.mock(UtilisateursService.class), UtilisateursService.class);
+        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
+
     }
 
     @Test
@@ -73,7 +74,6 @@ class UtilisateursResourceTest {
         Utilisateur utilisateurExpected = MockDataUtilisateur.getTestUtilisateurWithDate();
         Mockito.when(utilisateurService.getUtilisateur(Mockito.anyString()))
                 .thenReturn(Uni.createFrom().item(utilisateurExpected));
-
         // Test
         given()
                 .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
@@ -112,6 +112,6 @@ class UtilisateursResourceTest {
         p.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
         p.setIss("https://accounts.google.com");
         p.setAud("test.apps.googleusercontent.com");
-        return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p, null));
+        return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p));
     }
 }

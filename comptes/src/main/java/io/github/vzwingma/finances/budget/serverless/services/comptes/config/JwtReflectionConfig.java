@@ -1,4 +1,4 @@
-package io.github.vzwingma.finances.budget.serverless.services.utilisateurs.config;
+package io.github.vzwingma.finances.budget.serverless.services.comptes.config;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.*;
 import io.quarkus.runtime.annotations.RegisterForReflection;
