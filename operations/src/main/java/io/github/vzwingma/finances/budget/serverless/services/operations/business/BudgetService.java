@@ -207,21 +207,9 @@ public class BudgetService implements IBudgetAppProvider {
     }
 
 
-    /**
-     * Chargement des budgets du compte
-     *
-     * @param compteBancaire compte bancaire
-     * @return budgets mensuels chargés à partir des données précédentes
-     */
-    private Multi<BudgetMensuel> chargerBudgetsMensuelsSurCompte(CompteBancaire compteBancaire) {
-        LOGGER.debug(" Chargement des budgets du compte");
-        // Chargement du budget précédent
-        return this.dataOperationsProvider.chargeBudgetsMensuels(compteBancaire.getId());
-    }
     /************************************
      *  			CALCULS
      ***********************************/
-
 
     /**
      * Recalcul du solde à la fin du mois précédent
