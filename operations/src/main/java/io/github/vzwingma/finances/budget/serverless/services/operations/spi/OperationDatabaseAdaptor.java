@@ -1,6 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleAvantApres;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
@@ -18,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Month;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -125,6 +127,36 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
 
 
 
+
+    /**
+     * Mise à jour des libellés des opérations d'un compte pour les homogénéiser
+     *
+     * @param idCompte           id du compte
+     * @param libellesToOverride liste des libellés à mettre à jour
+     * @return override des libellés pour les budgets mensuels
+     */
+    public Multi<BudgetMensuel> overrideLibellesOperations(String idCompte, List<LibelleAvantApres> libellesToOverride) {
+
+        LOGGER.info("Mise à jour des libellés des opérations du compte {} : {} éléments", idCompte, libellesToOverride != null ? libellesToOverride.size() : 0);
+        return find(ATTRIBUT_COMPTE_ID + "=?1", idCompte, Sort.by("id"))
+                .stream()
+                .onItem().transform(budget -> {
+                    budget.getListeOperations()
+                            .forEach(operation -> {
+                                assert libellesToOverride != null;
+                                libellesToOverride.forEach(libelle -> {
+                                    if (operation.getLibelle().trim().equalsIgnoreCase(libelle.getAvant().trim())) {
+                                        LOGGER.debug("    override du libellé [{}] --> [{}]", libelle.getAvant(), libelle.getApres());
+                                        operation.setLibelle(libelle.getApres());
+                                    }
+                                });
+                            });
+                    return budget;
+                })
+                .onItem().transformToUniAndConcatenate(this::persistOrUpdate); // on sauvegarde les budgets mis à jour uniquement si des modifications ont été apportées
+
+    }
+
     /**
      * Liste des libellés des opérations d'un compte
      *
@@ -133,6 +165,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
      */
     @Override
     public Multi<String> getLibellesOperations(String idCompte) {
+
         LOGGER.info("Liste des libellés des opérations du compte {}", idCompte);
 
         return mongoCollection()

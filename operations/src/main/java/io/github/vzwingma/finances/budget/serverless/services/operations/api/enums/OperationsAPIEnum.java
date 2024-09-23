@@ -11,10 +11,14 @@ public class OperationsAPIEnum {
     public static final String PARAM_ID_BUDGET = "{idBudget}";
     public static final String PARAM_ID_COMPTE = "{idCompte}";
     public static final String PARAM_ID_OPERATION = "{idOperation}";
+
+    public static final String ADMIN_SUFFIX = "/admin";
+
     /**
      * Budget
      */
     public static final String BUDGET_BASE = "/budgets/v2";
+    public static final String BUDGET_ADMIN_BASE = BUDGET_BASE + ADMIN_SUFFIX;
     public static final String BUDGET_ID = "/" + PARAM_ID_BUDGET;
     /**
      * Operations
@@ -30,6 +34,7 @@ public class OperationsAPIEnum {
     // - actif
     public static final String BUDGET_ETAT = "/" + PARAM_ID_BUDGET + "/etat";
     public static final String OPERATIONS_LIBELLES = "/compte/" + PARAM_ID_COMPTE + "/operations/libelles";
+    public static final String OPERATIONS_LIBELLES_OVERRIDE = OPERATIONS_LIBELLES + "/override";
     /**
      * Roles
      */
