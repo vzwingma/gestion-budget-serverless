@@ -210,7 +210,6 @@ public class BudgetService implements IBudgetAppProvider {
      */
     private Multi<BudgetMensuel> chargerBudgetsMensuelsSurCompte(CompteBancaire compteBancaire) {
         LOGGER.debug(" Chargement des budgets du compte");
-
         // Chargement du budget précédent
         return this.dataOperationsProvider.chargeBudgetsMensuels(compteBancaire.getId());
     }

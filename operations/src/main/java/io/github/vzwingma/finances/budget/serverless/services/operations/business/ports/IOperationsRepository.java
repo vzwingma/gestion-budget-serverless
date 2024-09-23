@@ -1,12 +1,14 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business.ports;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleAvantApres;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 import java.time.Month;
+import java.util.List;
 
 /**
  * Service Provider Interface pour fournir les opérations
@@ -63,4 +65,13 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
      * @return libelles des opérations
      */
     Multi<String> getLibellesOperations(String idCompte);
+
+    /**
+     * Mise à jour des libellés des opérations d'un compte pour les homogénéiser
+     *
+     * @param idCompte           id du compte
+     * @param libellesToOverride liste des libellés à mettre à jour
+     * @return liste des budgets mensuels mis à jour
+     */
+    Multi<BudgetMensuel> overrideLibellesOperations(String idCompte, List<LibelleAvantApres> libellesToOverride);
 }
