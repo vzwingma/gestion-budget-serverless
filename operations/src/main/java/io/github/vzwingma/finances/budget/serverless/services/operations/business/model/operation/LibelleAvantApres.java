@@ -6,8 +6,7 @@ import lombok.Setter;
 
 /**
  * Classe permettant de stocker un libellé avant et après modification
- *
- * exemple :
+  * exemple :
  * [
  *     { "avant": "*** Alignement ***", "apres": "Alignement" },
  *     { "avant": "13 eme mois", "apres": "13ème mois" },

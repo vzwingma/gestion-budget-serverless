@@ -119,6 +119,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                 .onItem().transform(budget -> {
                     budget.getListeOperations()
                             .forEach(operation -> {
+                                assert libellesToOverride != null;
                                 libellesToOverride.forEach(libelle -> {
                                     if (operation.getLibelle().trim().equalsIgnoreCase(libelle.getAvant().trim())) {
                                         LOGGER.debug("    override du libellé [{}] --> [{}]", libelle.getAvant(), libelle.getApres());
