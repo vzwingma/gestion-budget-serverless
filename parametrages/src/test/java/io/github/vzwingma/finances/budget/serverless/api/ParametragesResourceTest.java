@@ -3,10 +3,10 @@ package io.github.vzwingma.finances.budget.serverless.api;
 import io.github.vzwingma.finances.budget.serverless.data.MockDataCategoriesOperations;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.api.enums.ParametragesAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
-import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JwtAuthHeader;
+import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.JwsSigningKeysDatabaseAdaptor;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
@@ -28,15 +28,17 @@ import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
 class ParametragesResourceTest {
 
     @Inject
-    IParametrageAppProvider parametragesService;
+    ParametragesService parametragesService;
 
     @BeforeAll
     public static void init() {
         QuarkusMock.installMockForType(Mockito.mock(ParametragesService.class), ParametragesService.class);
+        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
     @Test
     void testInfoEndpoint() {
+        Mockito.when(parametragesService.refreshJwksSigningKeys()).thenReturn(Uni.createFrom().voidItem());
         given()
                 .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
                 .then()
@@ -54,7 +56,7 @@ class ParametragesResourceTest {
                 .when().get(ParametragesAPIEnum.PARAMS_BASE + ParametragesAPIEnum.PARAMS_CATEGORIES)
                 .then()
                 .statusCode(200)
-                .body(Matchers.containsString(MockDataCategoriesOperations.getListeTestCategories().get(0).getLibelle()));
+                .body(Matchers.containsString(MockDataCategoriesOperations.getListeTestCategories().getFirst().getLibelle()));
     }
 
 
@@ -66,6 +68,8 @@ class ParametragesResourceTest {
         p.setGiven_name("Test");
         p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
         p.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
+        p.setIss("https://accounts.google.com");
+        p.setAud("test.apps.googleusercontent.com");
         return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p));
     }
 }
