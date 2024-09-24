@@ -83,11 +83,11 @@ public class JwtSecurityContext implements IJwtSecurityContext {
     @Override
     public boolean isUserInRole(String role) {
         if (jwtValidatedToken == null) {
-            LOG.warn("L'utilisateur [{}] n'a pas de token JWT valide", getUserPrincipal().getName());
+            LOG.warn("L'utilisateur [{}] n'a pas de token JWT valide", getUserPrincipal() != null ? getUserPrincipal().getName() : null);
             return false;
         }
         else {
-            LOG.warn("L'utilisateur [{}] n'a pas de rôle [{}]", getUserPrincipal().getName(), role);
+            LOG.warn("L'utilisateur [{}] n'a pas le rôle [{}]",  getUserPrincipal() != null ? getUserPrincipal().getName() : null, role);
         }
         return true;
     }

@@ -80,7 +80,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     @Override
     public Multi<ProjectionBudgetSoldes> chargeSoldesBudgetMensuel(String idCompte, Month mois, int annee){
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
-        LOGGER.info("Chargement des soldes {}/{} du compte {} ", mois, annee, idCompte);
+        LOGGER.info("Chargement des soldes {}{} du compte {} ", mois != null ? mois +"/" : "", annee, idCompte);
         String query = ATTRIBUT_COMPTE_ID + " = ?1 and " + ATTRIBUT_ANNEE + " = ?2";
         if(mois != null){
             query += " and " + ATTRIBUT_MOIS + " = ?3";

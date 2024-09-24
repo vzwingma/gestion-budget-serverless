@@ -1,7 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.api;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleAvantApres;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAdminAppProvider;
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIInterceptors;
@@ -47,7 +46,7 @@ public class AdminBudgetResource extends AbstractAPIInterceptors {
     @Operation(description = "Mise à jour des libellés des budgets d'un compte")
     @APIResponses(value = {
             @APIResponse(responseCode = "200", description = "Opération réussie",
-                    content = {@Content(mediaType = "application/json", schema = @Schema(implementation = BudgetMensuel.class))}),
+                    content = {@Content(mediaType = "application/json", schema = @Schema(implementation = LibelleAvantApres.class))}),
             @APIResponse(responseCode = "401", description = "Utilisateur non authentifié"),
             @APIResponse(responseCode = "403", description = "Opération non autorisée"),
             @APIResponse(responseCode = "404", description = "Données introuvables"),
