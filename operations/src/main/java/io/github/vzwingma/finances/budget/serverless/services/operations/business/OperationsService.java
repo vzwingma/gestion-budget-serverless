@@ -304,7 +304,7 @@ public class OperationsService implements IOperationsAppProvider {
                 .onItem().transform(doc -> {
                     Document attributes = doc.get("operationLibelleAttributes", Document.class);
                     LibelleCategorieOperation libelleCategorieOperation = new LibelleCategorieOperation();
-                    libelleCategorieOperation.setLibelle(attributes.getString("libelle"));
+                    libelleCategorieOperation.setLibelle(BudgetDataUtils.deleteTagFromString(attributes.getString("libelle")));
                     libelleCategorieOperation.setCategorieId(attributes.getString("categorieId"));
                     libelleCategorieOperation.setSsCategorieId(attributes.getString("ssCategorieId"));
                     return libelleCategorieOperation;
