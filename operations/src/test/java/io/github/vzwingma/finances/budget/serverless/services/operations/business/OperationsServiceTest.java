@@ -188,11 +188,19 @@ class OperationsServiceTest {
     void getLibellesOperations() {
 
         Document l1 = new Document();
-        l1.put("libelle", "Test");
+        Document l1Attributes = new Document();
+        l1Attributes.put("libelle", "Test");
+        l1.put("operationLibelleAttributes", l1Attributes);
+
         Document l2 = new Document();
-        l2.put("libelle", "[depuis Compte] TestInterCompte");
+        Document l2Attributes = new Document();
+        l2Attributes.put("libelle",  "[depuis Compte] TestInterCompte");
+        l2.put("operationLibelleAttributes", l2Attributes);
+
         Document l3 = new Document();
-        l3.put("libelle", "[En Retard][Vers Compte] TestVersCompte");
+        Document l3Attributes = new Document();
+        l3Attributes.put("libelle", "[En Retard][Vers Compte] TestVersCompte");
+        l3.put("operationLibelleAttributes", l3Attributes);
 
         Mockito.when(mockOperationDataProvider.getLibellesOperations(Mockito.anyString())).thenReturn(Multi.createFrom().items(l1, l2, l3));
         List<LibelleCategorieOperation> libelles = operationsAppProvider.getLibellesOperations("testCompte").collect().asList().await().indefinitely();
