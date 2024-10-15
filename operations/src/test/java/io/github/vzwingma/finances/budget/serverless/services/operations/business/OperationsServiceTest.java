@@ -1,6 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleCategorieOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationPeriodiciteEnum;
@@ -11,6 +12,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieO
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
+import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,8 +52,8 @@ class OperationsServiceTest {
         // Test
         operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest", null);
         assertEquals(1, listeOperations.size());
-        assertEquals(OperationEtatEnum.REALISEE, listeOperations.get(0).getEtat());
-        assertNotNull(listeOperations.get(0).getAutresInfos().getDateOperation());
+        assertEquals(OperationEtatEnum.REALISEE, listeOperations.getFirst().getEtat());
+        assertNotNull(listeOperations.getFirst().getAutresInfos().getDateOperation());
     }
 
 
@@ -67,20 +69,20 @@ class OperationsServiceTest {
         // Test
         operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest", null);
         assertEquals(1, listeOperations.size());
-        assertEquals(OperationEtatEnum.REALISEE, listeOperations.get(0).getEtat());
-        assertEquals(OperationPeriodiciteEnum.MENSUELLE, listeOperations.get(0).getMensualite().getPeriode());
-        assertEquals(1, listeOperations.get(0).getMensualite().getProchaineEcheance());
+        assertEquals(OperationEtatEnum.REALISEE, listeOperations.getFirst().getEtat());
+        assertEquals(OperationPeriodiciteEnum.MENSUELLE, listeOperations.getFirst().getMensualite().getPeriode());
+        assertEquals(1, listeOperations.getFirst().getMensualite().getProchaineEcheance());
 
 
         // Changement de période
         operation.getMensualite().setPeriode(OperationPeriodiciteEnum.PONCTUELLE);
         operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest", null);
-        assertEquals(OperationPeriodiciteEnum.PONCTUELLE, listeOperations.get(0).getMensualite().getPeriode());
-        assertEquals(-1, listeOperations.get(0).getMensualite().getProchaineEcheance());
+        assertEquals(OperationPeriodiciteEnum.PONCTUELLE, listeOperations.getFirst().getMensualite().getPeriode());
+        assertEquals(-1, listeOperations.getFirst().getMensualite().getProchaineEcheance());
         operation.getMensualite().setPeriode(OperationPeriodiciteEnum.TRIMESTRIELLE);
         operationsAppProvider.addOrReplaceOperation(listeOperations, operation, "userTest", null);
-        assertEquals(OperationPeriodiciteEnum.TRIMESTRIELLE, listeOperations.get(0).getMensualite().getPeriode());
-        assertEquals(3, listeOperations.get(0).getMensualite().getProchaineEcheance());
+        assertEquals(OperationPeriodiciteEnum.TRIMESTRIELLE, listeOperations.getFirst().getMensualite().getPeriode());
+        assertEquals(3, listeOperations.getFirst().getMensualite().getProchaineEcheance());
     }
 
 
@@ -185,14 +187,19 @@ class OperationsServiceTest {
     @Test
     void getLibellesOperations() {
 
-        Mockito.when(mockOperationDataProvider.getLibellesOperations(Mockito.anyString())).thenReturn(Multi.createFrom().items("Test", "[depuis Compte] TestInterCompte", "[En Retard][Vers Compte] TestVersCompte", "Test"));
-        List<String> libelles = operationsAppProvider.getLibellesOperations("testCompte").collect().asList().await().indefinitely();
+        Document l1 = new Document();
+        l1.put("libelle", "Test");
+        Document l2 = new Document();
+        l2.put("libelle", "[depuis Compte] TestInterCompte");
+        Document l3 = new Document();
+        l3.put("libelle", "[En Retard][Vers Compte] TestVersCompte");
+
+        Mockito.when(mockOperationDataProvider.getLibellesOperations(Mockito.anyString())).thenReturn(Multi.createFrom().items(l1, l2, l3));
+        List<LibelleCategorieOperation> libelles = operationsAppProvider.getLibellesOperations("testCompte").collect().asList().await().indefinitely();
 
         assertEquals(3, libelles.size());
-        assertEquals("Test", libelles.get(0));
-        assertEquals("TestInterCompte", libelles.get(1));
-        assertEquals("TestVersCompte", libelles.get(2));
-
-
+        assertEquals("Test", libelles.get(0).getLibelle());
+        assertEquals("TestInterCompte", libelles.get(1).getLibelle());
+        assertEquals("TestVersCompte", libelles.get(2).getLibelle());
     }
 }
