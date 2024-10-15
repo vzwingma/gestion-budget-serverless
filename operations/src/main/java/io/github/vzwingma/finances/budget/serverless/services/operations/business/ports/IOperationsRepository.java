@@ -7,6 +7,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBanc
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import org.bson.Document;
 
 import java.time.Month;
 import java.util.List;
@@ -67,7 +68,7 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
      * @param idCompte id du  compte
      * @return libelles des opérations
      */
-    Multi<String> getLibellesOperations(String idCompte);
+    Multi<Document> getLibellesOperations(String idCompte);
 
     /**
      * Mise à jour des libellés des opérations d'un compte pour les homogénéiser

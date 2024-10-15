@@ -2,6 +2,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.api;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleCategorieOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
@@ -433,7 +434,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
     @RolesAllowed({OperationsAPIEnum.OPERATIONS_ROLE})
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Multi<String> libellesOperationsCompte(@RestPath("idCompte") String idCompte) {
+    public Multi<LibelleCategorieOperation> libellesOperationsCompte(@RestPath("idCompte") String idCompte) {
 
         LOG.info("Libelles des opérations du Compte [{}]", idCompte);
 

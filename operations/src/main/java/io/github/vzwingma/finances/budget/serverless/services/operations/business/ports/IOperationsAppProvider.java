@@ -2,6 +2,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.TotauxCategorie;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleCategorieOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
@@ -61,5 +62,5 @@ public interface IOperationsAppProvider {
      * @param idCompte id du compte
      * @return liste des libellés des opérations
      */
-    Multi<String> getLibellesOperations(String idCompte);
+    Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte);
 }

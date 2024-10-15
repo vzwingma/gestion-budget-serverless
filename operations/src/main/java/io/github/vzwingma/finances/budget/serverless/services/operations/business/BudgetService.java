@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleCategorieOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationPeriodiciteEnum;
@@ -568,7 +569,8 @@ public class BudgetService implements IBudgetAppProvider {
      * @return liste des libellés d'opérations
      */
     @Override
-    public Multi<String> getLibellesOperations(String idCompte, String auteur) {
+    public Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte, String auteur) {
         return this.operationsAppProvider.getLibellesOperations(idCompte);
+
     }
 }
