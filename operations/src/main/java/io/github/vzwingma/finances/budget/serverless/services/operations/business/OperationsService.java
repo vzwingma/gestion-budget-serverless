@@ -309,7 +309,7 @@ public class OperationsService implements IOperationsAppProvider {
                     libelleCategorieOperation.setSsCategorieId(attributes.getString("ssCategorieId"));
                     return libelleCategorieOperation;
                 })
-                .select().distinct();
+                .select().distinct((o1, o2) -> o1.getLibelle().compareToIgnoreCase(o2.getLibelle()));
     }
 
 
