@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
-import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractAPIObjectModel;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.quarkus.mongodb.panache.common.MongoEntity;
@@ -104,8 +103,19 @@ public class BudgetMensuel extends AbstractAPIObjectModel implements Serializabl
      * Set id à partir des informations fonctionnelles
      */
     public void setId() {
-        this.id = BudgetDataUtils.getBudgetId(this.idCompteBancaire, this.mois, this.annee);
+        this.id = getBudgetId(this.idCompteBancaire, this.mois, this.annee);
     }
+
+    /**
+     * @param idCompte id compte bancaire
+     * @param mois     mois
+     * @param annee    année
+     * @return id de budget
+     */
+    private static String getBudgetId(String idCompte, Month mois, int annee) {
+        return String.format("%s_%s_%s", idCompte, annee, String.format("%02d", mois.getValue()));
+    }
+
 
     /* (non-Javadoc)
      * @see java.lang.Object#toString()

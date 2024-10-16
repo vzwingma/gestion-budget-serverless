@@ -4,6 +4,7 @@ import io.github.vzwingma.finances.budget.services.communs.api.codecs.ComptePana
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import org.bson.BsonReader;
 import org.bson.json.JsonReader;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,7 +29,7 @@ class TestComptePanacheCodec {
         assertEquals("img/banque.png", compteBancaire.getItemIcon());
         assertEquals(12, compteBancaire.getOrdre());
         assertEquals(true, compteBancaire.isActif());
-        //  assertEquals(new ObjectId("54aa7db30bc460e1aeb95596"), compteBancaire.getProprietaire().getId());
+        assertEquals(new ObjectId("54aa7db30bc460e1aeb95596"), compteBancaire.getProprietaire().getId());
         assertEquals("test", compteBancaire.getProprietaire().getLogin());
         assertEquals("test", compteBancaire.getProprietaire().getLibelle());
     }

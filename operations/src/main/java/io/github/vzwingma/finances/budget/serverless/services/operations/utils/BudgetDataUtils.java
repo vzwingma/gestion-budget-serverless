@@ -31,16 +31,6 @@ public class BudgetDataUtils {
 
 
     /**
-     * @param idCompte id compte bancaire
-     * @param mois     mois
-     * @param annee    année
-     * @return id de budget
-     */
-    public static String getBudgetId(String idCompte, Month mois, int annee) {
-        return String.format("%s_%s_%s", idCompte, annee, String.format("%02d", mois.getValue()));
-    }
-
-    /**
      * @param budgetId id budget
      * @return la valeur de l'année à partir de l'id
      * @throws BudgetNotFoundException budget introuvable car erreur d'id

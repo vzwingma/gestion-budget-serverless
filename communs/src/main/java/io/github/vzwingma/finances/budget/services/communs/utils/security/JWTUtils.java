@@ -12,6 +12,7 @@ import java.security.*;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 
@@ -140,6 +141,84 @@ public class JWTUtils {
             return null;
         }
 
+    }
+
+
+    
+    /**
+     * Vérifie si le token JWT est signé en utilisant les clés publiques de Google.
+     * @return true si la signature est valide, false sinon.
+     */
+    public static boolean hasValidSignature(JWTAuthToken token, JwtValidationParams validationParams) {
+        if(token.getRawContent() != null && token.isHasSignature()){
+            return isTokenSignatureValid(token.getRawContent(), validationParams.getJwksAuthKeys());  // Vérifie la signature du token JWT
+        }
+        else{
+            LOG.warn("Le token n'est pas signé");
+            return true;
+        }
+    }
+
+    
+
+    /**
+     * Vérifie la validité du token JWT en fonction des paramètres de validation fournis.
+     * Cette méthode effectue plusieurs vérifications pour s'assurer que le token est toujours valide :
+     * - Le token ne doit pas être expiré.
+     * - Le token doit provenir de Google.
+     * - Le token doit être destiné à l'application utilisateur spécifiée dans les paramètres de validation.
+     *
+     * @param validationParams Les paramètres de validation du token, incluant l'identifiant de l'application utilisateur.
+     * @return true si le token est valide selon les critères ci-dessus, false sinon.
+     */
+    public static boolean isValid(JWTAuthToken token, JwtValidationParams validationParams){
+        return isFromGoogle(token) && isFromUserAppContent(token, validationParams) && hasValidSignature(token, validationParams) && isNotExpired(token);
+    }
+
+    /**
+     * Vérifie si le token est expiré en comparant la date et l'heure actuelles à la date d'expiration.
+     * @return Vrai si le token est expiré, faux sinon.
+     */
+    private static boolean isNotExpired(JWTAuthToken token) {
+        boolean isExpired = true;
+        LocalDateTime expAt = token.expiredAt();
+        if (expAt != null) {
+            isExpired = !LocalDateTime.now().isBefore(expAt);
+        }
+        if(isExpired){
+            LOG.warn("Le token est expiré depuis {}", expAt);
+        }
+        return !isExpired;
+    }
+
+    /**
+     * Vérifie si le token provient de Google.
+     * @return Vrai si le token provient de Google, faux sinon.
+     */
+    private static boolean isFromGoogle(JWTAuthToken token) {
+        boolean isIssGood =  token.getPayload() != null && token.getPayload().getIss() != null && token.getPayload().getIss().contains("accounts.google.com");
+        if(!isIssGood){
+            LOG.warn("Le token n'est pas émis par le bon issuer (iss) : {}", token.getPayload() != null ? token.getPayload().getIss() : null);
+        }
+        return isIssGood;
+    }
+
+    /**
+     * Vérifie si le token provient de l'application utilisateur.
+     * @param validationParams Paramètres de validation du token.
+     * @return Vrai si le token provient de l'application utilisateur, faux sinon.
+     */
+    private static boolean isFromUserAppContent(JWTAuthToken token, JwtValidationParams validationParams){
+        if(validationParams == null || validationParams.getIdAppUserContent() == null){
+            LOG.warn("L'identifiant de l'application est nul - (Paramètre oidc.jwt.id.appusercontent)");
+            return false;
+        }
+        String userContent = validationParams.getIdAppUserContent() + ".apps.googleusercontent.com";
+        boolean isGoodAud = token.getPayload() != null && token.getPayload().getAud() != null && token.getPayload().getAud().equals(userContent);
+        if(!isGoodAud){
+            LOG.warn("Le token n'est pas généré depuis l'application utilisateur [{}] : {}", validationParams.getIdAppUserContent(), token.getPayload() != null ? token.getPayload().getAud() : null);
+        }
+        return isGoodAud;
     }
 
 }
