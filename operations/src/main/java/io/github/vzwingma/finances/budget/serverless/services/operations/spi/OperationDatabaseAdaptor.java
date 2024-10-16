@@ -4,7 +4,6 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleAvantApres;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
-import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
@@ -143,13 +142,14 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                 .onItem().transform(budget -> {
                     budget.getListeOperations()
                             .forEach(operation -> {
-                                assert libellesToOverride != null;
-                                libellesToOverride.forEach(libelle -> {
-                                    if (operation.getLibelle().trim().equalsIgnoreCase(libelle.getAvant().trim())) {
-                                        LOGGER.debug("    override du libellé [{}] --> [{}]", libelle.getAvant(), libelle.getApres());
-                                        operation.setLibelle(libelle.getApres());
-                                    }
-                                });
+                                if(libellesToOverride != null){
+                                    libellesToOverride.forEach(libelle -> {
+                                        if (operation.getLibelle().trim().equalsIgnoreCase(libelle.getAvant().trim())) {
+                                            LOGGER.debug("    override du libellé [{}] --> [{}]", libelle.getAvant(), libelle.getApres());
+                                            operation.setLibelle(libelle.getApres());
+                                        }
+                                    });
+                                }
                             });
                     return budget;
                 })

@@ -7,7 +7,6 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
-import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIInterceptors;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
