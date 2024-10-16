@@ -4,6 +4,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.TotauxCategorie;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleCategorieOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationTypeEnum;
@@ -20,6 +21,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +49,6 @@ public class OperationsService implements IOperationsAppProvider {
 
     @Inject
     IBudgetAppProvider budgetService;
-
-
     /**
      * Calcul des soldes
      *
@@ -299,10 +299,18 @@ public class OperationsService implements IOperationsAppProvider {
      * @return liste des libellés des opérations
      */
     @Override
-    public Multi<String> getLibellesOperations(String idCompte) {
+    public Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte) {
         return dataOperationsProvider.getLibellesOperations(idCompte)
-                .map(c -> c.replaceAll("\\[.*\\]", "").trim())
-                .select().distinct();
+                .onItem().transform(doc -> {
+                    Document attributes = doc.get("operationLibelleAttributes", Document.class);
+                    LibelleCategorieOperation libelleCategorieOperation = new LibelleCategorieOperation();
+                    // Suppression des tags [En Retard][Intercompte], et du commentaire - xxx
+                    libelleCategorieOperation.setLibelle(BudgetDataUtils.deleteTagFromString(attributes.getString("libelle").split("-")[0]));
+                    libelleCategorieOperation.setCategorieId(attributes.getString("categorieId"));
+                    libelleCategorieOperation.setSsCategorieId(attributes.getString("ssCategorieId"));
+                    return libelleCategorieOperation;
+                })
+                .select().distinct((o1, o2) -> o1.getLibelle().compareToIgnoreCase(o2.getLibelle()));
     }
 
 

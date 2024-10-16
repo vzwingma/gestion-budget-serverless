@@ -164,25 +164,35 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
      * @return libelles des opérations
      */
     @Override
-    public Multi<String> getLibellesOperations(String idCompte) {
+    public Multi<Document> getLibellesOperations(String idCompte) {
 
         LOGGER.info("Liste des libellés des opérations du compte {}", idCompte);
-
+        String opattribute = "operationLibelleAttributes";
         return mongoCollection()
                 .aggregate(
-                        Arrays.asList(new Document("$match",
+                        Arrays.asList(
+                                new Document("$match",
                                         new Document(ATTRIBUT_COMPTE_ID, idCompte)),
-                                // Petit trick : on projete le libellé sur un document dont l'attribut sera un String dans BudgetMensuel
+                                // On projette les libellés des opérations et les catégories associées
                                 new Document("$project",
-                                        new Document(ATTRIBUT_COMPTE_ID, "$listeOperations.libelle")),
-                                // et on le remappe sur un des attributs String  idCompteBancaire dans BudgetMensuel
+                                        new Document(opattribute,
+                                                new Document("$map",
+                                                        new Document("input", "$listeOperations")
+                                                                .append("as", "operation")
+                                                                    .append("in",
+                                                                            new Document("libelle", "$$operation.libelle")
+                                                                                 .append("categorieId"   , "$$operation.categorie._id")
+                                                                                 .append("ssCategorieId" , "$$operation.ssCategorie._id"))
+                                                )
+                                        )
+                                ),
+                                // et on éclate le tableau en documents séparés
                                 new Document("$unwind",
-                                        new Document("path", "$" + ATTRIBUT_COMPTE_ID)
+                                        new Document("path", "$" + opattribute)
                                                 .append("includeArrayIndex", "string")
                                                 .append("preserveNullAndEmptyArrays", false))
                         )
-                )
-                .map(BudgetMensuel::getIdCompteBancaire);
+                , Document.class);
     }
 
     /**

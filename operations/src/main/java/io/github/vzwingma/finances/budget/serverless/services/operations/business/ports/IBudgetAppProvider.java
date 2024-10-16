@@ -1,6 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business.ports;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleCategorieOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
 import io.smallrye.mutiny.Multi;
@@ -104,5 +105,5 @@ public interface IBudgetAppProvider {
      * @param auteur   utilisateur authentifié
      * @return libelles des opérations
      */
-    Multi<String> getLibellesOperations(String idCompte, String auteur);
+    Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte, String auteur);
 }

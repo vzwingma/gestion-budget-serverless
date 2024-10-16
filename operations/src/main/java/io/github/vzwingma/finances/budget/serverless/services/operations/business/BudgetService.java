@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleCategorieOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationPeriodiciteEnum;
@@ -482,7 +483,8 @@ public class BudgetService implements IBudgetAppProvider {
             final String libelleOperation = ligneOperation.getLibelle();
             String idBudgetDestination = BudgetDataUtils.getBudgetId(idCompteDestination, BudgetDataUtils.getMoisFromBudgetId(idBudget), BudgetDataUtils.getAnneeFromBudgetId(idBudget));
             String idCompteSource = BudgetDataUtils.getCompteFromBudgetId(idBudget);
-
+            Month moisFromBudgetId = BudgetDataUtils.getMoisFromBudgetId(idBudget);
+            Integer anneeFromBudgetId = BudgetDataUtils.getAnneeFromBudgetId(idBudget);
             LOGGER.info("Ajout d'un transfert intercompte de {} vers {} ({}) > {} ", idBudget, idBudgetDestination, idCompteDestination, ligneOperation);
 
             /*
@@ -511,18 +513,14 @@ public class BudgetService implements IBudgetAppProvider {
             /*
              * Opération sur Compte cible
              */
-
-            Uni<BudgetMensuel> budgetCible =
-                    Uni.combine().all().unis(
-                                    getBudgetAndCompteActif(idBudgetDestination).map(Tuple2::getItem1),
-                                    this.comptesService.getCompteById(idCompteSource))
-                            .asTuple()
+            Uni<BudgetMensuel> budgetCible = this.comptesService.getCompteById(idCompteDestination)
+                                                .onItem().ifNotNull()
+                                                .transformToUni(compteDestination -> chargerBudgetMensuelSurCompteActif(compteDestination, moisFromBudgetId, anneeFromBudgetId))
                             .invoke(tuple -> {
                                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudgetDestination).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource);
-                                String libelleOperationCible = "[depuis " + tuple.getItem2().getId() + "] " + libelleOperation;
-                                this.operationsAppProvider.addOperationIntercompte(tuple.getItem1().getListeOperations(), ligneOperation, libelleOperationCible, auteur);
+                                String libelleOperationCible = "[depuis " + idCompteSource+ "] " + libelleOperation;
+                                this.operationsAppProvider.addOperationIntercompte(tuple.getListeOperations(), ligneOperation, libelleOperationCible, auteur);
                             })
-                            .map(Tuple2::getItem1)
                             .onItem().ifNotNull()
                             .invoke(this::recalculSoldes)
                             // Sauvegarde du budget
@@ -571,7 +569,8 @@ public class BudgetService implements IBudgetAppProvider {
      * @return liste des libellés d'opérations
      */
     @Override
-    public Multi<String> getLibellesOperations(String idCompte, String auteur) {
+    public Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte, String auteur) {
         return this.operationsAppProvider.getLibellesOperations(idCompte);
+
     }
 }
