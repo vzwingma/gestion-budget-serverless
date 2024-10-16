@@ -56,7 +56,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
      */
     @Override
     public Uni<BudgetMensuel> chargeBudgetMensuel(CompteBancaire compte, Month mois, int annee) {
-        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, BudgetDataUtils.getBudgetId(compte.getId(), mois, annee));
+        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, BudgetMensuel.getBudgetId(compte.getId(), mois, annee));
         LOGGER.info("Chargement du budget {}/{} du compte {} ", mois, annee, compte.getId());
         return find(ATTRIBUT_COMPTE_ID + " = ?1 and " + ATTRIBUT_MOIS + " = ?2 and " + ATTRIBUT_ANNEE + " = ?3", compte.getId(), mois.toString(), annee)
                 .singleResultOptional()

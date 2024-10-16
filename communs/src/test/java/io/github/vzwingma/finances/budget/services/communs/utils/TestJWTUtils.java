@@ -96,7 +96,7 @@ class TestJWTUtils {
 
         LOG.info(LocalDateTime.now().toString());
         LOG.info(token.expiredAt().toString());
-        assertFalse(token.isValid(null));
+        assertFalse(JWTUtils.isValid(token, null));
 
         JWTUtils.encodeJWT(token);
 
@@ -133,7 +133,7 @@ class TestJWTUtils {
         String rawToken = ID_TOKEN_BAD_APP;
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertFalse(token.isValid(generateValidParams()));
+        assertFalse(JWTUtils.isValid(token, generateValidParams()));
     }
 
 
@@ -143,7 +143,7 @@ class TestJWTUtils {
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
 
-        assertFalse(token.isValid(generateValidParams()));
+        assertFalse(JWTUtils.isValid(token, generateValidParams()));
     }
 
 
@@ -152,7 +152,7 @@ class TestJWTUtils {
         String rawToken = ID_TOKEN_SIGNED;
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertTrue(token.hasValidSignature(generateValidParams()));
+        assertTrue(JWTUtils.hasValidSignature(token, generateValidParams()));
     }
 
 
@@ -162,7 +162,7 @@ class TestJWTUtils {
         String rawToken = ID_TOKEN;
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertFalse(token.hasValidSignature(generateValidParams()));
+        assertFalse(JWTUtils.hasValidSignature(token, generateValidParams()));
     }
 
 
@@ -172,7 +172,7 @@ class TestJWTUtils {
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
 
-        assertTrue(token.isValid(generateValidParams()));
+        assertTrue(JWTUtils.isValid(token, generateValidParams()));
     }
 
 }

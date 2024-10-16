@@ -78,7 +78,7 @@ public class BudgetService implements IBudgetAppProvider {
      */
     @Override
     public Uni<BudgetMensuel> getBudgetMensuel(String idCompte, Month mois, int annee) {
-        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.BUDGET, BudgetDataUtils.getBudgetId(idCompte, mois, annee));
+        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.BUDGET, BudgetMensuel.getBudgetId(idCompte, mois, annee));
         LOGGER.debug("Chargement du budget de {}/{}", mois, annee);
         return this.comptesService.getCompteById(idCompte)
                 .invoke(compte -> LOGGER.debug("-> Compte correspondant : {}", compte))
@@ -288,7 +288,7 @@ public class BudgetService implements IBudgetAppProvider {
         // MAJ Calculs à partir du mois précédent
         // Recherche du budget précédent
         // Si impossible : on retourne le budget initialisé
-        String idBudgetPrecedent = BudgetDataUtils.getBudgetId(compteBancaire.getId(), mois.minus(1), Month.DECEMBER.equals(mois.minus(1)) ? annee - 1 : annee);
+        String idBudgetPrecedent = BudgetMensuel.getBudgetId(compteBancaire.getId(), mois.minus(1), Month.DECEMBER.equals(mois.minus(1)) ? annee - 1 : annee);
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudgetPrecedent);
         LOGGER.debug("Chargement du budget précédent pour initialisation");
         return getBudgetMensuel(idBudgetPrecedent)
@@ -481,7 +481,7 @@ public class BudgetService implements IBudgetAppProvider {
 
         try {
             final String libelleOperation = ligneOperation.getLibelle();
-            String idBudgetDestination = BudgetDataUtils.getBudgetId(idCompteDestination, BudgetDataUtils.getMoisFromBudgetId(idBudget), BudgetDataUtils.getAnneeFromBudgetId(idBudget));
+            String idBudgetDestination = BudgetMensuel.getBudgetId(idCompteDestination, BudgetDataUtils.getMoisFromBudgetId(idBudget), BudgetDataUtils.getAnneeFromBudgetId(idBudget));
             String idCompteSource = BudgetDataUtils.getCompteFromBudgetId(idBudget);
             Month moisFromBudgetId = BudgetDataUtils.getMoisFromBudgetId(idBudget);
             Integer anneeFromBudgetId = BudgetDataUtils.getAnneeFromBudgetId(idBudget);

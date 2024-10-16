@@ -112,7 +112,7 @@ public class BudgetMensuel extends AbstractAPIObjectModel implements Serializabl
      * @param annee    année
      * @return id de budget
      */
-    private static String getBudgetId(String idCompte, Month mois, int annee) {
+    public static String getBudgetId(String idCompte, Month mois, int annee) {
         return String.format("%s_%s_%s", idCompte, annee, String.format("%02d", mois.getValue()));
     }
 

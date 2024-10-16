@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
 import io.github.vzwingma.finances.budget.services.communs.api.security.IJwtSecurityContext;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.*;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
@@ -32,7 +33,7 @@ public class RequestJWTHeaderFactory implements ClientHeadersFactory {
         // Ajout du JWT Token et Ajout de l'API Key
         if (securityContext != null) {
             JWTAuthToken jwToken = securityContext.getJwtValidatedToken();
-            if (jwToken != null && jwToken.isNotExpired()) {
+            if (jwToken != null && JWTUtils.isNotExpired(jwToken)) {
                 headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + jwToken.getRawContent());
             } else {
                 LOG.warn("L'appel n'est pas authentifié : JWT Token est null ou expiré");

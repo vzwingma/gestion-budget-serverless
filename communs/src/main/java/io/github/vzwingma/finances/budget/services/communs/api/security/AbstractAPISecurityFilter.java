@@ -40,7 +40,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
         if (rawJWTToken != null && !rawJWTToken.isEmpty() && !"null".equals(rawJWTToken)) {
             try {
                 JWTAuthToken jwToken = JWTUtils.decodeJWT(rawJWTToken);
-                if(jwToken.isValid(securityContext.getJwtValidationParams())){
+                if(JWTUtils.isValid(jwToken, securityContext.getJwtValidationParams())){
                     securityContext.setJwtValidatedToken(jwToken);
                 }
                 else {

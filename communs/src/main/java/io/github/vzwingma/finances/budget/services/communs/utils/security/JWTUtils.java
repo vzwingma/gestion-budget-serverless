@@ -179,7 +179,7 @@ public class JWTUtils {
      * Vérifie si le token est expiré en comparant la date et l'heure actuelles à la date d'expiration.
      * @return Vrai si le token est expiré, faux sinon.
      */
-    private static boolean isNotExpired(JWTAuthToken token) {
+    public static boolean isNotExpired(JWTAuthToken token) {
         boolean isExpired = true;
         LocalDateTime expAt = token.expiredAt();
         if (expAt != null) {

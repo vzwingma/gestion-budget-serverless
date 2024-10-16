@@ -80,7 +80,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
 
         if (idCompte != null && mois != null && annee != null) {
             try {
-                String idBudget = BudgetDataUtils.getBudgetId(idCompte, Month.of(mois), annee);
+                String idBudget = BudgetMensuel.getBudgetId(idCompte, Month.of(mois), annee);
                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
                 return budgetService.getBudgetMensuel(idCompte, Month.of(mois), annee);
             } catch (NumberFormatException e) {
@@ -123,7 +123,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
 
         if (mois != null && annee != null) {
             try {
-                String idBudget = BudgetDataUtils.getBudgetId(idCompte, Month.of(mois), annee);
+                String idBudget = BudgetMensuel.getBudgetId(idCompte, Month.of(mois), annee);
                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
                 return budgetService.getSoldesBudgetMensuel(idCompte, Month.of(mois), annee);
             } catch (NumberFormatException e) {
