@@ -126,6 +126,8 @@ class BudgetDataUtilsTest {
 
 
         assertEquals("Libellé Opération", BudgetDataUtils.deleteTagFromString("[Virement depuis @utre Compte] Libellé Opération"));
+        assertEquals("Libellé Opération", BudgetDataUtils.deleteTagFromString("[En Retard] Libellé Opération"));
+        assertEquals("Libellé Opération", BudgetDataUtils.deleteTagFromString("[En Retard][Virement depuis @utre Compte] Libellé Opération"));
     }
 
     @Test
