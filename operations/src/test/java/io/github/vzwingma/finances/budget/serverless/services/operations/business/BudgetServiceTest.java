@@ -150,7 +150,8 @@ class BudgetServiceTest {
         Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
-    @Test
+    @SuppressWarnings("unchecked")
+@Test
     void testInitNewBudgetOnCompteActif() {
 
         // Initialisation
@@ -186,7 +187,8 @@ class BudgetServiceTest {
     }
 
 
-    @Test
+    @SuppressWarnings("unchecked")
+@Test
     void testGetBudgetSurCompteInactif() {
 
         // Initialisation

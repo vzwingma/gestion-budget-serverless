@@ -9,6 +9,7 @@ import org.bson.codecs.configuration.CodecRegistry;
  * Enregistrement des codecs pour les échanges avec MongoDB
  */
 public class RegisterPanacheCodecs implements CodecProvider {
+    @SuppressWarnings("unchecked")
     @Override
     public <T> Codec<T> get(Class<T> clazz, CodecRegistry registry) {
         if (clazz.equals(Utilisateur.class)) {

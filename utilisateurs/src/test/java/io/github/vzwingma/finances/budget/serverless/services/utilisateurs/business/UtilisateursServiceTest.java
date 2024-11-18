@@ -54,7 +54,7 @@ class UtilisateursServiceTest {
     void testGetUtilisateurKO() {
         // Lancement du test
         Assertions.assertThrows(CompletionException.class, () -> {
-            Utilisateur utilisateur = appProvider.getUtilisateur("Test2").await().indefinitely();
+            appProvider.getUtilisateur("Test2").await().indefinitely();
         });
 
         //Vérification

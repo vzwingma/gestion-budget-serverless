@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.Getter;
 import lombok.Setter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -20,7 +18,6 @@ import java.time.ZoneId;
 @Setter
 public class JWTAuthToken {
 
-    private static final Logger LOG = LoggerFactory.getLogger(JWTAuthToken.class);
     private JwtAuthHeader header;
 
     private JWTAuthPayload payload;

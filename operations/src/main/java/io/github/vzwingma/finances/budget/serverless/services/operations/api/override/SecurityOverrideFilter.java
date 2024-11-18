@@ -2,7 +2,6 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.api.ov
 
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
 import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.PreMatching;
 import jakarta.ws.rs.ext.Provider;
 import lombok.Getter;
@@ -15,7 +14,7 @@ import java.io.IOException;
 @Getter
 @Provider
 @PreMatching
-public class SecurityOverrideFilter extends AbstractAPISecurityFilter implements ContainerRequestFilter {
+public class SecurityOverrideFilter extends AbstractAPISecurityFilter {
 
     private String apiKey;
 

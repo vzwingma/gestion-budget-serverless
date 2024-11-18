@@ -32,7 +32,7 @@ import java.util.Map;
 @Getter
 @Setter
 @NoArgsConstructor
-public class BudgetMensuel extends AbstractAPIObjectModel implements Serializable {
+public class BudgetMensuel extends AbstractAPIObjectModel {
 
     @Serial
     private static final long serialVersionUID = 4393433203514049021L;
