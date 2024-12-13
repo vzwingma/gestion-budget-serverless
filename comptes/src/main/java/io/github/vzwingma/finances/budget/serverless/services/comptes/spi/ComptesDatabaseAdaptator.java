@@ -33,7 +33,7 @@ public class ComptesDatabaseAdaptator implements IComptesRepository {
     public Multi<CompteBancaire> chargeComptes(String idUtilisateur) {
         try {
             LOGGER.info("Chargement des comptes de l'utilisateur");
-            return find("proprietaire.login", idUtilisateur)
+            return findAll() // find("proprietaire.login", idUtilisateur) -> issue IHM#219
                     .stream()
                     .invoke(compte -> LOGGER.debug("Chargement du compte [{}] en BDD terminé", compte.getLibelle()));
         } catch (Exception e) {
