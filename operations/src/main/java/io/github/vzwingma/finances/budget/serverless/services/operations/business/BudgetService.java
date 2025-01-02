@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleCategorieOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationPeriodiciteEnum;
@@ -11,6 +12,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IComptesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
@@ -76,7 +78,7 @@ public class BudgetService implements IBudgetAppProvider {
      */
     @Override
     public Uni<BudgetMensuel> getBudgetMensuel(String idCompte, Month mois, int annee) {
-        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.BUDGET, BudgetDataUtils.getBudgetId(idCompte, mois, annee));
+        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.BUDGET, BudgetMensuel.getBudgetId(idCompte, mois, annee));
         LOGGER.debug("Chargement du budget de {}/{}", mois, annee);
         return this.comptesService.getCompteById(idCompte)
                 .invoke(compte -> LOGGER.debug("-> Compte correspondant : {}", compte))
@@ -91,14 +93,6 @@ public class BudgetService implements IBudgetAppProvider {
     }
 
 
-    public Multi<BudgetMensuel> getBudgetsMensuels(String idCompte) {
-        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
-        LOGGER.debug("Chargement des budgets");
-        return this.comptesService.getCompteById(idCompte)
-                .invoke(compte -> LOGGER.debug("-> Compte correspondant : {}", compte))
-                .onItem().ifNotNull()
-                .transformToMulti(this::chargerBudgetsMensuelsSurCompte);
-    }
 
     /**
      * Chargement du budget mensuel
@@ -112,7 +106,18 @@ public class BudgetService implements IBudgetAppProvider {
         return this.dataOperationsProvider.chargeBudgetMensuel(idBudget);
     }
 
-
+    /**
+     * Retourne le solde et les totaux par catégorie pour un budget mensuel (ou la liste des budgets mensuels) pour un compte et une année donnée
+     * @param idCompte identifiant du compte
+     * @param mois mois (facultatif)
+     * @param annee année
+     * @return liste des soldes et totaux par catégorie
+     */
+    @Override
+    public Multi<ProjectionBudgetSoldes> getSoldesBudgetMensuel(String idCompte, Month mois, int annee){
+        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
+        return this.dataOperationsProvider.chargeSoldesBudgetMensuel(idCompte, mois, annee);
+    }
     /**
      * Chargement du budget et du compte en double Uni
      *
@@ -170,12 +175,13 @@ public class BudgetService implements IBudgetAppProvider {
 
 
     /**
-     * Chargement du budget du dernier mois connu pour le compte inactif
+     * Cette méthode est utilisée pour charger le budget mensuel d'un compte bancaire inactif pour un mois et une année spécifiques.
+     * Elle utilise le service de fournisseur de données d'opérations pour récupérer le budget mensuel.
      *
-     * @param compteBancaire compte bancaire
-     * @param mois           mois
-     * @param annee          année
-     * @return budget mensuel chargé à partir des données précédentes
+     * @param compteBancaire Le compte bancaire inactif pour lequel le budget mensuel doit être chargé.
+     * @param mois Le mois pour lequel le budget mensuel doit être chargé.
+     * @param annee L'année pour laquelle le budget mensuel doit être chargé.
+     * @return Un objet Uni contenant le budget mensuel si trouvé, ou une exception BudgetNotFoundException s'il n'est pas trouvé.
      */
     private Uni<BudgetMensuel> chargerBudgetMensuelSurCompteInactif(CompteBancaire compteBancaire, Month mois, int annee) {
         LOGGER.debug(" Chargement du budget sur compte inactif de {}/{}", mois, annee);
@@ -202,22 +208,9 @@ public class BudgetService implements IBudgetAppProvider {
     }
 
 
-    /**
-     * Chargement des budgets du compte
-     *
-     * @param compteBancaire compte bancaire
-     * @return budgets mensuels chargés à partir des données précédentes
-     */
-    private Multi<BudgetMensuel> chargerBudgetsMensuelsSurCompte(CompteBancaire compteBancaire) {
-        LOGGER.debug(" Chargement des budgets du compte");
-
-        // Chargement du budget précédent
-        return this.dataOperationsProvider.chargeBudgetsMensuels(compteBancaire.getId());
-    }
     /************************************
      *  			CALCULS
      ***********************************/
-
 
     /**
      * Recalcul du solde à la fin du mois précédent
@@ -295,7 +288,7 @@ public class BudgetService implements IBudgetAppProvider {
         // MAJ Calculs à partir du mois précédent
         // Recherche du budget précédent
         // Si impossible : on retourne le budget initialisé
-        String idBudgetPrecedent = BudgetDataUtils.getBudgetId(compteBancaire.getId(), mois.minus(1), Month.DECEMBER.equals(mois.minus(1)) ? annee - 1 : annee);
+        String idBudgetPrecedent = BudgetMensuel.getBudgetId(compteBancaire.getId(), mois.minus(1), Month.DECEMBER.equals(mois.minus(1)) ? annee - 1 : annee);
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudgetPrecedent);
         LOGGER.debug("Chargement du budget précédent pour initialisation");
         return getBudgetMensuel(idBudgetPrecedent)
@@ -488,9 +481,10 @@ public class BudgetService implements IBudgetAppProvider {
 
         try {
             final String libelleOperation = ligneOperation.getLibelle();
-            String idBudgetDestination = BudgetDataUtils.getBudgetId(idCompteDestination, BudgetDataUtils.getMoisFromBudgetId(idBudget), BudgetDataUtils.getAnneeFromBudgetId(idBudget));
+            String idBudgetDestination = BudgetMensuel.getBudgetId(idCompteDestination, BudgetDataUtils.getMoisFromBudgetId(idBudget), BudgetDataUtils.getAnneeFromBudgetId(idBudget));
             String idCompteSource = BudgetDataUtils.getCompteFromBudgetId(idBudget);
-
+            Month moisFromBudgetId = BudgetDataUtils.getMoisFromBudgetId(idBudget);
+            Integer anneeFromBudgetId = BudgetDataUtils.getAnneeFromBudgetId(idBudget);
             LOGGER.info("Ajout d'un transfert intercompte de {} vers {} ({}) > {} ", idBudget, idBudgetDestination, idCompteDestination, ligneOperation);
 
             /*
@@ -519,18 +513,14 @@ public class BudgetService implements IBudgetAppProvider {
             /*
              * Opération sur Compte cible
              */
-
-            Uni<BudgetMensuel> budgetCible =
-                    Uni.combine().all().unis(
-                                    getBudgetAndCompteActif(idBudgetDestination).map(Tuple2::getItem1),
-                                    this.comptesService.getCompteById(idCompteSource))
-                            .asTuple()
+            Uni<BudgetMensuel> budgetCible = this.comptesService.getCompteById(idCompteDestination)
+                                                .onItem().ifNotNull()
+                                                .transformToUni(compteDestination -> chargerBudgetMensuelSurCompteActif(compteDestination, moisFromBudgetId, anneeFromBudgetId))
                             .invoke(tuple -> {
                                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudgetDestination).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource);
-                                String libelleOperationCible = "[depuis " + tuple.getItem2().getId() + "] " + libelleOperation;
-                                this.operationsAppProvider.addOperationIntercompte(tuple.getItem1().getListeOperations(), ligneOperation, libelleOperationCible, auteur);
+                                String libelleOperationCible = "[depuis " + idCompteSource+ "] " + libelleOperation;
+                                this.operationsAppProvider.addOperationIntercompte(tuple.getListeOperations(), ligneOperation, libelleOperationCible, auteur);
                             })
-                            .map(Tuple2::getItem1)
                             .onItem().ifNotNull()
                             .invoke(this::recalculSoldes)
                             // Sauvegarde du budget
@@ -579,7 +569,8 @@ public class BudgetService implements IBudgetAppProvider {
      * @return liste des libellés d'opérations
      */
     @Override
-    public Multi<String> getLibellesOperations(String idCompte, String auteur) {
+    public Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte, String auteur) {
         return this.operationsAppProvider.getLibellesOperations(idCompte);
+
     }
 }

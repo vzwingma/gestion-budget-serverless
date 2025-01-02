@@ -63,7 +63,7 @@ public class MockDataBudgets {
         budget.setMois(Month.JANUARY);
         budget.setAnnee(2022);
         budget.setIdCompteBancaire(getCompteC1().getId());
-        budget.setId(BudgetDataUtils.getBudgetId(budget.getIdCompteBancaire(), budget.getMois(), budget.getAnnee()));
+        budget.setId(BudgetMensuel.getBudgetId(budget.getIdCompteBancaire(), budget.getMois(), budget.getAnnee()));
 
         budget.setActif(true);
         budget.setDateMiseAJour(LocalDateTime.now().minusDays(1));
@@ -84,7 +84,7 @@ public class MockDataBudgets {
         budget.setMois(Month.JANUARY);
         budget.setAnnee(2022);
         budget.setIdCompteBancaire(getCompteCx(2).getId());
-        budget.setId(BudgetDataUtils.getBudgetId(budget.getIdCompteBancaire(), budget.getMois(), budget.getAnnee()));
+        budget.setId(BudgetMensuel.getBudgetId(budget.getIdCompteBancaire(), budget.getMois(), budget.getAnnee()));
 
         budget.setActif(true);
         budget.setDateMiseAJour(LocalDateTime.now().minusDays(1));
@@ -102,7 +102,7 @@ public class MockDataBudgets {
         bo.setAnnee(2021);
         bo.setActif(false);
         bo.setIdCompteBancaire(getCompteC1().getId());
-        bo.setId(BudgetDataUtils.getBudgetId(bo.getIdCompteBancaire(), bo.getMois(), bo.getAnnee()));
+        bo.setId(BudgetMensuel.getBudgetId(bo.getIdCompteBancaire(), bo.getMois(), bo.getAnnee()));
 
         bo.getSoldes().setSoldeAtFinMoisCourant(1000D);
         bo.getSoldes().setSoldeAtMaintenant(1000D);
@@ -122,7 +122,7 @@ public class MockDataBudgets {
         budget.setMois(Month.JANUARY);
         budget.setAnnee(2022);
         budget.setIdCompteBancaire(getCompteC1().getId());
-        budget.setId(BudgetDataUtils.getBudgetId(budget.getIdCompteBancaire(), budget.getMois(), budget.getAnnee()));
+        budget.setId(BudgetMensuel.getBudgetId(budget.getIdCompteBancaire(), budget.getMois(), budget.getAnnee()));
 
         budget.setActif(true);
         budget.setDateMiseAJour(LocalDateTime.now().minusDays(1));

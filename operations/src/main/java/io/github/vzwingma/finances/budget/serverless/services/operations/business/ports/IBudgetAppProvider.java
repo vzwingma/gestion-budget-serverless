@@ -1,7 +1,9 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business.ports;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleCategorieOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -23,13 +25,14 @@ public interface IBudgetAppProvider {
      */
     Uni<BudgetMensuel> getBudgetMensuel(String idCompte, Month mois, int annee);
 
-
     /**
-     * Chargement des budgets mensuels du compte
-     * @param idCompte id du compte
-     * @return budgets mensuels
+     * Retourne le solde et les totaux par catégorie pour un budget mensuel (ou la liste des budgets mensuels) pour un compte et une année donnée
+     * @param idCompte identifiant du compte
+     * @param mois mois (facultatif)
+     * @param annee année
+     * @return liste des soldes et totaux par catégorie
      */
-    Multi<BudgetMensuel> getBudgetsMensuels(String idCompte);
+    Multi<ProjectionBudgetSoldes> getSoldesBudgetMensuel(String idCompte, Month mois, int annee);
     /**
      * Charger budget
      *
@@ -102,5 +105,5 @@ public interface IBudgetAppProvider {
      * @param auteur   utilisateur authentifié
      * @return libelles des opérations
      */
-    Multi<String> getLibellesOperations(String idCompte, String auteur);
+    Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte, String auteur);
 }

@@ -1,8 +1,9 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleAvantApres;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
-import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Month;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -39,9 +41,21 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     private static final String ATTRIBUT_ANNEE = "annee";
     private static final String ATTRIBUT_MOIS = "mois";
 
+
+    /**
+     * Cette méthode est utilisée pour charger le budget mensuel pour un compte bancaire spécifique, un mois et une année donnés.
+     * Elle commence par enregistrer l'ID du budget dans le contexte de trace métier.
+     * Ensuite, elle tente de trouver le budget dans la base de données en utilisant l'ID du compte, le mois et l'année.
+     * Si le budget est trouvé, il est renvoyé. Sinon, une exception BudgetNotFoundException est levée.
+     *
+     * @param compte Le compte bancaire pour lequel le budget doit être chargé.
+     * @param mois Le mois pour lequel le budget doit être chargé.
+     * @param annee L'année pour laquelle le budget doit être chargé.
+     * @return Un objet Uni contenant le budget mensuel s'il est trouvé, ou une exception BudgetNotFoundException s'il n'est pas trouvé.
+     */
     @Override
     public Uni<BudgetMensuel> chargeBudgetMensuel(CompteBancaire compte, Month mois, int annee) {
-        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, BudgetDataUtils.getBudgetId(compte.getId(), mois, annee));
+        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, BudgetMensuel.getBudgetId(compte.getId(), mois, annee));
         LOGGER.info("Chargement du budget {}/{} du compte {} ", mois, annee, compte.getId());
         return find(ATTRIBUT_COMPTE_ID + " = ?1 and " + ATTRIBUT_MOIS + " = ?2 and " + ATTRIBUT_ANNEE + " = ?3", compte.getId(), mois.toString(), annee)
                 .singleResultOptional()
@@ -53,6 +67,33 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                 })
                 .invoke(budget -> LOGGER.debug("-> Réception du budget {}. {} opérations", budget.getId(), budget.getListeOperations().size()));
     }
+
+
+    /**
+     * Retourne le solde et les totaux par catégorie pour un budget mensuel (ou la liste des budgets mensuels) pour un compte et une année donnée
+     * @param idCompte identifiant du compte
+     * @param mois mois (facultatif)
+     * @param annee année
+     * @return liste des soldes et totaux par catégorie
+     */
+    @Override
+    public Multi<ProjectionBudgetSoldes> chargeSoldesBudgetMensuel(String idCompte, Month mois, int annee){
+        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
+        LOGGER.info("Chargement des soldes {}{} du compte {} ", mois != null ? mois +"/" : "", annee, idCompte);
+        String query = ATTRIBUT_COMPTE_ID + " = ?1 and " + ATTRIBUT_ANNEE + " = ?2";
+        if(mois != null){
+            query += " and " + ATTRIBUT_MOIS + " = ?3";
+        }
+        return find(query, idCompte, annee, mois, Sort.by("id"))
+                .project(ProjectionBudgetSoldes.class)
+                .stream()
+                .onFailure()
+                .transform(e -> {
+                    LOGGER.error("Erreur lors du chargement des budgets de {}", idCompte, e);
+                    return new BudgetNotFoundException("Erreur lors du chargement des budgets " + idCompte);
+                });
+    }
+
 
     /**
      * @param idBudget id budget
@@ -83,22 +124,37 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                 .invoke(budget -> LOGGER.debug("-> Réception du budget {}. {} opérations", budget.getId(), budget.getListeOperations().size()));
     }
 
+
+
+
     /**
-     * Chargement des budgets mensuels du compte
+     * Mise à jour des libellés des opérations d'un compte pour les homogénéiser
      *
-     * @param idCompte compte bancaire
-     * @return budgets mensuels : flux de budgets mensuels correspondants au compte
+     * @param idCompte           id du compte
+     * @param libellesToOverride liste des libellés à mettre à jour
+     * @return override des libellés pour les budgets mensuels
      */
-    @Override
-    public Multi<BudgetMensuel> chargeBudgetsMensuels(String idCompte){
-        LOGGER.info("Chargement des budgets ");
+    public Multi<BudgetMensuel> overrideLibellesOperations(String idCompte, List<LibelleAvantApres> libellesToOverride) {
+
+        LOGGER.info("Mise à jour des libellés des opérations du compte {} : {} éléments", idCompte, libellesToOverride != null ? libellesToOverride.size() : 0);
         return find(ATTRIBUT_COMPTE_ID + "=?1", idCompte, Sort.by("id"))
                 .stream()
-                .onFailure()
-                    .transform(e -> {
-                        LOGGER.error("Erreur lors du chargement des budgets de {}", idCompte, e);
-                        return new BudgetNotFoundException("Erreur lors du chargement des budgets " + idCompte);
-                    });
+                .onItem().transform(budget -> {
+                    budget.getListeOperations()
+                            .forEach(operation -> {
+                                if(libellesToOverride != null){
+                                    libellesToOverride.forEach(libelle -> {
+                                        if (operation.getLibelle().trim().equalsIgnoreCase(libelle.getAvant().trim())) {
+                                            LOGGER.debug("    override du libellé [{}] --> [{}]", libelle.getAvant(), libelle.getApres());
+                                            operation.setLibelle(libelle.getApres());
+                                        }
+                                    });
+                                }
+                            });
+                    return budget;
+                })
+                .onItem().transformToUniAndConcatenate(this::persistOrUpdate); // on sauvegarde les budgets mis à jour uniquement si des modifications ont été apportées
+
     }
 
     /**
@@ -108,24 +164,35 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
      * @return libelles des opérations
      */
     @Override
-    public Multi<String> getLibellesOperations(String idCompte) {
-        LOGGER.info("Liste des libellés des opérations du compte {}", idCompte);
+    public Multi<Document> getLibellesOperations(String idCompte) {
 
+        LOGGER.info("Liste des libellés des opérations du compte {}", idCompte);
+        String opattribute = "operationLibelleAttributes";
         return mongoCollection()
                 .aggregate(
-                        Arrays.asList(new Document("$match",
+                        Arrays.asList(
+                                new Document("$match",
                                         new Document(ATTRIBUT_COMPTE_ID, idCompte)),
-                                // Petit trick : on projete le libellé sur un document dont l'attribut sera un String dans BudgetMensuel
+                                // On projette les libellés des opérations et les catégories associées
                                 new Document("$project",
-                                        new Document(ATTRIBUT_COMPTE_ID, "$listeOperations.libelle")),
-                                // et on le remappe sur un des attributs String  idCompteBancaire dans BudgetMensuel
+                                        new Document(opattribute,
+                                                new Document("$map",
+                                                        new Document("input", "$listeOperations")
+                                                                .append("as", "operation")
+                                                                    .append("in",
+                                                                            new Document("libelle", "$$operation.libelle")
+                                                                                 .append("categorieId"   , "$$operation.categorie._id")
+                                                                                 .append("ssCategorieId" , "$$operation.ssCategorie._id"))
+                                                )
+                                        )
+                                ),
+                                // et on éclate le tableau en documents séparés
                                 new Document("$unwind",
-                                        new Document("path", "$" + ATTRIBUT_COMPTE_ID)
+                                        new Document("path", "$" + opattribute)
                                                 .append("includeArrayIndex", "string")
                                                 .append("preserveNullAndEmptyArrays", false))
                         )
-                )
-                .map(BudgetMensuel::getIdCompteBancaire);
+                , Document.class);
     }
 
     /**

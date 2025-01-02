@@ -4,11 +4,12 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.api.enu
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.BudgetService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.OperationsService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JwtAuthHeader;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
@@ -27,6 +28,9 @@ import java.time.Month;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+
 
 @QuarkusTest
 class BudgetsResourceTest {
@@ -34,11 +38,14 @@ class BudgetsResourceTest {
     @Inject
     IBudgetAppProvider budgetService;
 
+
     @BeforeAll
     public static void init() {
         QuarkusMock.installMockForType(Mockito.mock(BudgetService.class), BudgetService.class);
         QuarkusMock.installMockForType(Mockito.mock(OperationsService.class), OperationsService.class);
+        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
+
 
     @Test
     void testInfoEndpoint() {
@@ -87,7 +94,8 @@ class BudgetsResourceTest {
                 + "?actif=true";
 
         given()
-                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+                .header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
                 .when()
                 .get(url)
                 .then()
@@ -115,7 +123,7 @@ class BudgetsResourceTest {
     }
 
     @Test
-    void testGetBudgetById() {
+    void testGetBudgetsUtilisateurById() {
         // Init des données
         Mockito.when(budgetService.getBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
@@ -134,7 +142,7 @@ class BudgetsResourceTest {
 
 
     @Test
-    void testGetBudgetByParams() {
+    void testGetBudgetsUtilisateurByParams() {
         // Init des données
         Mockito.when(budgetService.getBudgetMensuel(anyString(), any(Month.class), anyInt()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
@@ -152,7 +160,7 @@ class BudgetsResourceTest {
 
 
     @Test
-    void testGetBudgetByParamsKO() {
+    void testGetBudgetsUtilisateurByParamsKO() {
         // Test
         String url = OperationsAPIEnum.BUDGET_BASE + OperationsAPIEnum.BUDGET_QUERY;
 
@@ -174,7 +182,8 @@ class BudgetsResourceTest {
                 + OperationsAPIEnum.BUDGET_ID.replace(OperationsAPIEnum.PARAM_ID_BUDGET, "1");
 
         given()
-                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+                .header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
                 .when().delete(url)
                 .then()
                 .statusCode(200)
@@ -190,6 +199,8 @@ class BudgetsResourceTest {
         p.setGiven_name("Test");
         p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
         p.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
+        p.setIss("https://accounts.google.com");
+        p.setAud("test.apps.googleusercontent.com");
         return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p));
     }
 }

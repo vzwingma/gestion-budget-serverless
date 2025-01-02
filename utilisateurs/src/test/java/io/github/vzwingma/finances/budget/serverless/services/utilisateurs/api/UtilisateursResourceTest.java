@@ -5,9 +5,10 @@ import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.busin
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.model.Utilisateur;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.ports.IUtilisateursAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.data.MockDataUtilisateur;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.JwtAuthHeader;
+import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.spi.JwsSigningKeysDatabaseAdaptor;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.UserAccessForbiddenException;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
@@ -32,9 +33,12 @@ class UtilisateursResourceTest {
     @Inject
     IUtilisateursAppProvider utilisateurService;
 
+
     @BeforeAll
     public static void init() {
         QuarkusMock.installMockForType(Mockito.mock(UtilisateursService.class), UtilisateursService.class);
+        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
+
     }
 
     @Test
@@ -52,6 +56,7 @@ class UtilisateursResourceTest {
         Utilisateur utilisateurExpected = MockDataUtilisateur.getTestUtilisateurWithDate();
         Mockito.when(utilisateurService.getLastAccessDate(Mockito.anyString()))
                 .thenReturn(Uni.createFrom().item(utilisateurExpected.getDernierAcces()));
+
         // Test
         given()
                 .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
@@ -85,6 +90,7 @@ class UtilisateursResourceTest {
         // Init des données
         Mockito.when(utilisateurService.getLastAccessDate(Mockito.anyString()))
                 .thenReturn(Uni.createFrom().nullItem());
+
         // Test
         given()
                 .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
@@ -104,6 +110,8 @@ class UtilisateursResourceTest {
         p.setGiven_name("Test");
         p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
         p.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
+        p.setIss("https://accounts.google.com");
+        p.setAud("test.apps.googleusercontent.com");
         return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p));
     }
 }

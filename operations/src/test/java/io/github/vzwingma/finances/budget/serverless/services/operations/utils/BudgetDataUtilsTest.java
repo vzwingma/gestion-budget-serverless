@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.utils;
 
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationPeriodiciteEnum;
@@ -64,7 +65,7 @@ class BudgetDataUtilsTest {
     void getBudgetId() {
         CompteBancaire c1 = new CompteBancaire();
         c1.setId("ING");
-        assertEquals("ING_2018_01", BudgetDataUtils.getBudgetId(c1.getId(), Month.JANUARY, 2018));
+        assertEquals("ING_2018_01", BudgetMensuel.getBudgetId(c1.getId(), Month.JANUARY, 2018));
     }
 
 
@@ -125,6 +126,8 @@ class BudgetDataUtilsTest {
 
 
         assertEquals("Libellé Opération", BudgetDataUtils.deleteTagFromString("[Virement depuis @utre Compte] Libellé Opération"));
+        assertEquals("Libellé Opération", BudgetDataUtils.deleteTagFromString("[En Retard] Libellé Opération"));
+        assertEquals("Libellé Opération", BudgetDataUtils.deleteTagFromString("[En Retard][Virement depuis @utre Compte] Libellé Opération"));
     }
 
     @Test
