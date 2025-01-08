@@ -119,17 +119,20 @@ public class BudgetsResource extends AbstractAPIInterceptors {
 
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("getSoldesBudget {}/{}", mois, annee);
-
-        if (mois != null && annee != null) {
-            try {
-                String idBudget = BudgetMensuel.getBudgetId(idCompte, Month.of(mois), annee);
-                BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
-                return budgetService.getSoldesBudgetMensuel(idCompte, Month.of(mois), annee);
-            } catch (NumberFormatException e) {
-                return Multi.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
+        if(idCompte != null) {
+            if (mois != null && annee != null) {
+                try {
+                    String idBudget = BudgetMensuel.getBudgetId(idCompte, Month.of(mois), annee);
+                    BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
+                    return budgetService.getSoldesBudgetMensuel(idCompte, Month.of(mois), annee);
+                } catch (NumberFormatException e) {
+                    return Multi.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
+                }
+            } else if (annee != null) {
+                return budgetService.getSoldesBudgetMensuel(idCompte, null, annee);
+            } else {
+                return budgetService.getSoldesBudgetMensuel(idCompte, null, null);
             }
-        } else if (annee != null) {
-            return budgetService.getSoldesBudgetMensuel(idCompte, null, annee);
         }
         return Multi.createFrom().failure(new BadParametersException("Mois et année doivent être renseignés"));
     }

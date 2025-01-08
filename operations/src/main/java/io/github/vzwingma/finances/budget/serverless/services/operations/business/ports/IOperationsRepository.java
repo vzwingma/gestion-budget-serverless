@@ -36,7 +36,7 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
      * @param annee année
      * @return liste des soldes et totaux par catégorie
      */
-    Multi<ProjectionBudgetSoldes> chargeSoldesBudgetMensuel(String idCompte, Month mois, int annee);
+    Multi<ProjectionBudgetSoldes> chargeSoldesBudgetMensuel(String idCompte, Month mois, Integer annee);
     /**
      * Activité Budget
      *
