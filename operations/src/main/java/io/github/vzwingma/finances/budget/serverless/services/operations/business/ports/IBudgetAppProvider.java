@@ -32,7 +32,7 @@ public interface IBudgetAppProvider {
      * @param annee année
      * @return liste des soldes et totaux par catégorie
      */
-    Multi<ProjectionBudgetSoldes> getSoldesBudgetMensuel(String idCompte, Month mois, int annee);
+    Multi<ProjectionBudgetSoldes> getSoldesBudgetMensuel(String idCompte, Month mois, Integer annee);
     /**
      * Charger budget
      *

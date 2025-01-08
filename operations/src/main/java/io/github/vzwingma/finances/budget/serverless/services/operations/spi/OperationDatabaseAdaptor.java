@@ -77,10 +77,13 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
      * @return liste des soldes et totaux par catégorie
      */
     @Override
-    public Multi<ProjectionBudgetSoldes> chargeSoldesBudgetMensuel(String idCompte, Month mois, int annee){
+    public Multi<ProjectionBudgetSoldes> chargeSoldesBudgetMensuel(String idCompte, Month mois, Integer annee){
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
-        LOGGER.info("Chargement des soldes {}{} du compte {} ", mois != null ? mois +"/" : "", annee, idCompte);
-        String query = ATTRIBUT_COMPTE_ID + " = ?1 and " + ATTRIBUT_ANNEE + " = ?2";
+        LOGGER.info("Chargement des soldes {}{} du compte {} ", mois != null ? mois +"/" : "", annee != null ? annee : " de toutes les années", idCompte);
+        String query = ATTRIBUT_COMPTE_ID + " = ?1 ";
+        if(annee != null) {
+            query += " and" + ATTRIBUT_ANNEE + " = ?2";
+        }
         if(mois != null){
             query += " and " + ATTRIBUT_MOIS + " = ?3";
         }
