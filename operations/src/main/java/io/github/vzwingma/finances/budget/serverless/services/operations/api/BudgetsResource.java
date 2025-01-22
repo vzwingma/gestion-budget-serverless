@@ -134,6 +134,9 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         } else if (annee != null) {
             return budgetService.getSoldesBudgetMensuel(idCompte, null, annee);
         }
+        else {
+            return budgetService.getSoldesBudgetMensuel(idCompte, null, null);
+        }
         return Multi.createFrom().failure(new BadParametersException("Mois et année doivent être renseignés"));
     }
 
