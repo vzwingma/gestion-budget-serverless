@@ -20,7 +20,8 @@ public class AbstractBusinessException extends IOException {
     @Serial
     private static final long serialVersionUID = -8869692972880299979L;
 
-
+    // Libellé de l'exception
+    private final String libelle;
     /**
      * Exception métier
      *
@@ -29,6 +30,7 @@ public class AbstractBusinessException extends IOException {
     public AbstractBusinessException(String libelleErreur) {
         Logger logger = LoggerFactory.getLogger(this.getClass());
         libelleErreur = libelleErreur.replaceAll("[\n\r]", "_");
+        this.libelle = libelleErreur;
         logger.error("{}", libelleErreur);
     }
 }
