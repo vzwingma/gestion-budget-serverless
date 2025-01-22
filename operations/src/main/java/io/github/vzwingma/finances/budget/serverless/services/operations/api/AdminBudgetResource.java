@@ -31,8 +31,7 @@ public class AdminBudgetResource extends AbstractAPIInterceptors {
 
     @Inject
     IBudgetAdminAppProvider budgetAdminService;
-    @PathParam("idCompte")
-    private String idCompte;
+
 
 
     /**

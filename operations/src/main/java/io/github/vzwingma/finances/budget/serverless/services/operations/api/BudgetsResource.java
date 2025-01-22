@@ -137,7 +137,6 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         else {
             return budgetService.getSoldesBudgetMensuel(idCompte, null, null);
         }
-        return Multi.createFrom().failure(new BadParametersException("Mois et année doivent être renseignés"));
     }
 
 
@@ -162,7 +161,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
     public Uni<BudgetMensuel> getBudgetsUtilisateur(@RestPath("idBudget") String idBudget) {
 
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
-        LOG.trace("chargeBudget");
+
         if (idBudget != null) {
             return budgetService.getBudgetMensuel(idBudget);
         } else {
