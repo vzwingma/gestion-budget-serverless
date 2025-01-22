@@ -10,7 +10,9 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.spi.pro
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIInterceptors;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.AbstractBusinessException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
+import io.github.vzwingma.finances.budget.services.communs.utils.security.SecurityUtils;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
@@ -78,7 +80,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
 
         if (idCompte != null && mois != null && annee != null) {
             try {
-                idCompte = idCompte.replaceAll("[\n\r]", "_");
+                idCompte = idCompte.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
                 String idBudget = BudgetMensuel.getBudgetId(idCompte, Month.of(mois), annee);
                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
                 return budgetService.getBudgetMensuel(idCompte, Month.of(mois), annee);
@@ -120,7 +122,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         if(idCompte == null) {
             return Multi.createFrom().failure(new BadParametersException("IdCompte doit être renseigné"));
         }
-        idCompte = idCompte.replaceAll("[\n\r]", "_");
+        idCompte = idCompte.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
 
         if (mois != null && annee != null) {
@@ -194,7 +196,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("Réinitialisation du budget");
         if (idBudget != null) {
-            idBudget = idBudget.replaceAll("[\n\r]", "_");
+            idBudget = idBudget.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
             return budgetService.reinitialiserBudgetMensuel(idBudget);
         } else {
             return Uni.createFrom().failure(new BadParametersException("L'id du budget doit être renseigné"));
@@ -227,7 +229,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         if(idBudget == null){
             return Uni.createFrom().failure(new BadParametersException("Le paramètre {idBudget} est obligatoire"));
         }
-        idBudget = idBudget.replaceAll("[\n\r]", "_");
+        idBudget = idBudget.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
 
         if (Boolean.TRUE.equals(actif)) {
@@ -259,7 +261,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
     public Uni<BudgetMensuel> setBudgetActif(
             @RestPath("idBudget") String idBudget,
             @RestQuery(value = "actif") Boolean actif) {
-        idBudget = idBudget.replaceAll("[\n\r]", "_");
+        idBudget = idBudget.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         return budgetService.setBudgetActif(idBudget, actif);
     }
@@ -335,8 +337,8 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         String uuidOperation = UUID.randomUUID().toString();
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, uuidOperation).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         if (operation != null && idBudget != null) {
-            idBudget = idBudget.replaceAll("[\n\r]", "_");
-            idCompte = idCompte.replaceAll("[\n\r]", "_");
+            idBudget = idBudget.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
+            idCompte = idCompte.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
             LOG.trace("Create Operation InterCompte [->{}]", idCompte);
             operation.setId(uuidOperation);
             return budgetService.createOperationsIntercomptes(idBudget, operation, idCompte, super.getAuthenticatedUser());
@@ -446,7 +448,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
     public Multi<LibelleCategorieOperation> libellesOperationsCompte(@RestPath("idCompte") String idCompte) {
 
         if (idCompte != null) {
-            idCompte = idCompte.replaceAll("[\n\r]", "_");
+            idCompte = idCompte.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
             LOG.info("Libelles des opérations du Compte [{}]", idCompte);
             BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
             return budgetService.getLibellesOperations(idCompte, super.getAuthenticatedUser());

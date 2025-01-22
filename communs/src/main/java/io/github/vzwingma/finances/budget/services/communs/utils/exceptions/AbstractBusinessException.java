@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.services.communs.utils.exceptions;
 
+import io.github.vzwingma.finances.budget.services.communs.utils.security.SecurityUtils;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import java.io.Serial;
  */
 @Getter
 public class AbstractBusinessException extends IOException {
+
     /**
      *
      */
@@ -29,7 +31,7 @@ public class AbstractBusinessException extends IOException {
      */
     public AbstractBusinessException(String libelleErreur) {
         Logger logger = LoggerFactory.getLogger(this.getClass());
-        libelleErreur = libelleErreur.replaceAll("[\n\r]", "_");
+        libelleErreur = libelleErreur.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
         this.libelle = libelleErreur;
         logger.error("{}", libelleErreur);
     }
