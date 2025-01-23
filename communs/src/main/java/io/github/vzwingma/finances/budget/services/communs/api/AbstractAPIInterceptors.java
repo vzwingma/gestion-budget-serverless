@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.services.communs.api;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
 import io.github.vzwingma.finances.budget.services.communs.api.security.IJwtSecurityContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
+import io.github.vzwingma.finances.budget.services.communs.utils.security.SecurityUtils;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -28,7 +29,7 @@ public abstract class AbstractAPIInterceptors {
      */
     public void preMatchingFilter(ContainerRequestContext requestContext) {
         // Replace pattern-breaking characters
-        String path = requestContext.getUriInfo().getPath().replaceAll("[\n\r\t]", "_");
+        String path = requestContext.getUriInfo().getPath().replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
         String apiKey = requestContext.getHeaderString(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY);
         String jwt = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
         LOG.debug("[HTTP] > [uri:{} {}]", requestContext.getMethod(), path);

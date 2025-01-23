@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.services.communs.utils.exceptions;
 
+import io.github.vzwingma.finances.budget.services.communs.utils.security.SecurityUtils;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,46 +15,24 @@ import java.io.Serial;
  */
 @Getter
 public class AbstractBusinessException extends IOException {
+
     /**
      *
      */
     @Serial
     private static final long serialVersionUID = -8869692972880299979L;
 
+    // Libellé de l'exception
     private final String libelle;
-
     /**
      * Exception métier
      *
      * @param libelleErreur libellé de l'erreur
      */
     public AbstractBusinessException(String libelleErreur) {
-        this.libelle = libelleErreur;
-        logErreur(libelleErreur, null);
-    }
-
-    /**
-     * Exception métier
-     *
-     * @param libelleErreur libellé Erreur
-     * @param e             exception
-     */
-    public AbstractBusinessException(String libelleErreur, Throwable e) {
-        this.libelle = libelleErreur;
-        logErreur(libelleErreur, e);
-    }
-
-    /**
-     * @param libelleErreur libellé Erreur
-     * @param ex            exception
-     */
-    private void logErreur(String libelleErreur, Throwable ex) {
         Logger logger = LoggerFactory.getLogger(this.getClass());
-        if (ex != null) {
-            logger.error("{}", libelleErreur);
-        } else {
-            logger.error("{}", libelleErreur, ex);
-        }
+        libelleErreur = libelleErreur.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
+        this.libelle = libelleErreur;
+        logger.error("{}", libelleErreur);
     }
-
 }

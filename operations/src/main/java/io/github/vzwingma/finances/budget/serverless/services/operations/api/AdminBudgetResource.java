@@ -6,13 +6,11 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIInterceptors;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
+import io.github.vzwingma.finances.budget.services.communs.utils.security.SecurityUtils;
 import io.smallrye.mutiny.Multi;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -58,7 +56,7 @@ public class AdminBudgetResource extends AbstractAPIInterceptors {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Multi<String> consolidateLibellesOperations(@RestPath("idCompte") String idCompte, List<LibelleAvantApres> libelles) {
-
+        idCompte = idCompte.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("[idCompte={}] Override libellés : {}", idCompte, libelles != null ? libelles.size() : 0);
         if(libelles == null || libelles.isEmpty()) {
