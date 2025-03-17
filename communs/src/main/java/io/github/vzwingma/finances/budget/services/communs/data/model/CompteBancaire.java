@@ -1,6 +1,5 @@
 package io.github.vzwingma.finances.budget.services.communs.data.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractAPIObjectModel;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import lombok.Getter;
@@ -11,6 +10,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Compte bancaire
@@ -35,8 +35,7 @@ public class CompteBancaire extends AbstractAPIObjectModel {
     @Schema(description = "Libellé du compte")
     private String libelle;
     // Propriétaire du compte
-    @JsonIgnore
-    private Proprietaire proprietaire;
+    private List<Proprietaire> proprietaires;
     // Icone
     @Schema(description = "Icone")
     private String itemIcon;
