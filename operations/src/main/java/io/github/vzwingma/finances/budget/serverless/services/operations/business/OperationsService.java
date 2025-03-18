@@ -8,20 +8,22 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationTypeEnum;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.bson.Document;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +49,9 @@ public class OperationsService implements IOperationsAppProvider {
     @Inject
     IOperationsRepository dataOperationsProvider;
 
-    @Inject
-    IBudgetAppProvider budgetService;
+    @RestClient
+    @ApplicationScoped
+    IParametragesServiceProvider parametragesService;
     /**
      * Calcul des soldes
      *
@@ -300,16 +303,42 @@ public class OperationsService implements IOperationsAppProvider {
      */
     @Override
     public Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte) {
-        return dataOperationsProvider.getLibellesOperations(idCompte)
-                .onItem().transform(doc -> {
-                    Document attributes = doc.get("operationLibelleAttributes", Document.class);
-                    LibelleCategorieOperation libelleCategorieOperation = new LibelleCategorieOperation();
-                    // Suppression des tags [En Retard][Intercompte], et du commentaire - xxx
-                    libelleCategorieOperation.setLibelle(BudgetDataUtils.deleteTagFromString(attributes.getString("libelle").split("-")[0]));
-                    libelleCategorieOperation.setCategorieId(attributes.getString("categorieId"));
-                    libelleCategorieOperation.setSsCategorieId(attributes.getString("ssCategorieId"));
-                    return libelleCategorieOperation;
-                })
+
+
+        return Uni.combine().all().unis(
+                        parametragesService.getCategories(),
+                        dataOperationsProvider.getLibellesOperations(idCompte).collect().asList())
+                .asTuple()
+                .onItem()
+                .transform(tuple -> {
+
+                    List<CategorieOperations> ssCategoriesParams = tuple.getItem1()
+                            .stream().flatMap(cat -> cat.getListeSSCategories().stream())
+                            .filter(ssCat -> ssCat.isActif())
+                            .toList();
+
+                    return tuple.getItem2().stream().map(doc -> {
+                        Document attributes = doc.get("operationLibelleAttributes", Document.class);
+                        LibelleCategorieOperation libelleCategorieOperation = new LibelleCategorieOperation();
+                        // Suppression des tags [En Retard][Intercompte], et du commentaire - xxx
+                        libelleCategorieOperation.setLibelle(BudgetDataUtils.deleteTagFromString(attributes.getString("libelle").split("-")[0]));
+                        String catId = attributes.getString("categorieId");
+                        String ssCatId = attributes.getString("ssCategorieId");
+                        if(ssCategoriesParams.stream()
+                                .anyMatch(ssCatParam -> ssCatParam.getId().equals(ssCatId))) {
+                            libelleCategorieOperation.setCategorieId(catId);
+                            libelleCategorieOperation.setSsCategorieId(ssCatId);
+                        }
+                        else{
+                            libelleCategorieOperation.setCategorieId(null);
+                            libelleCategorieOperation.setSsCategorieId(null);
+                        }
+                        return libelleCategorieOperation;
+                    })
+                    .filter(libelleCategorieOperation -> libelleCategorieOperation.getCategorieId() != null && libelleCategorieOperation.getSsCategorieId() != null)
+                    .distinct()
+                    .toList();
+                }).onItem().transformToMulti(Multi.createFrom()::iterable)
                 .select().distinct((o1, o2) -> o1.getLibelle().compareToIgnoreCase(o2.getLibelle()));
     }
 
