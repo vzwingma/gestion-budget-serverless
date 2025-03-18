@@ -40,7 +40,7 @@ class BudgetsResourceTest {
 
 
     @BeforeAll
-    public static void init() {
+    static void init() {
         QuarkusMock.installMockForType(Mockito.mock(BudgetService.class), BudgetService.class);
         QuarkusMock.installMockForType(Mockito.mock(OperationsService.class), OperationsService.class);
         QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
@@ -195,6 +195,7 @@ class BudgetsResourceTest {
         JwtAuthHeader h = new JwtAuthHeader();
         JWTAuthPayload p = new JWTAuthPayload();
         p.setName("Test");
+        p.setEmail("toto.toto@world.com");
         p.setFamily_name("Test");
         p.setGiven_name("Test");
         p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));

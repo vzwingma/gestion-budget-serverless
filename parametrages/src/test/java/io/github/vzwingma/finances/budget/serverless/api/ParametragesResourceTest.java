@@ -31,7 +31,7 @@ class ParametragesResourceTest {
     ParametragesService parametragesService;
 
     @BeforeAll
-    public static void init() {
+    static void init() {
         QuarkusMock.installMockForType(Mockito.mock(ParametragesService.class), ParametragesService.class);
         QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
@@ -64,6 +64,7 @@ class ParametragesResourceTest {
         JwtAuthHeader h = new JwtAuthHeader();
         JWTAuthPayload p = new JWTAuthPayload();
         p.setName("Test");
+        p.setEmail("Test.test@world.com");
         p.setFamily_name("Test");
         p.setGiven_name("Test");
         p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
