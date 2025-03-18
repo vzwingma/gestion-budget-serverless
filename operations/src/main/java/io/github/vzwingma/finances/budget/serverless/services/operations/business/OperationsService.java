@@ -305,16 +305,16 @@ public class OperationsService implements IOperationsAppProvider {
     public Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte) {
 
 
+        LOGGER.debug("Récupération des libellés des opérations");
         return Uni.combine().all().unis(
                         parametragesService.getCategories(),
                         dataOperationsProvider.getLibellesOperations(idCompte).collect().asList())
                 .asTuple()
                 .onItem()
                 .transform(tuple -> {
-
                     List<CategorieOperations> ssCategoriesParams = tuple.getItem1()
                             .stream().flatMap(cat -> cat.getListeSSCategories().stream())
-                            .filter(ssCat -> ssCat.isActif())
+                            .filter(CategorieOperations::isActif)
                             .toList();
 
                     return tuple.getItem2().stream().map(doc -> {
@@ -324,6 +324,7 @@ public class OperationsService implements IOperationsAppProvider {
                         libelleCategorieOperation.setLibelle(BudgetDataUtils.deleteTagFromString(attributes.getString("libelle").split("-")[0]));
                         String catId = attributes.getString("categorieId");
                         String ssCatId = attributes.getString("ssCategorieId");
+
                         if(ssCategoriesParams.stream()
                                 .anyMatch(ssCatParam -> ssCatParam.getId().equals(ssCatId))) {
                             libelleCategorieOperation.setCategorieId(catId);
@@ -336,7 +337,6 @@ public class OperationsService implements IOperationsAppProvider {
                         return libelleCategorieOperation;
                     })
                     .filter(libelleCategorieOperation -> libelleCategorieOperation.getCategorieId() != null && libelleCategorieOperation.getSsCategorieId() != null)
-                    .distinct()
                     .toList();
                 }).onItem().transformToMulti(Multi.createFrom()::iterable)
                 .select().distinct((o1, o2) -> o1.getLibelle().compareToIgnoreCase(o2.getLibelle()));
