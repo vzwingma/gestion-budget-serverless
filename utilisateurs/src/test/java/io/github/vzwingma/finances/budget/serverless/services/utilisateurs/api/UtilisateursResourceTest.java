@@ -106,6 +106,7 @@ class UtilisateursResourceTest {
         JwtAuthHeader h = new JwtAuthHeader();
         JWTAuthPayload p = new JWTAuthPayload();
         p.setName("Test");
+        p.setEmail("test.test@world.com");
         p.setFamily_name("Test");
         p.setGiven_name("Test");
         p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
