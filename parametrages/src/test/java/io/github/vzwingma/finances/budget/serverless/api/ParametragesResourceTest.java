@@ -31,7 +31,7 @@ class ParametragesResourceTest {
     ParametragesService parametragesService;
 
     @BeforeAll
-    public static void init() {
+    static void init() {
         QuarkusMock.installMockForType(Mockito.mock(ParametragesService.class), ParametragesService.class);
         QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }

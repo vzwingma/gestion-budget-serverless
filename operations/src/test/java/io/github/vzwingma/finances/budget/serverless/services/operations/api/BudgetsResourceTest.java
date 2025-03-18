@@ -40,7 +40,7 @@ class BudgetsResourceTest {
 
 
     @BeforeAll
-    public static void init() {
+    static void init() {
         QuarkusMock.installMockForType(Mockito.mock(BudgetService.class), BudgetService.class);
         QuarkusMock.installMockForType(Mockito.mock(OperationsService.class), OperationsService.class);
         QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
