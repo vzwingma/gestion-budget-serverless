@@ -195,6 +195,7 @@ class BudgetsResourceTest {
         JwtAuthHeader h = new JwtAuthHeader();
         JWTAuthPayload p = new JWTAuthPayload();
         p.setName("Test");
+        p.setEmail("toto.toto@world.com");
         p.setFamily_name("Test");
         p.setGiven_name("Test");
         p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
