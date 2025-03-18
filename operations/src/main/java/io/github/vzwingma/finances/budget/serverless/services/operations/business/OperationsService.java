@@ -8,6 +8,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationTypeEnum;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
@@ -52,6 +53,9 @@ public class OperationsService implements IOperationsAppProvider {
     @RestClient
     @ApplicationScoped
     IParametragesServiceProvider parametragesService;
+
+    @Inject
+    IBudgetAppProvider budgetService;
     /**
      * Calcul des soldes
      *
