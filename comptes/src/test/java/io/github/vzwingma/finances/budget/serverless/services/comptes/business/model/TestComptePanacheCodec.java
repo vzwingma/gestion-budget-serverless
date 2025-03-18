@@ -50,8 +50,8 @@ class TestComptePanacheCodec {
         assertEquals("img/banque.png", compteBancaire.getItemIcon());
         assertEquals(12, compteBancaire.getOrdre());
         assertEquals(true, compteBancaire.isActif());
-        assertEquals(new ObjectId("54aa7db30bc460e1aeb95596"), compteBancaire.getProprietaires().get(0).getId());
-        assertEquals("test", compteBancaire.getProprietaires().get(0).getLogin());
+        assertEquals(new ObjectId("54aa7db30bc460e1aeb95596"), compteBancaire.getProprietaires().getFirst().getId());
+        assertEquals("test", compteBancaire.getProprietaires().getFirst().getLogin());
     }
 
 

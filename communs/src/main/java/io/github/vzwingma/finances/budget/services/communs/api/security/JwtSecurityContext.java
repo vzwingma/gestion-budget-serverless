@@ -63,9 +63,7 @@ public class JwtSecurityContext implements IJwtSecurityContext {
     public Principal getUserPrincipal() {
         if (jwtValidatedToken != null && jwtValidatedToken.getPayload() != null) {
             JWTAuthPayload p = this.jwtValidatedToken.getPayload();
-            String g = p.getGiven_name() != null && !p.getGiven_name().isEmpty() ? p.getGiven_name().substring(0, 1).toLowerCase() : "";
-            String f = p.getFamily_name() != null && !p.getFamily_name().isEmpty() ? p.getFamily_name().substring(0, Math.min(p.getFamily_name().length(), 7)).toLowerCase() : "";
-            return new UserPrincipal(g + f);
+            return new UserPrincipal(p.getEmail());
         }
         else{
             LOG.warn("L'utilisateur n'a pas de token JWT valide");

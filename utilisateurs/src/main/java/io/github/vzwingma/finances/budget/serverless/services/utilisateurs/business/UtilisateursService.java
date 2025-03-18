@@ -58,8 +58,10 @@ public class UtilisateursService implements IUtilisateursAppProvider {
         // Enregistrement de la date du dernier accès à maintenant, en async
         return getUtilisateur(login)
                 .onItem().transform(user -> {
-                    LOGGER.info("{} accède à l'application", user.toFullString());
-                    updateUtilisateurLastConnection(user);
+                    LOGGER.info("{} accède à l'application", user != null ? user.toFullString() : "Utilisateur inconnu");
+                    if(user != null){
+                        updateUtilisateurLastConnection(user);
+                    }
                     return user;
                 })
                 .map(Utilisateur::getDernierAcces);
