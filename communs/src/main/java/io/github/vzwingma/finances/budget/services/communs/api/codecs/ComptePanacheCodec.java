@@ -69,7 +69,7 @@ public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
         compteBancaire.setItemIcon(document.getString("itemIcon"));
         compteBancaire.setOrdre(document.getInteger("ordre"));
         // feat #67 & compatibilité asc : ajout des multiples propriétaires
-        
+
         Document proprietaireDocument = document.get("proprietaire", Document.class);
         if(proprietaireDocument != null) {
             CompteBancaire.Proprietaire proprietaire = decode(proprietaireDocument);
@@ -107,7 +107,6 @@ public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
     private Proprietaire decode(Document document) {
         Proprietaire proprietaire = new Proprietaire();
         proprietaire.setId(document.getObjectId("_id"));
-        proprietaire.setLibelle(document.getString("libelle"));
         proprietaire.setLogin(document.getString("login"));
         return proprietaire;
     }

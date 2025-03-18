@@ -13,21 +13,21 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Classe de test pour la classe {@link ComptePanacheCodec}..
- * 
+ *
  * Cette classe contient plusieurs tests unitaires pour vérifier le bon fonctionnement
  * des méthodes de décodage et d'encodage de la classe ComptePanacheCodec.
- * 
+ *
  * Tests inclus :
  * - testDecodeMonoProprietaire : Vérifie le décodage d'un compte bancaire avec un seul propriétaire.
  * - testDecodeMultiProprietaire : Vérifie le décodage d'un compte bancaire avec plusieurs propriétaires.
  * - testType : Vérifie que la classe encodée est bien CompteBancaire.
  * - testDocumentId : Vérifie que l'identifiant du document est correctement généré et récupéré.
- * 
+ *
  * Scénarios de test :
  * - Les JSON d'entrée contiennent des comptes bancaires avec différentes configurations de propriétaires.
  * - Les comptes décodés doivent avoir les mêmes propriétés que celles définies dans les JSON.
  * - Les propriétés vérifiées incluent : id, libelle, itemIcon, ordre, actif, et les propriétaires.
- * 
+ *
  * Vérifications :
  * - Les objets CompteBancaire ne doivent pas être null.
  * - Les propriétés id, libelle, itemIcon, ordre, et actif doivent correspondre aux valeurs des JSON.
@@ -52,22 +52,21 @@ class TestComptePanacheCodec {
         assertEquals(true, compteBancaire.isActif());
         assertEquals(new ObjectId("54aa7db30bc460e1aeb95596"), compteBancaire.getProprietaires().get(0).getId());
         assertEquals("test", compteBancaire.getProprietaires().get(0).getLogin());
-        assertEquals("test", compteBancaire.getProprietaires().get(0).getLibelle());
     }
 
 
     /**
      * Teste la méthode de décodage pour un compte avec plusieurs propriétaires.
-     * 
+     *
      * Ce test vérifie que le JSON représentant un compte bancaire avec plusieurs propriétaires
      * est correctement décodé en un objet CompteBancaire. Il vérifie également que les propriétés
      * de l'objet CompteBancaire résultant sont correctement définies.
-     * 
+     *
      * Scénario de test :
      * - Le JSON d'entrée contient un compte avec deux propriétaires.
      * - Le compte décodé doit avoir les mêmes propriétés que celles définies dans le JSON.
      * - Les propriétés vérifiées incluent : id, libelle, itemIcon, ordre, actif, et les propriétaires.
-     * 
+     *
      * Vérifications :
      * - L'objet CompteBancaire ne doit pas être null.
      * - Les propriétés id, libelle, itemIcon, ordre, et actif doivent correspondre aux valeurs du JSON.
@@ -91,10 +90,8 @@ class TestComptePanacheCodec {
         assertEquals(2, compteBancaire.getProprietaires().size());
         assertEquals(new ObjectId("54aa7db30bc460e1aeb95596"), compteBancaire.getProprietaires().get(0).getId());
         assertEquals("testP1", compteBancaire.getProprietaires().get(0).getLogin());
-        assertEquals("testP1", compteBancaire.getProprietaires().get(0).getLibelle());
         assertEquals(new ObjectId("54aa7db30ff460e1aeb95596"), compteBancaire.getProprietaires().get(1).getId());
         assertEquals("testP2", compteBancaire.getProprietaires().get(1).getLogin());
-        assertEquals("testP2", compteBancaire.getProprietaires().get(1).getLibelle());        
     }
 
 

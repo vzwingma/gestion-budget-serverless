@@ -115,8 +115,6 @@ public class CompteBancaire extends AbstractAPIObjectModel {
         private ObjectId id;
         // Login
         private String login;
-        // Libellé
-        private String libelle;
     }
 
 
