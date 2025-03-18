@@ -64,6 +64,7 @@ class ParametragesResourceTest {
         JwtAuthHeader h = new JwtAuthHeader();
         JWTAuthPayload p = new JWTAuthPayload();
         p.setName("Test");
+        p.setEmail("Test.test@world.com");
         p.setFamily_name("Test");
         p.setGiven_name("Test");
         p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
