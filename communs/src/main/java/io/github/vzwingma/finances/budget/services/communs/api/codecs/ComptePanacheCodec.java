@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.services.communs.api.codecs;
 
 import com.mongodb.MongoClientSettings;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
+import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire.Proprietaire;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.bson.*;
 import org.bson.codecs.Codec;
@@ -12,6 +13,8 @@ import org.bson.codecs.EncoderContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -65,13 +68,21 @@ public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
 
         compteBancaire.setItemIcon(document.getString("itemIcon"));
         compteBancaire.setOrdre(document.getInteger("ordre"));
+        // feat #67 & compatibilité asc : ajout des multiples propriétaires
 
-        CompteBancaire.Proprietaire proprietaire = new CompteBancaire.Proprietaire();
         Document proprietaireDocument = document.get("proprietaire", Document.class);
-        proprietaire.setId(proprietaireDocument.getObjectId("_id"));
-        proprietaire.setLibelle(proprietaireDocument.getString("libelle"));
-        proprietaire.setLogin(proprietaireDocument.getString("login"));
-        compteBancaire.setProprietaire(proprietaire);
+        if(proprietaireDocument != null) {
+            CompteBancaire.Proprietaire proprietaire = decode(proprietaireDocument);
+            compteBancaire.setProprietaires(List.of(proprietaire));
+        }
+        List<Document> proprietairesDocument = document.getList("proprietaires", Document.class);
+        if(proprietairesDocument != null) {
+            compteBancaire.setProprietaires(new ArrayList<>());
+            proprietairesDocument.forEach(prop -> {
+                CompteBancaire.Proprietaire propTemp = decode(prop);
+                compteBancaire.getProprietaires().add(propTemp);
+            });
+        }
 
         return compteBancaire;
     }
@@ -84,5 +95,19 @@ public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
     @Override
     public Class<CompteBancaire> getEncoderClass() {
         return CompteBancaire.class;
+    }
+
+
+    /**
+     * Décode un document MongoDB en un objet Proprietaire.
+     *
+     * @param document le document MongoDB à décoder
+     * @return un objet Proprietaire avec les données du document
+     */
+    private Proprietaire decode(Document document) {
+        Proprietaire proprietaire = new Proprietaire();
+        proprietaire.setId(document.getObjectId("_id"));
+        proprietaire.setLogin(document.getString("login"));
+        return proprietaire;
     }
 }

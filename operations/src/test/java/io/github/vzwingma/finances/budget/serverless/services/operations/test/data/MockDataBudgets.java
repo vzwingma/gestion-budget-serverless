@@ -7,6 +7,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBanc
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Jeu de données Budgets
@@ -27,8 +28,8 @@ public class MockDataBudgets {
         c1.setActif(true);
         c1.setId("C" + noCompte);
         c1.setLibelle("Libelle" + noCompte);
-        c1.setProprietaire(new CompteBancaire.Proprietaire());
-        c1.getProprietaire().setLogin("test");
+        c1.setProprietaires(List.of(new CompteBancaire.Proprietaire()));
+        c1.getProprietaires().getFirst().setLogin("test");
         c1.setOrdre(noCompte);
         return c1;
     }

@@ -10,7 +10,6 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.spi.pro
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIInterceptors;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
-import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.AbstractBusinessException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.SecurityUtils;
 import io.smallrye.mutiny.Multi;

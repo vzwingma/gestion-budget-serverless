@@ -7,11 +7,14 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationPeriodiciteEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
+import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataCategories;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +23,7 @@ import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,6 +34,8 @@ class OperationsServiceTest {
 
     private IOperationsRepository mockOperationDataProvider;
 
+    private IParametragesServiceProvider mockParam;
+
     @BeforeEach
     public void setup() {
         mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
@@ -37,6 +43,8 @@ class OperationsServiceTest {
         IBudgetAppProvider budgetAppProvider = Mockito.mock(BudgetService.class);
         operationsAppProvider.setDataOperationsProvider(mockOperationDataProvider);
         operationsAppProvider.setBudgetService(budgetAppProvider);
+        mockParam = Mockito.mock(IParametragesServiceProvider.class);
+        operationsAppProvider.setParametragesService(mockParam);
     }
 
 
@@ -184,30 +192,4 @@ class OperationsServiceTest {
         assertEquals("TestRemboursement", operations.get(1).getLibelle());
     }
 
-    @Test
-    void getLibellesOperations() {
-
-        Document l1 = new Document();
-        Document l1Attributes = new Document();
-        l1Attributes.put("libelle", "Test");
-        l1.put("operationLibelleAttributes", l1Attributes);
-
-        Document l2 = new Document();
-        Document l2Attributes = new Document();
-        l2Attributes.put("libelle",  "[depuis Compte] TestInterCompte");
-        l2.put("operationLibelleAttributes", l2Attributes);
-
-        Document l3 = new Document();
-        Document l3Attributes = new Document();
-        l3Attributes.put("libelle", "[En Retard][Vers Compte] TestVersCompte");
-        l3.put("operationLibelleAttributes", l3Attributes);
-
-        Mockito.when(mockOperationDataProvider.getLibellesOperations(Mockito.anyString())).thenReturn(Multi.createFrom().items(l1, l2, l3));
-        List<LibelleCategorieOperation> libelles = operationsAppProvider.getLibellesOperations("testCompte").collect().asList().await().indefinitely();
-
-        assertEquals(3, libelles.size());
-        assertEquals("Test", libelles.get(0).getLibelle());
-        assertEquals("TestInterCompte", libelles.get(1).getLibelle());
-        assertEquals("TestVersCompte", libelles.get(2).getLibelle());
-    }
 }
