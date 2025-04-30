@@ -144,7 +144,7 @@ public class BudgetDataUtils {
         ligneOperationClonee.getAutresInfos().setDateMaj(LocalDateTime.now());
         // #73
         LocalDate nextDate = null;
-        if(ligneOperation.getAutresInfos().getDateOperation() != null){
+        if(ligneOperation.getAutresInfos() != null && ligneOperation.getAutresInfos().getDateOperation() != null){
             nextDate = ligneOperation.getAutresInfos().getDateOperation().plusMonths(1);
         }
         ligneOperationClonee.getAutresInfos().setDateOperation(nextDate);
