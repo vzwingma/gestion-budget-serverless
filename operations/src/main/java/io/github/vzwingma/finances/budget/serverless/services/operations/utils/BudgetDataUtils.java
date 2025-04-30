@@ -142,7 +142,12 @@ public class BudgetDataUtils {
         }
         ligneOperationClonee.setAutresInfos(new LigneOperation.AddInfos());
         ligneOperationClonee.getAutresInfos().setDateMaj(LocalDateTime.now());
-        ligneOperationClonee.getAutresInfos().setDateOperation(null);
+        // #73
+        LocalDate nextDate = null;
+        if(ligneOperation.getAutresInfos().getDateOperation() != null){
+            nextDate = ligneOperation.getAutresInfos().getDateOperation().plusMonths(1);
+        }
+        ligneOperationClonee.getAutresInfos().setDateOperation(nextDate);
         ligneOperationClonee.setEtat(OperationEtatEnum.PREVUE);
         ligneOperationClonee.setTypeOperation(ligneOperation.getTypeOperation());
         ligneOperationClonee.putValeurFromSaisie(Math.abs(ligneOperation.getValeur()));
@@ -239,7 +244,7 @@ public class BudgetDataUtils {
                 }
             });
             Optional<LigneOperation> maxDate = listeOperations.stream().max(comparator);
-            if (maxDate.isPresent() && maxDate.get().retrieveDateOperation() != null) {
+            if (maxDate.get().retrieveDateOperation() != null) {
                 localDateDerniereOperation = maxDate.get().retrieveDateOperation();
             }
         }
