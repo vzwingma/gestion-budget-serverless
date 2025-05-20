@@ -27,8 +27,6 @@ class OperationsServiceTest {
 
     private IOperationsRepository mockOperationDataProvider;
 
-    private IParametragesServiceProvider mockParam;
-
     @BeforeEach
     public void setup() {
         mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
@@ -36,7 +34,7 @@ class OperationsServiceTest {
         IBudgetAppProvider budgetAppProvider = Mockito.mock(BudgetService.class);
         operationsAppProvider.setDataOperationsProvider(mockOperationDataProvider);
         operationsAppProvider.setBudgetService(budgetAppProvider);
-        mockParam = Mockito.mock(IParametragesServiceProvider.class);
+        IParametragesServiceProvider mockParam = Mockito.mock(IParametragesServiceProvider.class);
         operationsAppProvider.setParametragesService(mockParam);
     }
 
@@ -170,9 +168,9 @@ class OperationsServiceTest {
     void testAddOperationRemboursement() throws DataNotFoundException {
 
         // When
-        CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId());
-        dep.setLibelle(IdsCategoriesEnum.FRAIS_REMBOURSABLES.toString());
-        CategorieOperations.CategorieParente cat = new CategorieOperations.CategorieParente(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId(), "Frais");
+        CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE.getId());
+        dep.setLibelle(IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE.getLibelle());
+        CategorieOperations.CategorieParente cat = new CategorieOperations.CategorieParente(IdsCategoriesEnum.CAT_FRAIS_REMBOURSABLE_SANTE.getId(), IdsCategoriesEnum.CAT_FRAIS_REMBOURSABLE_SANTE.getLibelle());
         dep.setCategorieParente(cat);
         // Test
         List<LigneOperation> operations = new ArrayList<>();

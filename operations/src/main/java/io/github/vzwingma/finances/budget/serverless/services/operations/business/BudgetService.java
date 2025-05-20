@@ -451,7 +451,7 @@ public class BudgetService implements IBudgetAppProvider {
                         budgetSurCompteActif,
                         Uni.createFrom().item(ligneOperation),
                         // On ne va charger la catégorie Remboursement - que pour un frais remboursable
-                        ligneOperation.getCategorie().getId().equals(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId()) ? this.parametragesService.getCategorieParId(IdsCategoriesEnum.REMBOURSEMENT.getId()) : Uni.createFrom().voidItem())
+                        BudgetDataUtils.isSsCategorieRemboursable(ligneOperation.getSsCategorie()) ? this.parametragesService.getCategorieParId(IdsCategoriesEnum.SS_CAT_REMBOURSEMENT.getId()) : Uni.createFrom().voidItem())
                 .asTuple()
                 // Ajout des opérations standard et remboursement (si non nulle)
                 .invoke(tuple -> {

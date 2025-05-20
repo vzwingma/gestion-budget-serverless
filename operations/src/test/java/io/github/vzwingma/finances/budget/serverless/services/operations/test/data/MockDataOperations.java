@@ -62,8 +62,8 @@ public class MockDataOperations {
     }
 
     public static LigneOperation getOperationRemboursement() {
-        CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId());
-        CategorieOperations cat = new CategorieOperations(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId());
+        CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE.getId());
+        CategorieOperations cat = new CategorieOperations(IdsCategoriesEnum.CAT_FRAIS_REMBOURSABLE_SANTE.getId());
         dep.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
         LigneOperation remboursement = new LigneOperation(dep, "TestRemboursement", OperationTypeEnum.DEPENSE, 123D, OperationEtatEnum.REALISEE);
         remboursement.setId("TestRemboursement");

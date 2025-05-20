@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.utils;
 
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibellesOperationEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
@@ -282,4 +283,20 @@ public class BudgetDataUtils {
         return null;
     }
 
+
+    /**
+     * Liste des sous catégories des frais remboursables
+     */
+    private static final IdsCategoriesEnum[] sousCatsFraisRemboursables = {
+            IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_PRO_NDF,
+            IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_DENTISTE,
+            IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_MEDECIN,
+            IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_OPTICIEN,
+            IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE,
+    };
+
+    public static boolean isSsCategorieRemboursable(LigneOperation.Categorie sousCategorieOperation){
+        return Arrays.stream(sousCatsFraisRemboursables)
+                .anyMatch(id -> id.getId().equals(sousCategorieOperation.getId()));
+    }
 }

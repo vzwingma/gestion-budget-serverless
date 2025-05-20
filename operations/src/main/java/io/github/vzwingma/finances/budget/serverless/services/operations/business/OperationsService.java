@@ -167,7 +167,7 @@ public class OperationsService implements IOperationsAppProvider {
                 // Création du remboursement si besoin
                 if (ligneUpdatedPeriodicOperation.getSsCategorie() != null
                         && ligneUpdatedPeriodicOperation.getCategorie() != null
-                        && IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId().equals(ligneUpdatedPeriodicOperation.getCategorie().getId())) {
+                        && BudgetDataUtils.isSsCategorieRemboursable(ligneUpdatedPeriodicOperation.getSsCategorie())) {
 
                     if (ssCategorieRemboursement != null) {
                         LigneOperation operationRemboursement = createOperationRemboursement(ligneUpdatedPeriodicOperation, auteur, ssCategorieRemboursement);
