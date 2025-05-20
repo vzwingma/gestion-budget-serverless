@@ -41,20 +41,28 @@ public class MockDataOperations {
 
     }
 
+    /**
+     *
+     * @return getOperationIntercompte
+     */
     public static LigneOperation getOperationIntercompte() {
-        String TRANSFERT_INTERCOMPTE = "ed3f6100-5dbd-4b68-860e-0c97ae1bbc63";
-        CategorieOperations dep = new CategorieOperations(TRANSFERT_INTERCOMPTE);
-        CategorieOperations cat = new CategorieOperations(TRANSFERT_INTERCOMPTE);
+        String transfertIntercompte = "ed3f6100-5dbd-4b68-860e-0c97ae1bbc63";
+        CategorieOperations dep = new CategorieOperations(transfertIntercompte);
+        CategorieOperations cat = new CategorieOperations(transfertIntercompte);
         dep.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
         LigneOperation test1 = new LigneOperation(dep, "TestIntercompte", OperationTypeEnum.CREDIT, 123D, OperationEtatEnum.PREVUE);
         test1.setId("TestIntercompte");
         return test1;
     }
 
+    /**
+     *
+     * @return getOperationPrelevement
+     */
     public static LigneOperation getOperationPrelevement() {
-        String ABONNEMENT = "b4827cca-bbb4-43af-89e1-4f2ced806343";
-        CategorieOperations dep = new CategorieOperations(ABONNEMENT);
-        CategorieOperations cat = new CategorieOperations(ABONNEMENT);
+        String abonnement = "b4827cca-bbb4-43af-89e1-4f2ced806343";
+        CategorieOperations dep = new CategorieOperations(abonnement);
+        CategorieOperations cat = new CategorieOperations(abonnement);
         dep.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
         LigneOperation test1 = new LigneOperation(dep, "TEST1", OperationTypeEnum.CREDIT, 123D, OperationEtatEnum.PREVUE);
         test1.setId("TEST1");

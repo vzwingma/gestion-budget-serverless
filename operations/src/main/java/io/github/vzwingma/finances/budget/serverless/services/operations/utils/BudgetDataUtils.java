@@ -295,6 +295,11 @@ public class BudgetDataUtils {
             IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE,
     };
 
+    /**
+     *
+     * @param sousCategorieOperation sous catégorie de l'opération
+     * @return si la sous catégorie est un frais remboursable
+     */
     public static boolean isSsCategorieRemboursable(LigneOperation.Categorie sousCategorieOperation){
         return Arrays.stream(sousCatsFraisRemboursables)
                 .anyMatch(id -> id.getId().equals(sousCategorieOperation.getId()));
