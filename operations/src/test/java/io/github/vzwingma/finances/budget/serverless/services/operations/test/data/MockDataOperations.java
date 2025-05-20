@@ -42,8 +42,9 @@ public class MockDataOperations {
     }
 
     public static LigneOperation getOperationIntercompte() {
-        CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.TRANSFERT_INTERCOMPTE.getId());
-        CategorieOperations cat = new CategorieOperations(IdsCategoriesEnum.TRANSFERT_INTERCOMPTE.getId());
+        String TRANSFERT_INTERCOMPTE = "ed3f6100-5dbd-4b68-860e-0c97ae1bbc63";
+        CategorieOperations dep = new CategorieOperations(TRANSFERT_INTERCOMPTE);
+        CategorieOperations cat = new CategorieOperations(TRANSFERT_INTERCOMPTE);
         dep.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
         LigneOperation test1 = new LigneOperation(dep, "TestIntercompte", OperationTypeEnum.CREDIT, 123D, OperationEtatEnum.PREVUE);
         test1.setId("TestIntercompte");
@@ -51,8 +52,9 @@ public class MockDataOperations {
     }
 
     public static LigneOperation getOperationPrelevement() {
-        CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.PRELEVEMENTS_MENSUELS.getId());
-        CategorieOperations cat = new CategorieOperations(IdsCategoriesEnum.PRELEVEMENTS_MENSUELS.getId());
+        String ABONNEMENT = "b4827cca-bbb4-43af-89e1-4f2ced806343";
+        CategorieOperations dep = new CategorieOperations(ABONNEMENT);
+        CategorieOperations cat = new CategorieOperations(ABONNEMENT);
         dep.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
         LigneOperation test1 = new LigneOperation(dep, "TEST1", OperationTypeEnum.CREDIT, 123D, OperationEtatEnum.PREVUE);
         test1.setId("TEST1");
@@ -60,8 +62,8 @@ public class MockDataOperations {
     }
 
     public static LigneOperation getOperationRemboursement() {
-        CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId());
-        CategorieOperations cat = new CategorieOperations(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId());
+        CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE.getId());
+        CategorieOperations cat = new CategorieOperations(IdsCategoriesEnum.CAT_FRAIS_REMBOURSABLE_SANTE.getId());
         dep.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
         LigneOperation remboursement = new LigneOperation(dep, "TestRemboursement", OperationTypeEnum.DEPENSE, 123D, OperationEtatEnum.REALISEE);
         remboursement.setId("TestRemboursement");

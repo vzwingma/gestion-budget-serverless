@@ -326,38 +326,6 @@ class BudgetServiceTest {
 
     }
 
-
-
-    void notestCreateOperationIntercompte() {
-        // When
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel("C1_2022_01"))
-                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel("C2_2022_01"))
-                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC2et0operationPrevue()));
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(argThat(c -> c.getId().equals("C2")), any(Month.class), eq(2022)))
-                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC2et0operationPrevue()));
-
-        Mockito.when(mockCompteServiceProvider.getCompteById("C1"))
-                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
-        Mockito.when(mockCompteServiceProvider.getCompteById("C2"))
-                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC2()));
-        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
-        // Test
-        LigneOperation ligneOperation = MockDataOperations.getOperationIntercompte();
-        BudgetMensuel budgetMensuelAJour = budgetAppProvider.createOperationsIntercomptes("C1_2022_01", ligneOperation, "C2", "userTest").await().indefinitely();
-
-        assertEquals("[vers C2] TestIntercompte", budgetMensuelAJour.getListeOperations().get(1).getLibelle());
-
-        assertEquals(2, budgetMensuelAJour.getListeOperations().size());
-
-        Mockito.verify(budgetAppProvider, Mockito.times(2)).recalculSoldes(any(BudgetMensuel.class));
-        Mockito.verify(mockOperationDataProvider, Mockito.times(2)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
-
-        Mockito.verify(budgetAppProvider, Mockito.times(1)).recalculSoldes(budgetMensuelAJour);
-        Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(budgetMensuelAJour);
-
-    }
-
     @Test
     void testDeleteOperationInBudget() {
         // When

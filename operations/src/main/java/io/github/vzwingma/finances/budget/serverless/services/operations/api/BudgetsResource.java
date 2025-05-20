@@ -338,9 +338,9 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         if (operation != null && idBudget != null) {
             idBudget = idBudget.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
             idCompte = idCompte.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
-            LOG.trace("Create Operation InterCompte [->{}]", idCompte);
+            LOG.trace("Create Operation Virement interne [->{}]", idCompte);
             operation.setId(uuidOperation);
-            return budgetService.createOperationsIntercomptes(idBudget, operation, idCompte, super.getAuthenticatedUser());
+            return budgetService.createOperationsVirementInterne(idBudget, operation, idCompte, super.getAuthenticatedUser());
         } else {
             return Uni.createFrom().failure(new BadParametersException("Les paramètres idBudget, idOperation et idCompte sont obligatoires"));
         }
