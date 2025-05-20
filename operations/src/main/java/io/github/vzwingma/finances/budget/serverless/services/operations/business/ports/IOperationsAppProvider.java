@@ -27,15 +27,15 @@ public interface IOperationsAppProvider {
     void calculSoldes(List<LigneOperation> operations, BudgetMensuel.Soldes soldes, Map<String, TotauxCategorie> totauxCategorieMap, Map<String, TotauxCategorie> totauxSsCategoriesMap);
 
     /**
-     * Ajout d'une ligne transfert intercompte
+     * Ajout d'une ligne de virement interne (rentrée d'argent)
      *
      * @param operations            liste des opérations à mettre à jour budget
-     * @param ligneOperationSource  ligne de dépense, source, pour créer une nouvelle opération
+     * @param ligneOperationSource  ligne de dépense, source, pour créer une nouvelle opération de virement
      * @param libelleOperationCible libelle de la nouvelle opération
      * @param auteur                auteur de l'action
      *                              liste des opérations à mettre à jour dans le budget, avec l'intercompte
      */
-    void addOperationIntercompte(List<LigneOperation> operations, LigneOperation ligneOperationSource, String libelleOperationCible, String auteur);
+    void addOperationVirementInterne(List<LigneOperation> operations, LigneOperation ligneOperationSource, String libelleOperationCible, String auteur);
 
 
     /**

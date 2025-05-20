@@ -104,7 +104,7 @@ class OperationsServiceTest {
 
 
     @Test
-    void testAddOperationIntercompte() {
+    void testAddOperationVirementInterne() {
 
         // When
         List<LigneOperation> listeOperations = new ArrayList<>();
@@ -113,7 +113,7 @@ class OperationsServiceTest {
         LigneOperation operation = MockDataOperations.getOperationIntercompte();
         operation.setEtat(OperationEtatEnum.REALISEE);
         // Test
-        operationsAppProvider.addOperationIntercompte(listeOperations, operation, "vers " + operation.getLibelle(), "userTest");
+        operationsAppProvider.addOperationVirementInterne(listeOperations, operation, "vers " + operation.getLibelle(), "userTest");
         assertEquals(2, listeOperations.size());
         assertEquals(OperationEtatEnum.PREVUE, listeOperations.get(1).getEtat());
         assertNull(listeOperations.get(1).getMensualite());
@@ -121,7 +121,7 @@ class OperationsServiceTest {
 
 
     @Test
-    void testAddOperationIntercompteMensuel() {
+    void testAddOperationVirementInterneMensuel() {
 
         // When
         List<LigneOperation> listeOperations = new ArrayList<>();
@@ -133,7 +133,7 @@ class OperationsServiceTest {
         operation.getMensualite().setPeriode(OperationPeriodiciteEnum.MENSUELLE);
         operation.getMensualite().setProchaineEcheance(1);
         // Test
-        operationsAppProvider.addOperationIntercompte(listeOperations, operation, "vers " + operation.getLibelle(), "userTest");
+        operationsAppProvider.addOperationVirementInterne(listeOperations, operation, "vers " + operation.getLibelle(), "userTest");
         assertEquals(2, listeOperations.size());
         assertEquals(OperationEtatEnum.PREVUE, listeOperations.get(1).getEtat());
         assertEquals(OperationPeriodiciteEnum.MENSUELLE, listeOperations.get(1).getMensualite().getPeriode());
@@ -141,7 +141,7 @@ class OperationsServiceTest {
     }
 
     @Test
-    void testAddOperationIntercompteReportee() {
+    void testAddOperationVirementInterneReportee() {
 
         // When
         List<LigneOperation> listeOperations = new ArrayList<>();
@@ -150,7 +150,7 @@ class OperationsServiceTest {
         LigneOperation operation = MockDataOperations.getOperationIntercompte();
         operation.setEtat(OperationEtatEnum.REPORTEE);
         // Test
-        operationsAppProvider.addOperationIntercompte(listeOperations, operation, "vers " + operation.getLibelle(), "userTest");
+        operationsAppProvider.addOperationVirementInterne(listeOperations, operation, "vers " + operation.getLibelle(), "userTest");
         assertEquals(2, listeOperations.size());
         assertEquals(OperationEtatEnum.REPORTEE, listeOperations.get(1).getEtat());
     }

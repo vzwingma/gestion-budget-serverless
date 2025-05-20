@@ -18,6 +18,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieO
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
@@ -208,7 +209,7 @@ public class BudgetService implements IBudgetAppProvider {
     }
 
 
-    /************************************
+    /* ***********************************
      *  			CALCULS
      ***********************************/
 
@@ -425,7 +426,7 @@ public class BudgetService implements IBudgetAppProvider {
     }
 
 
-    /************************************
+    /* ***********************************
      *  			OPERATIONS
      ***********************************/
 
@@ -469,7 +470,7 @@ public class BudgetService implements IBudgetAppProvider {
     }
 
     /**
-     * Création des opérations inter-comptes
+     * Création des opérations de virement interne
      *
      * @param idBudget            identifiant du budget source
      * @param ligneOperation      ligne de dépense à ajouter
@@ -477,7 +478,7 @@ public class BudgetService implements IBudgetAppProvider {
      * @return budget mensuel mis à jour
      */
     @Override
-    public Uni<BudgetMensuel> createOperationsIntercomptes(String idBudget, final LigneOperation ligneOperation, String idCompteDestination, String auteur) {
+    public Uni<BudgetMensuel> createOperationsVirementInterne(String idBudget, final LigneOperation ligneOperation, String idCompteDestination, String auteur) {
 
         try {
             final String libelleOperation = ligneOperation.getLibelle();
@@ -485,7 +486,12 @@ public class BudgetService implements IBudgetAppProvider {
             String idCompteSource = BudgetDataUtils.getCompteFromBudgetId(idBudget);
             Month moisFromBudgetId = BudgetDataUtils.getMoisFromBudgetId(idBudget);
             Integer anneeFromBudgetId = BudgetDataUtils.getAnneeFromBudgetId(idBudget);
-            LOGGER.info("Ajout d'un transfert intercompte de {} vers {} ({}) > {} ", idBudget, idBudgetDestination, idCompteDestination, ligneOperation);
+
+            if(!IdsCategoriesEnum.SS_CAT_VIREMENT_INTERNE.getId().equals(ligneOperation.getSsCategorie().getId())){
+                LOGGER.error("L'opération {} n'est pas un virement interne. L'opération est annulée", ligneOperation.getLibelle());
+                return Uni.createFrom().failure(new BadParametersException("L'opération "+ligneOperation+" n'est pas un virement interne"));
+            }
+            LOGGER.info("Ajout d'un virement interne de {} vers {} ({}) > {} ", idBudget, idBudgetDestination, idCompteDestination, ligneOperation);
 
             /*
              * Opération sur Compte source
@@ -519,7 +525,7 @@ public class BudgetService implements IBudgetAppProvider {
                             .invoke(tuple -> {
                                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudgetDestination).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource);
                                 String libelleOperationCible = "[depuis " + idCompteSource+ "] " + libelleOperation;
-                                this.operationsAppProvider.addOperationIntercompte(tuple.getListeOperations(), ligneOperation, libelleOperationCible, auteur);
+                                this.operationsAppProvider.addOperationVirementInterne(tuple.getListeOperations(), ligneOperation, libelleOperationCible, auteur);
                             })
                             .onItem().ifNotNull()
                             .invoke(this::recalculSoldes)
@@ -534,7 +540,7 @@ public class BudgetService implements IBudgetAppProvider {
                     .ifNotNull().transform(Tuple2::getItem1);
 
         } catch (BudgetNotFoundException e) {
-            LOGGER.error("Erreur lors de la création de l'opération intercompte", e);
+            LOGGER.error("Erreur lors de la création des opérations de virements internes", e);
             return Uni.createFrom().failure(e);
         }
     }

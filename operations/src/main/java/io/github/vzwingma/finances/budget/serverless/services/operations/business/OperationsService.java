@@ -251,7 +251,7 @@ public class OperationsService implements IOperationsAppProvider {
 
     private LigneOperation createOperationRemboursement(LigneOperation operationSource, String auteur, CategorieOperations ssCategorieRemboursement) {
         // Workaround de #26
-        CategorieOperations.CategorieParente categorieParente = new CategorieOperations.CategorieParente(IdsCategoriesEnum.VIREMENT.getId(), "Virement");
+        CategorieOperations.CategorieParente categorieParente = new CategorieOperations.CategorieParente(IdsCategoriesEnum.CAT_RENTREES.getId(), IdsCategoriesEnum.CAT_RENTREES.getLibelle());
         ssCategorieRemboursement.setCategorieParente(categorieParente);
         // Si l'opération est une opération de remboursement, on ajoute la catégorie de remboursement
         return completeOperationAttributes(new LigneOperation(
@@ -265,7 +265,7 @@ public class OperationsService implements IOperationsAppProvider {
 
 
     @Override
-    public void addOperationIntercompte(List<LigneOperation> operations, LigneOperation ligneOperationSource, String libelleOperationCible, String auteur) {
+    public void addOperationVirementInterne(List<LigneOperation> operations, LigneOperation ligneOperationSource, String libelleOperationCible, String auteur) {
 
         // #59 : Cohérence des états
         OperationEtatEnum etatDepenseTransfert;
@@ -285,18 +285,26 @@ public class OperationsService implements IOperationsAppProvider {
             mensualiteTransfert.setProchaineEcheance(ligneOperationSource.getMensualite().getProchaineEcheance());
         }
 
-        LigneOperation ligneTransfert = completeOperationAttributes(
+        // Catégorie de virements
+        LigneOperation.Categorie catVirementInterne = new LigneOperation.Categorie();
+        catVirementInterne.setId(IdsCategoriesEnum.CAT_RENTREES.getId());
+        catVirementInterne.setLibelle(IdsCategoriesEnum.CAT_RENTREES.getLibelle());
+        LigneOperation.Categorie sscatVirementInterne = new LigneOperation.Categorie();
+        sscatVirementInterne.setId(IdsCategoriesEnum.SS_CAT_RENTREE_VIREMENT_INTERNE.getId());
+        sscatVirementInterne.setLibelle(IdsCategoriesEnum.SS_CAT_RENTREE_VIREMENT_INTERNE.getLibelle());
+
+        LigneOperation ligneRentreeVirementInterne = completeOperationAttributes(
                 new LigneOperation(
-                        ligneOperationSource.getCategorie(),
-                        ligneOperationSource.getSsCategorie(),
+                        catVirementInterne,
+                        sscatVirementInterne,
                         libelleOperationCible,
                         OperationTypeEnum.CREDIT,
                         Math.abs(ligneOperationSource.getValeur()),
                         etatDepenseTransfert, mensualiteTransfert),
                 auteur);
-        LOGGER.debug("Ajout de l'opération [{}] dans le budget", ligneTransfert);
+        LOGGER.debug("Ajout de l'opération Virement interne [{}] dans le budget", ligneRentreeVirementInterne);
 
-        operations.add(ligneTransfert);
+        operations.add(ligneRentreeVirementInterne);
     }
 
     /**
