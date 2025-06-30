@@ -1,7 +1,7 @@
 package io.github.vzwingma.finances.budget.services.communs.business.ports;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
-import java.util.stream.Stream;
+import io.smallrye.mutiny.Multi;
 
 /**
  * Service de données en lecture en MongoDB fournissant les clés de signature des JWT
@@ -17,5 +17,5 @@ public interface IJwtSigningKeyReadRepository {
      *
      * @return les clés de signature des tokens JWT
      */
-    Stream<JwksAuthKey> getJwksSigningAuthKeys() ;
+    Multi<JwksAuthKey> getJwksSigningAuthKeys() ;
 }

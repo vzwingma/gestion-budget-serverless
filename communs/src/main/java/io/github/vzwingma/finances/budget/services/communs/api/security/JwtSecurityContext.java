@@ -114,7 +114,7 @@ public class JwtSecurityContext implements IJwtSecurityContext {
         if(jwtValidationParams == null) {
             jwtValidationParams = new JwtValidationParams();
             jwtValidationParams.setIdAppUserContent(this.idAppUserContent.get());
-            jwtValidationParams.setJwksAuthKeys(jwtSigningKeyRepository.get().getJwksSigningAuthKeys().toList());
+            jwtSigningKeyRepository.get().getJwksSigningAuthKeys().subscribe().with(jwtValidationParams::addJwksAuthKey);
         }
         return jwtValidationParams;
     }

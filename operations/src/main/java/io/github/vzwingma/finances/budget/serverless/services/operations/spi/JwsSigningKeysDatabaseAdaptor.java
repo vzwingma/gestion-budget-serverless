@@ -2,7 +2,8 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
-import io.quarkus.mongodb.panache.PanacheMongoRepository;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
+import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.stream.Stream;
@@ -14,7 +15,7 @@ import java.util.stream.Stream;
  * @author vzwingma
  */
 @ApplicationScoped
-public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyReadRepository, PanacheMongoRepository<JwksAuthKey> {
+public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyReadRepository, ReactivePanacheMongoRepository<JwksAuthKey> {
 
 
     /**
@@ -23,7 +24,7 @@ public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyReadReposito
      * @return les clés de signature des tokens JWT
      */
     @Override
-    public Stream<JwksAuthKey> getJwksSigningAuthKeys() {
+    public Multi<JwksAuthKey> getJwksSigningAuthKeys() {
         return streamAll();
     }
 }
