@@ -6,8 +6,6 @@ import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import java.util.stream.Stream;
-
 /**
  * Service de données en MongoDB fournissant les clés de signature des JWT
  * Adapteur du port {@link IJwtSigningKeyReadRepository}
