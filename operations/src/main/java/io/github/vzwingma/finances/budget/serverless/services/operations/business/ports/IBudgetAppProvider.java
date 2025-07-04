@@ -51,14 +51,14 @@ public interface IBudgetAppProvider {
     Uni<BudgetMensuel> addOrUpdateOperationInBudget(String idBudget, final LigneOperation ligneOperation, String auteur);
 
     /**
-     * Création d'une opération intercompte
+     * Création d'une opération de virements internes
      *
      * @param idBudget            id du budget source
-     * @param ligneOperation      opération intercompte source
+     * @param ligneOperation      opération virement interne source
      * @param idCompteDestination id du compte destination
      * @return budget mensuel source modifié
      */
-    Uni<BudgetMensuel> createOperationsIntercomptes(String idBudget, LigneOperation ligneOperation, String idCompteDestination, String auteur);
+    Uni<BudgetMensuel> createOperationsVirementInterne(String idBudget, LigneOperation ligneOperation, String idCompteDestination, String auteur);
 
     /**
      * Suppression d'une opération

@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.utils;
 
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibellesOperationEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
@@ -142,7 +143,12 @@ public class BudgetDataUtils {
         }
         ligneOperationClonee.setAutresInfos(new LigneOperation.AddInfos());
         ligneOperationClonee.getAutresInfos().setDateMaj(LocalDateTime.now());
-        ligneOperationClonee.getAutresInfos().setDateOperation(null);
+        // #73
+        LocalDate nextDate = null;
+        if(ligneOperation.getAutresInfos() != null && ligneOperation.getAutresInfos().getDateOperation() != null){
+            nextDate = ligneOperation.getAutresInfos().getDateOperation().plusMonths(1);
+        }
+        ligneOperationClonee.getAutresInfos().setDateOperation(nextDate);
         ligneOperationClonee.setEtat(OperationEtatEnum.PREVUE);
         ligneOperationClonee.setTypeOperation(ligneOperation.getTypeOperation());
         ligneOperationClonee.putValeurFromSaisie(Math.abs(ligneOperation.getValeur()));
@@ -239,7 +245,7 @@ public class BudgetDataUtils {
                 }
             });
             Optional<LigneOperation> maxDate = listeOperations.stream().max(comparator);
-            if (maxDate.isPresent() && maxDate.get().retrieveDateOperation() != null) {
+            if (maxDate.get().retrieveDateOperation() != null) {
                 localDateDerniereOperation = maxDate.get().retrieveDateOperation();
             }
         }
@@ -277,4 +283,25 @@ public class BudgetDataUtils {
         return null;
     }
 
+
+    /**
+     * Liste des sous catégories des frais remboursables
+     */
+    private static final IdsCategoriesEnum[] sousCatsFraisRemboursables = {
+            IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_PRO_NDF,
+            IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_DENTISTE,
+            IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_MEDECIN,
+            IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_OPTICIEN,
+            IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE,
+    };
+
+    /**
+     *
+     * @param sousCategorieOperation sous catégorie de l'opération
+     * @return si la sous catégorie est un frais remboursable
+     */
+    public static boolean isSsCategorieRemboursable(LigneOperation.Categorie sousCategorieOperation){
+        return Arrays.stream(sousCatsFraisRemboursables)
+                .anyMatch(id -> id.getId().equals(sousCategorieOperation.getId()));
+    }
 }

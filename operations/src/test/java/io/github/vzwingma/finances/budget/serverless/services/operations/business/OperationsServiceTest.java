@@ -28,8 +28,6 @@ class OperationsServiceTest {
 
     private IOperationsRepository mockOperationDataProvider;
 
-    private IParametragesServiceProvider mockParam;
-
     @BeforeEach
     public void setup() {
         mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
@@ -37,7 +35,7 @@ class OperationsServiceTest {
         IBudgetAppProvider budgetAppProvider = Mockito.mock(BudgetService.class);
         operationsAppProvider.setDataOperationsProvider(mockOperationDataProvider);
         operationsAppProvider.setBudgetService(budgetAppProvider);
-        mockParam = Mockito.mock(IParametragesServiceProvider.class);
+        IParametragesServiceProvider mockParam = Mockito.mock(IParametragesServiceProvider.class);
         operationsAppProvider.setParametragesService(mockParam);
     }
 
@@ -105,7 +103,7 @@ class OperationsServiceTest {
 
 
     @Test
-    void testAddOperationIntercompte() {
+    void testAddOperationVirementInterne() {
 
         // When
         List<LigneOperation> listeOperations = new ArrayList<>();
@@ -114,7 +112,7 @@ class OperationsServiceTest {
         LigneOperation operation = MockDataOperations.getOperationIntercompte();
         operation.setEtat(OperationEtatEnum.REALISEE);
         // Test
-        operationsAppProvider.addOperationIntercompte(listeOperations, operation, "vers " + operation.getLibelle(), "userTest");
+        operationsAppProvider.addOperationVirementInterne(listeOperations, operation, "vers " + operation.getLibelle(), "userTest");
         assertEquals(2, listeOperations.size());
         assertEquals(OperationEtatEnum.PREVUE, listeOperations.get(1).getEtat());
         assertNull(listeOperations.get(1).getMensualite());
@@ -122,7 +120,7 @@ class OperationsServiceTest {
 
 
     @Test
-    void testAddOperationIntercompteMensuel() {
+    void testAddOperationVirementInterneMensuel() {
 
         // When
         List<LigneOperation> listeOperations = new ArrayList<>();
@@ -134,7 +132,7 @@ class OperationsServiceTest {
         operation.getMensualite().setPeriode(OperationPeriodiciteEnum.MENSUELLE);
         operation.getMensualite().setProchaineEcheance(1);
         // Test
-        operationsAppProvider.addOperationIntercompte(listeOperations, operation, "vers " + operation.getLibelle(), "userTest");
+        operationsAppProvider.addOperationVirementInterne(listeOperations, operation, "vers " + operation.getLibelle(), "userTest");
         assertEquals(2, listeOperations.size());
         assertEquals(OperationEtatEnum.PREVUE, listeOperations.get(1).getEtat());
         assertEquals(OperationPeriodiciteEnum.MENSUELLE, listeOperations.get(1).getMensualite().getPeriode());
@@ -142,7 +140,7 @@ class OperationsServiceTest {
     }
 
     @Test
-    void testAddOperationIntercompteReportee() {
+    void testAddOperationVirementInterneReportee() {
 
         // When
         List<LigneOperation> listeOperations = new ArrayList<>();
@@ -151,7 +149,7 @@ class OperationsServiceTest {
         LigneOperation operation = MockDataOperations.getOperationIntercompte();
         operation.setEtat(OperationEtatEnum.REPORTEE);
         // Test
-        operationsAppProvider.addOperationIntercompte(listeOperations, operation, "vers " + operation.getLibelle(), "userTest");
+        operationsAppProvider.addOperationVirementInterne(listeOperations, operation, "vers " + operation.getLibelle(), "userTest");
         assertEquals(2, listeOperations.size());
         assertEquals(OperationEtatEnum.REPORTEE, listeOperations.get(1).getEtat());
     }
@@ -171,9 +169,9 @@ class OperationsServiceTest {
     void testAddOperationRemboursement() throws DataNotFoundException {
 
         // When
-        CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId());
-        dep.setLibelle(IdsCategoriesEnum.FRAIS_REMBOURSABLES.toString());
-        CategorieOperations.CategorieParente cat = new CategorieOperations.CategorieParente(IdsCategoriesEnum.FRAIS_REMBOURSABLES.getId(), "Frais");
+        CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE.getId());
+        dep.setLibelle(IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE.getLibelle());
+        CategorieOperations.CategorieParente cat = new CategorieOperations.CategorieParente(IdsCategoriesEnum.CAT_FRAIS_REMBOURSABLE_SANTE.getId(), IdsCategoriesEnum.CAT_FRAIS_REMBOURSABLE_SANTE.getLibelle());
         dep.setCategorieParente(cat);
         // Test
         List<LigneOperation> operations = new ArrayList<>();
