@@ -4,18 +4,22 @@ import io.github.vzwingma.finances.budget.serverless.data.MockDataCategoriesOper
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.api.enums.ParametragesAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.JwsSigningKeysDatabaseAdaptor;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -30,14 +34,36 @@ class ParametragesResourceTest {
     @Inject
     ParametragesService parametragesService;
 
+    @Inject
+    IJwtSigningKeyReadRepository jwtSigningKeyReadRepository;
+
     @BeforeAll
     static void init() {
         QuarkusMock.installMockForType(Mockito.mock(ParametragesService.class), ParametragesService.class);
-        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
+        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), IJwtSigningKeyReadRepository.class);
+
+    }
+
+    @BeforeEach
+    void setup() {
+        Mockito.when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().item(jwksAuthKey()));
+
+    }
+
+    public static JwksAuthKey jwksAuthKey() {
+        JwksAuthKey jwksAuthKey = new JwksAuthKey();
+        jwksAuthKey.setKid("test");
+        jwksAuthKey.setKty("RSA");
+        jwksAuthKey.setAlg("RS256");
+        jwksAuthKey.setUse("sig");
+        jwksAuthKey.setN("test");
+        jwksAuthKey.setE("test");
+        return jwksAuthKey;
     }
 
     @Test
     void testInfoEndpoint() {
+
         Mockito.when(parametragesService.refreshJwksSigningKeys()).thenReturn(Uni.createFrom().voidItem());
         given()
                 .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
@@ -48,6 +74,7 @@ class ParametragesResourceTest {
 
     @Test
     void testGetCategories() {
+
         // Init des données
         Mockito.when(parametragesService.getCategories()).thenReturn(Uni.createFrom().item(MockDataCategoriesOperations.getListeTestCategories()));
         // Test
