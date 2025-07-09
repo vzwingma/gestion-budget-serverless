@@ -1,6 +1,7 @@
 package io.github.vzwingma.finances.budget.services.communs.utils.security;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.*;
+import io.smallrye.mutiny.Multi;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.EncodeException;
 import io.vertx.core.json.Json;
@@ -14,7 +15,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.List;
 
 /**
  * Classe utilitaire pour le décodage et l'encodage des tokens JWT ID_TOKEN de Google.
@@ -88,13 +88,13 @@ public class JWTUtils {
      * @param jwtRawContent Le contenu brut du token JWT à vérifier.
      * @return true si la signature est valide, false sinon.
      */
-    public static boolean isTokenSignatureValid(String jwtRawContent, List<JwksAuthKey> authKeys){
+    public static boolean isTokenSignatureValid(String jwtRawContent, Multi<JwksAuthKey> authKeys){
         LOG.trace("Vérification de la signature du Token JWT : {}", jwtRawContent);
-        if(authKeys == null || authKeys.isEmpty()){
+        if(authKeys == null){
             LOG.error("Aucune clé publique n'a été fournie pour vérifier la signature du token JWT");
             return false;
         }
-        for(JwksAuthKey key : authKeys){
+        for(JwksAuthKey key : authKeys.subscribe().asIterable()){
             try {
                 RSAPublicKey publicKey = (RSAPublicKey) getPublicKey(key.getN(), key.getE());
 
@@ -144,7 +144,7 @@ public class JWTUtils {
     }
 
 
-    
+
     /**
      * Vérifie si le token JWT est signé en utilisant les clés publiques de Google.
      * @return true si la signature est valide, false sinon.
@@ -159,7 +159,7 @@ public class JWTUtils {
         }
     }
 
-    
+
 
     /**
      * Vérifie la validité du token JWT en fonction des paramètres de validation fournis.
