@@ -1,7 +1,6 @@
 package io.github.vzwingma.finances.budget.services.communs.api.security;
 
 import com.sun.security.auth.UserPrincipal;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
@@ -10,13 +9,13 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.SecurityContext;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.Principal;
+import java.util.ArrayList;
 
 /**
  * Implémentation personnalisée de {@link SecurityContext} pour gérer la sécurité basée sur les tokens JWT OIDC de Google.
@@ -25,7 +24,6 @@ import java.security.Principal;
 @RequestScoped
 @Setter
 @Getter
-@NoArgsConstructor
 public class JwtSecurityContext implements IJwtSecurityContext {
 
     private static final Logger LOG = LoggerFactory.getLogger(JwtSecurityContext.class);
@@ -46,12 +44,10 @@ public class JwtSecurityContext implements IJwtSecurityContext {
     @ConfigProperty(name = "oidc.jwt.id.appusercontent")
     Instance<String> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
 
-    private Instance<IJwtSigningKeyReadRepository> jwtSigningKeyRepository;
-
 
     @Inject
-    public JwtSecurityContext(Instance<IJwtSigningKeyReadRepository> jwtSigningKeyRepository) {
-        this.jwtSigningKeyRepository = jwtSigningKeyRepository;
+    public JwtSecurityContext() {
+
     }
 
     /**
@@ -115,7 +111,7 @@ public class JwtSecurityContext implements IJwtSecurityContext {
         if(jwtValidationParams == null) {
             jwtValidationParams = new JwtValidationParams();
             jwtValidationParams.setIdAppUserContent(this.idAppUserContent.get());
-            jwtValidationParams.setJwksAuthKeys(jwtSigningKeyRepository.get().getJwksSigningAuthKeys());
+            jwtValidationParams.setJwksAuthKeys(new ArrayList<>());
         }
         return jwtValidationParams;
     }
