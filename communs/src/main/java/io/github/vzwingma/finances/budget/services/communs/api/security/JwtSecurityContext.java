@@ -4,6 +4,7 @@ import com.sun.security.auth.UserPrincipal;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.Principal;
+import java.util.List;
 
 /**
  * Implémentation personnalisée de {@link SecurityContext} pour gérer la sécurité basée sur les tokens JWT OIDC de Google.
@@ -48,9 +50,13 @@ public class JwtSecurityContext implements IJwtSecurityContext {
 
     private Instance<IJwtSigningKeyReadRepository> jwtSigningKeyRepository;
 
+    private List<JwksAuthKey> jwksAuthKeys;
+
     @Inject
     public JwtSecurityContext(Instance<IJwtSigningKeyReadRepository> jwtSigningKeyRepository) {
         this.jwtSigningKeyRepository = jwtSigningKeyRepository;
+        LOG.info("Chargement des JwksSigningAuthKeys");
+        this.jwksAuthKeys = jwtSigningKeyRepository.get().getJwksSigningAuthKeys().subscribe().asStream().toList();
     }
 
     /**
@@ -114,7 +120,7 @@ public class JwtSecurityContext implements IJwtSecurityContext {
         if(jwtValidationParams == null) {
             jwtValidationParams = new JwtValidationParams();
             jwtValidationParams.setIdAppUserContent(this.idAppUserContent.get());
-            jwtValidationParams.setJwksAuthKeys(jwtSigningKeyRepository.get().getJwksSigningAuthKeys().subscribe().asStream().toList());
+            jwtValidationParams.setJwksAuthKeys(this.jwksAuthKeys);
         }
         return jwtValidationParams;
     }
