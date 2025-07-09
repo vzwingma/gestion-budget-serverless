@@ -5,6 +5,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAu
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
+import io.smallrye.mutiny.Multi;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.Json;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -75,7 +75,7 @@ class TestJWTUtils {
     static JwtValidationParams generateValidParams(){
         JwtValidationParams params = new JwtValidationParams();
         params.setIdAppUserContent(JWTUtils.decodeJWT(ID_TOKEN).getPayload().getAud().replace(".apps.googleusercontent.com", ""));
-        params.setJwksAuthKeys(Arrays.asList(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys()));
+        params.setJwksAuthKeys(Multi.createFrom().items(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys()));
         return params;
     }
 
