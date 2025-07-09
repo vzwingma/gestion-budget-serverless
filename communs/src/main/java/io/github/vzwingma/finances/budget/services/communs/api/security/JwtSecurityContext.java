@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -50,7 +51,7 @@ public class JwtSecurityContext implements IJwtSecurityContext {
 
     private Instance<IJwtSigningKeyReadRepository> jwtSigningKeyRepository;
 
-    private List<JwksAuthKey> jwksAuthKeys;
+    private List<JwksAuthKey> jwksAuthKeys = new ArrayList<>();
 
     @Inject
     public JwtSecurityContext(Instance<IJwtSigningKeyReadRepository> jwtSigningKeyRepository) {
