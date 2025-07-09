@@ -56,7 +56,7 @@ public class JwtSecurityContext implements IJwtSecurityContext {
     public JwtSecurityContext(Instance<IJwtSigningKeyReadRepository> jwtSigningKeyRepository) {
         this.jwtSigningKeyRepository = jwtSigningKeyRepository;
         LOG.info("Chargement des JwksSigningAuthKeys");
-        this.jwksAuthKeys = jwtSigningKeyRepository.get().getJwksSigningAuthKeys().subscribe().asStream().toList();
+        jwtSigningKeyRepository.get().getJwksSigningAuthKeys().subscribe().with(this.jwksAuthKeys::add);
     }
 
     /**
