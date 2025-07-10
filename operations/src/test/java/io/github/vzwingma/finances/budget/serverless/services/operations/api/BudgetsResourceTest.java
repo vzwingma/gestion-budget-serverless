@@ -7,18 +7,22 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -38,6 +42,8 @@ class BudgetsResourceTest {
     @Inject
     IBudgetAppProvider budgetService;
 
+    @Inject
+    IJwtSigningKeyReadRepository jwtSigningKeyReadRepository;
 
     @BeforeAll
     static void init() {
@@ -46,6 +52,10 @@ class BudgetsResourceTest {
         QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
+    @BeforeEach
+    void setup() {
+        Mockito.when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().item(jwksAuthKey()));
+    }
 
     @Test
     void testInfoEndpoint() {
@@ -203,5 +213,17 @@ class BudgetsResourceTest {
         p.setIss("https://accounts.google.com");
         p.setAud("test.apps.googleusercontent.com");
         return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p));
+    }
+
+
+    public static JwksAuthKey jwksAuthKey() {
+        JwksAuthKey jwksAuthKey = new JwksAuthKey();
+        jwksAuthKey.setKid("test");
+        jwksAuthKey.setKty("RSA");
+        jwksAuthKey.setAlg("RS256");
+        jwksAuthKey.setUse("sig");
+        jwksAuthKey.setN("test");
+        jwksAuthKey.setE("test");
+        return jwksAuthKey;
     }
 }

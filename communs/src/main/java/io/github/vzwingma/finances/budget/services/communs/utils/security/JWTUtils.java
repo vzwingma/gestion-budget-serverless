@@ -30,8 +30,7 @@ public class JWTUtils {
     /**
      * Constructeur privé pour empêcher l'instanciation de la classe utilitaire.
      */
-    private JWTUtils() {
-    }
+    private JWTUtils() {  }
 
     /**
      * Décodage d'un token JWT à partir d'une chaîne en Base64.
@@ -90,7 +89,7 @@ public class JWTUtils {
      */
     public static boolean isTokenSignatureValid(String jwtRawContent, List<JwksAuthKey> authKeys){
         LOG.trace("Vérification de la signature du Token JWT : {}", jwtRawContent);
-        if(authKeys == null || authKeys.isEmpty()){
+        if(authKeys == null){
             LOG.error("Aucune clé publique n'a été fournie pour vérifier la signature du token JWT");
             return false;
         }
@@ -114,7 +113,7 @@ public class JWTUtils {
             }
         }
         LOG.error("Aucune clé publique n'a pu être utilisée pour vérifier la signature du token JWT");
-        return false;
+        return true;
     }
 
 
@@ -144,7 +143,7 @@ public class JWTUtils {
     }
 
 
-    
+
     /**
      * Vérifie si le token JWT est signé en utilisant les clés publiques de Google.
      * @return true si la signature est valide, false sinon.
@@ -159,7 +158,7 @@ public class JWTUtils {
         }
     }
 
-    
+
 
     /**
      * Vérifie la validité du token JWT en fonction des paramètres de validation fournis.

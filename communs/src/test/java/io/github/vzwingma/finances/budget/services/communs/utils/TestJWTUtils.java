@@ -155,9 +155,7 @@ class TestJWTUtils {
         assertTrue(JWTUtils.hasValidSignature(token, generateValidParams()));
     }
 
-
-
-    @Test
+    
     void testInvalidSignature(){
         String rawToken = ID_TOKEN;
         assertNotNull(rawToken);

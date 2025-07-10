@@ -3,12 +3,11 @@ package io.github.vzwingma.finances.budget.serverless.services.parametrages.spi;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyWriteRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
-import io.quarkus.mongodb.panache.PanacheMongoRepository;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
+import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
-import java.util.stream.Stream;
-
 /**
  * Service de données en MongoDB fournissant les clés de signature des JWT
  * Adapteur du port {@link IJwtSigningKeyWriteRepository} et {@link IJwtSigningKeyReadRepository}
@@ -16,7 +15,7 @@ import java.util.stream.Stream;
  * @author vzwingma
  */
 @ApplicationScoped
-public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyReadRepository, IJwtSigningKeyWriteRepository, PanacheMongoRepository<JwksAuthKey> {
+public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyReadRepository, IJwtSigningKeyWriteRepository, ReactivePanacheMongoRepository<JwksAuthKey> {
 
     /**
      * Sauvegarde des clés de signature des tokens JWT
@@ -34,7 +33,7 @@ public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyReadReposito
      * @return les clés de signature des tokens JWT
      */
     @Override
-    public Stream<JwksAuthKey> getJwksSigningAuthKeys() {
+    public Multi<JwksAuthKey> getJwksSigningAuthKeys() {
         return streamAll();
     }
 }

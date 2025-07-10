@@ -34,7 +34,7 @@ class ComptesServiceTest {
         List<CompteBancaire> comptes = comptesAppProvider.getComptesUtilisateur("test").await().indefinitely();
         Assertions.assertNotNull(comptes);
         Assertions.assertEquals(3, comptes.size());
-        Assertions.assertEquals("Libelle0", comptes.get(0).getLibelle());
+        Assertions.assertEquals("Libelle0", comptes.getFirst().getLibelle());
 
     }
 
