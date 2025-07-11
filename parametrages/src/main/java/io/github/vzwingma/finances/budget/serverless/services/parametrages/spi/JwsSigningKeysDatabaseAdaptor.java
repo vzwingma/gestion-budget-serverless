@@ -5,6 +5,7 @@ import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSi
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
@@ -23,8 +24,8 @@ public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyReadReposito
      * @param jwksAuthKeys les clés de signature des tokens JWT
      */
     @Override
-    public void saveJwksAuthKeys(List<JwksAuthKey> jwksAuthKeys) {
-        persistOrUpdate(jwksAuthKeys.stream());
+    public Uni<Void> saveJwksAuthKeys(List<JwksAuthKey> jwksAuthKeys) {
+        return persistOrUpdate(jwksAuthKeys.stream());
     }
 
     /**
