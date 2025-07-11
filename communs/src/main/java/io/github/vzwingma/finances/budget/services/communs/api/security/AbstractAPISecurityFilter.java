@@ -2,7 +2,9 @@ package io.github.vzwingma.finances.budget.services.communs.api.security;
 
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
+import io.smallrye.mutiny.Multi;
 import io.vertx.core.json.DecodeException;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -89,6 +91,10 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
      * Chargement des clés de signature JWKS
      */
     private void loadJwksSigningAuthKeys() {
-        jwtSigningKeyService.loadJwksSigningKeys().subscribe().with(jwksAuthKey -> JwtSecurityContext.JWKS_AUTH_KEYS.add(jwksAuthKey));
+        Multi<JwksAuthKey> jwksAuthKeyMulti =
+                jwtSigningKeyService.loadJwksSigningKeys();
+        if(jwksAuthKeyMulti != null){
+            jwksAuthKeyMulti.subscribe().with(jwksAuthKey -> JwtSecurityContext.JWKS_AUTH_KEYS.add(jwksAuthKey));
+        }
     }
 }
