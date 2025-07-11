@@ -3,6 +3,8 @@ package io.github.vzwingma.finances.budget.serverless.services.comptes.business;
 
 import io.github.vzwingma.finances.budget.serverless.services.comptes.business.ports.IComptesAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.comptes.business.ports.IComptesRepository;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,7 +23,7 @@ import java.util.List;
  */
 @ApplicationScoped
 @NoArgsConstructor
-public class ComptesService implements IComptesAppProvider {
+public class ComptesService implements IComptesAppProvider, IJwtSigningKeyService {
 
 
     /**
@@ -34,8 +36,12 @@ public class ComptesService implements IComptesAppProvider {
     @Inject
     IComptesRepository dataComptes;
 
-    public ComptesService(IComptesRepository dataComptes) {
+    @Inject
+    IJwtSigningKeyReadRepository signingKeyReadRepository;
+
+    public ComptesService(IComptesRepository dataComptes, IJwtSigningKeyReadRepository signingKeyReadRepository) {
         this.dataComptes = dataComptes;
+        this.signingKeyReadRepository = signingKeyReadRepository;
     }
 
     @Override
@@ -58,5 +64,12 @@ public class ComptesService implements IComptesAppProvider {
                         comptes.stream()
                                 .sorted(Comparator.comparingInt(CompteBancaire::getOrdre))
                                 .toList());
+    }
+
+    /**
+     */
+    @Override
+    public IJwtSigningKeyReadRepository getSigningKeyReadRepository() {
+        return signingKeyReadRepository;
     }
 }

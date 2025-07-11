@@ -14,6 +14,8 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.spi.ICo
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
@@ -45,7 +47,7 @@ import java.util.List;
 @ApplicationScoped
 @NoArgsConstructor
 @Setter
-public class BudgetService implements IBudgetAppProvider {
+public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService {
 
 
     /**
@@ -69,6 +71,8 @@ public class BudgetService implements IBudgetAppProvider {
     @ApplicationScoped
     IParametragesServiceProvider parametragesService;
 
+    @Inject
+    IJwtSigningKeyReadRepository iJwtSigningKeyReadRepository;
     /**
      * Chargement du budget du mois courant
      *
@@ -579,4 +583,12 @@ public class BudgetService implements IBudgetAppProvider {
         return this.operationsAppProvider.getLibellesOperations(idCompte);
 
     }
+    /**
+     * @return le dépôt des clés de signature
+     */
+    @Override
+    public IJwtSigningKeyReadRepository getSigningKeyReadRepository() {
+        return iJwtSigningKeyReadRepository;
+    }
+
 }

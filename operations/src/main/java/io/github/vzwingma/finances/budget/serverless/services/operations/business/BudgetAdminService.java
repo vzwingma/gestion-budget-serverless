@@ -4,6 +4,8 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleAvantApres;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAdminAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -20,14 +22,15 @@ import java.util.List;
 @ApplicationScoped
 @NoArgsConstructor
 @Setter
-public class BudgetAdminService implements IBudgetAdminAppProvider {
+public class BudgetAdminService implements IBudgetAdminAppProvider, IJwtSigningKeyService {
 
     /**
      * Service Provider Interface des données
      */
     @Inject
     IOperationsRepository dataOperationsProvider;
-
+    @Inject
+    IJwtSigningKeyReadRepository iJwtSigningKeyReadRepository;
 
     /**
      * Mise à jour des libellés des budgets d'un compte en harmonisant les libellés
@@ -40,5 +43,13 @@ public class BudgetAdminService implements IBudgetAdminAppProvider {
         return this.dataOperationsProvider.overrideLibellesOperations(idCompte, libellesToOverride)
                 .onItem().transform(BudgetMensuel::getId);
 
+    }
+
+    /**
+     * @return le dépôt des clés de signature
+     */
+    @Override
+    public IJwtSigningKeyReadRepository getSigningKeyReadRepository() {
+        return iJwtSigningKeyReadRepository;
     }
 }

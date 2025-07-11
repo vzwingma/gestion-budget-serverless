@@ -13,6 +13,8 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
@@ -41,7 +43,7 @@ import java.util.Map;
 @ApplicationScoped
 @NoArgsConstructor
 @Setter
-public class OperationsService implements IOperationsAppProvider {
+public class OperationsService implements IOperationsAppProvider, IJwtSigningKeyService {
 
 
     // Logger
@@ -53,6 +55,9 @@ public class OperationsService implements IOperationsAppProvider {
     @RestClient
     @ApplicationScoped
     IParametragesServiceProvider parametragesService;
+
+    @Inject
+    IJwtSigningKeyReadRepository iJwtSigningKeyReadRepository;
 
     @Inject
     IBudgetAppProvider budgetService;
@@ -364,4 +369,12 @@ public class OperationsService implements IOperationsAppProvider {
             LOGGER.warn("[idBudget={}][idOperation={}] Impossible de supprimer l'opération. Introuvable", operations, idOperation);
         }
     }
+    /**
+     * @return le dépôt des clés de signature
+     */
+    @Override
+    public IJwtSigningKeyReadRepository getSigningKeyReadRepository() {
+        return iJwtSigningKeyReadRepository;
+    }
+
 }

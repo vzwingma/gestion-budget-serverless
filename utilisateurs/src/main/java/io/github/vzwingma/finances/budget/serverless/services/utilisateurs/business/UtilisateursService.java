@@ -3,6 +3,8 @@ package io.github.vzwingma.finances.budget.serverless.services.utilisateurs.busi
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.model.Utilisateur;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.ports.IUtilisateursAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.ports.IUtilisateursRepository;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -19,7 +21,7 @@ import java.time.LocalDateTime;
  */
 @ApplicationScoped
 @NoArgsConstructor
-public class UtilisateursService implements IUtilisateursAppProvider {
+public class UtilisateursService implements IUtilisateursAppProvider, IJwtSigningKeyService {
 
     /**
      * Logger
@@ -30,7 +32,8 @@ public class UtilisateursService implements IUtilisateursAppProvider {
      */
     @Inject
     IUtilisateursRepository dataDBUsers;
-
+    @Inject
+    IJwtSigningKeyReadRepository iJwtSigningKeyReadRepository;
     /**
      * Constructeur (pour les tests)
      *
@@ -76,6 +79,14 @@ public class UtilisateursService implements IUtilisateursAppProvider {
         Utilisateur clone = new Utilisateur(utilisateurUni);
         clone.setDernierAcces(LocalDateTime.now());
         dataDBUsers.majUtilisateur(clone);
+    }
+
+    /**
+     * @return le dépôt des clés de signature
+     */
+    @Override
+    public IJwtSigningKeyReadRepository getSigningKeyReadRepository() {
+        return iJwtSigningKeyReadRepository;
     }
 
 }
