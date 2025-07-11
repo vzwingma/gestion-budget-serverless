@@ -28,7 +28,6 @@ public class BudgetAdminService implements IBudgetAdminAppProvider {
     @Inject
     IOperationsRepository dataOperationsProvider;
 
-
     /**
      * Mise à jour des libellés des budgets d'un compte en harmonisant les libellés
      * @param idCompte        id du compte

@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Factory pour injecter le token JWT correspondant à l'utilisateur connecté. S'il existe, s'il n'est pas expiré
+ * Factory pour injecter le token JWT correspondant à l'utilisateur connecté. S'il existe, s'il n'est pas expiré, pour l'appel à une autre API
  */
 public class RequestJWTHeaderFactory implements ClientHeadersFactory {
 
@@ -46,7 +46,7 @@ public class RequestJWTHeaderFactory implements ClientHeadersFactory {
                 LOG.warn("L'appel n'est pas authentifié pour l'API Gateway : l'API Key est nulle");
             }
         } else {
-            LOG.warn("L'appel n'est pas valide pour l'API Gateway :securityOverrideContext est {}", securityContext);
+            LOG.warn("L'appel n'est pas valide pour l'API Gateway :securityOverrideContext est null");
         }
         return headers;
     }

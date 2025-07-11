@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.services.communs.utils.security;
 
+import io.github.vzwingma.finances.budget.services.communs.api.security.JwtSecurityContext;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.*;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.EncodeException;
@@ -113,7 +114,7 @@ public class JWTUtils {
             }
         }
         LOG.error("Aucune clé publique n'a pu être utilisée pour vérifier la signature du token JWT");
-        return true;
+        return false;
     }
 
 
@@ -148,9 +149,9 @@ public class JWTUtils {
      * Vérifie si le token JWT est signé en utilisant les clés publiques de Google.
      * @return true si la signature est valide, false sinon.
      */
-    public static boolean hasValidSignature(JWTAuthToken token, JwtValidationParams validationParams) {
+    public static boolean hasValidSignature(JWTAuthToken token) {
         if(token.getRawContent() != null && token.isHasSignature()){
-            return isTokenSignatureValid(token.getRawContent(), validationParams.getJwksAuthKeys());  // Vérifie la signature du token JWT
+            return isTokenSignatureValid(token.getRawContent(), JwtSecurityContext.JWKS_AUTH_KEYS);  // Vérifie la signature du token JWT
         }
         else{
             LOG.warn("Le token n'est pas signé");
@@ -167,11 +168,11 @@ public class JWTUtils {
      * - Le token doit provenir de Google.
      * - Le token doit être destiné à l'application utilisateur spécifiée dans les paramètres de validation.
      *
-     * @param validationParams Les paramètres de validation du token, incluant l'identifiant de l'application utilisateur.
+     * @param idAppUserContent Les paramètres de validation du token : l'identifiant de l'application utilisateur.
      * @return true si le token est valide selon les critères ci-dessus, false sinon.
      */
-    public static boolean isValid(JWTAuthToken token, JwtValidationParams validationParams){
-        return isFromGoogle(token) && isFromUserAppContent(token, validationParams) && hasValidSignature(token, validationParams) && isNotExpired(token);
+    public static boolean isValid(JWTAuthToken token, String idAppUserContent){
+        return isFromGoogle(token) && isFromUserAppContent(token, idAppUserContent) && hasValidSignature(token) && isNotExpired(token);
     }
 
     /**
@@ -204,18 +205,18 @@ public class JWTUtils {
 
     /**
      * Vérifie si le token provient de l'application utilisateur.
-     * @param validationParams Paramètres de validation du token.
+     * @param idAppUserContent Paramètres de validation du token.
      * @return Vrai si le token provient de l'application utilisateur, faux sinon.
      */
-    private static boolean isFromUserAppContent(JWTAuthToken token, JwtValidationParams validationParams){
-        if(validationParams == null || validationParams.getIdAppUserContent() == null){
+    private static boolean isFromUserAppContent(JWTAuthToken token, String idAppUserContent){
+        if(idAppUserContent == null){
             LOG.warn("L'identifiant de l'application est nul - (Paramètre oidc.jwt.id.appusercontent)");
             return false;
         }
-        String userContent = validationParams.getIdAppUserContent() + ".apps.googleusercontent.com";
+        String userContent = idAppUserContent + ".apps.googleusercontent.com";
         boolean isGoodAud = token.getPayload() != null && token.getPayload().getAud() != null && token.getPayload().getAud().equals(userContent);
         if(!isGoodAud){
-            LOG.warn("Le token n'est pas généré depuis l'application utilisateur [{}] : {}", validationParams.getIdAppUserContent(), token.getPayload() != null ? token.getPayload().getAud() : null);
+            LOG.warn("Le token n'est pas généré depuis l'application utilisateur [{}] : {}", idAppUserContent, token.getPayload() != null ? token.getPayload().getAud() : null);
         }
         return isGoodAud;
     }

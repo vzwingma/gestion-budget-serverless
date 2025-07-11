@@ -1,8 +1,8 @@
 package io.github.vzwingma.finances.budget.services.communs.utils;
 
+import io.github.vzwingma.finances.budget.services.communs.api.security.JwtSecurityContext;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKeys;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.vertx.core.json.DecodeException;
@@ -72,11 +72,9 @@ class TestJWTUtils {
      * Génère des paramètres de validation valides
      * @return les paramètres de validation
      */
-    static JwtValidationParams generateValidParams(){
-        JwtValidationParams params = new JwtValidationParams();
-        params.setIdAppUserContent(JWTUtils.decodeJWT(ID_TOKEN).getPayload().getAud().replace(".apps.googleusercontent.com", ""));
-        params.setJwksAuthKeys(Arrays.asList(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys()));
-        return params;
+    static String generateValidParams(){
+        JwtSecurityContext.JWKS_AUTH_KEYS = Arrays.asList(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys());
+        return JWTUtils.decodeJWT(ID_TOKEN).getPayload().getAud().replace(".apps.googleusercontent.com", "");
     }
 
     @Test
@@ -152,15 +150,18 @@ class TestJWTUtils {
         String rawToken = ID_TOKEN_SIGNED;
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertTrue(JWTUtils.hasValidSignature(token, generateValidParams()));
+        generateValidParams();
+        assertTrue(JWTUtils.hasValidSignature(token));
     }
 
-    
+
+    @Test
     void testInvalidSignature(){
         String rawToken = ID_TOKEN;
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertFalse(JWTUtils.hasValidSignature(token, generateValidParams()));
+        generateValidParams();
+        assertFalse(JWTUtils.hasValidSignature(token));
     }
 
 

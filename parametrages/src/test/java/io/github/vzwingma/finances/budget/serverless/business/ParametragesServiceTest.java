@@ -4,6 +4,7 @@ import io.github.vzwingma.finances.budget.serverless.data.MockDataCategoriesOper
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametragesRepository;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyWriteRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.quarkus.test.junit.QuarkusTest;
@@ -27,7 +28,8 @@ class ParametragesServiceTest {
     public void setup() {
         parametrageServiceProvider = Mockito.mock(IParametragesRepository.class);
         IJwtSigningKeyWriteRepository signingKeyRepository = Mockito.mock(IJwtSigningKeyWriteRepository.class);
-        parametrageAppProvider = Mockito.spy(new ParametragesService(parametrageServiceProvider, signingKeyRepository));
+        IJwtSigningKeyReadRepository signingKeyRRepository = Mockito.mock(IJwtSigningKeyReadRepository.class);
+        parametrageAppProvider = Mockito.spy(new ParametragesService(parametrageServiceProvider, signingKeyRepository, signingKeyRRepository));
 
         Mockito.when(parametrageServiceProvider.chargeCategories()).thenReturn(Multi.createFrom().items(MockDataCategoriesOperations.getListeTestCategories().stream()));
     }

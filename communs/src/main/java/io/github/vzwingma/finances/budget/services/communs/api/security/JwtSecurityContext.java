@@ -3,7 +3,7 @@ package io.github.vzwingma.finances.budget.services.communs.api.security;
 import com.sun.security.auth.UserPrincipal;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtValidationParams;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implémentation personnalisée de {@link SecurityContext} pour gérer la sécurité basée sur les tokens JWT OIDC de Google.
@@ -36,10 +37,11 @@ public class JwtSecurityContext implements IJwtSecurityContext {
      * L'API Key.
      */
     private String apiKey;
+
     /**
-     * Paramètres de validation JWT
+     * Les clés de signature JWT.
      */
-    private JwtValidationParams jwtValidationParams;
+    public static List<JwksAuthKey> JWKS_AUTH_KEYS = new ArrayList<>();
 
     @ConfigProperty(name = "oidc.jwt.id.appusercontent")
     Instance<String> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
@@ -101,18 +103,5 @@ public class JwtSecurityContext implements IJwtSecurityContext {
     @Override
     public String getAuthenticationScheme() {
         return jwtValidatedToken != null ? jwtValidatedToken.getHeader().toString() : null;
-    }
-
-
-    /**
-     * Initialisation des clés de signature JWT
-     */
-    public JwtValidationParams getJwtValidationParams() {
-        if(jwtValidationParams == null) {
-            jwtValidationParams = new JwtValidationParams();
-            jwtValidationParams.setIdAppUserContent(this.idAppUserContent.get());
-            jwtValidationParams.setJwksAuthKeys(new ArrayList<>());
-        }
-        return jwtValidationParams;
     }
 }

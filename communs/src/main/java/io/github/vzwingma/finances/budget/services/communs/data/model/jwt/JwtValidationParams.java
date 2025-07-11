@@ -5,9 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @RegisterForReflection
 @Setter
 @Getter
@@ -19,8 +16,5 @@ public class JwtValidationParams {
      */
     private String idAppUserContent;
 
-    /**
-     * Les clés de signature JWT.
-     */
-    private List<JwksAuthKey> jwksAuthKeys = new ArrayList<>();
+
 }

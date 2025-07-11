@@ -4,7 +4,9 @@ package io.github.vzwingma.finances.budget.serverless.services.parametrages.busi
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametragesRepository;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.IJwtAuthSigningKeyServiceProvider;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyWriteRepository;
+import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.smallrye.mutiny.Uni;
@@ -23,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author vzwingma
  */
 @ApplicationScoped
-public class ParametragesService implements IParametrageAppProvider {
+public class ParametragesService implements IParametrageAppProvider, IJwtSigningKeyService {
 
 
     /**
@@ -38,6 +40,7 @@ public class ParametragesService implements IParametrageAppProvider {
 
     private final IJwtSigningKeyWriteRepository signingKeyRepository;
 
+    private final IJwtSigningKeyReadRepository signingKeyReadRepository;
     @Inject
     @RestClient
     IJwtAuthSigningKeyServiceProvider jwtAuthSigningKeyServiceProvider; // Service fournissant les clés de signature JWT.
@@ -50,9 +53,10 @@ public class ParametragesService implements IParametrageAppProvider {
      * @param signingKeyRepository le repository des clés de signature
      */
     @Inject
-    public ParametragesService(IParametragesRepository parametrageRepository, IJwtSigningKeyWriteRepository signingKeyRepository){
+    public ParametragesService(IParametragesRepository parametrageRepository, IJwtSigningKeyWriteRepository signingKeyRepository, IJwtSigningKeyReadRepository signingKeyReadRepository){
         this.dataParams = parametrageRepository;
         this.signingKeyRepository = signingKeyRepository;
+        this.signingKeyReadRepository = signingKeyReadRepository;
     }
 
     /**
@@ -62,10 +66,7 @@ public class ParametragesService implements IParametrageAppProvider {
         LOGGER.info("Initialisation des clés de signature JWT");
         return jwtAuthSigningKeyServiceProvider.getJwksAuthKeys()
                 .map(jwksAuthKeys -> Arrays.stream(jwksAuthKeys.getKeys()).toList())
-                .flatMap(jwksAuthKeys -> {
-                    signingKeyRepository.saveJwksAuthKeys(jwksAuthKeys);
-                    return Uni.createFrom().voidItem();
-                });
+                .flatMap(signingKeyRepository::saveJwksAuthKeys);
     }
 
 
@@ -148,5 +149,13 @@ public class ParametragesService implements IParametrageAppProvider {
             return clone;
         }
         return null;
+    }
+
+    /**
+     * @return le repository des clés de signature
+     */
+    @Override
+    public IJwtSigningKeyReadRepository getSigningKeyReadRepository() {
+       return signingKeyReadRepository;
     }
 }

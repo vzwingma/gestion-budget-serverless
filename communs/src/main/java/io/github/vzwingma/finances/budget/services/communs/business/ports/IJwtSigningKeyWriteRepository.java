@@ -1,6 +1,8 @@
 package io.github.vzwingma.finances.budget.services.communs.business.ports;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
+import io.smallrye.mutiny.Uni;
+
 import java.util.List;
 
 /**
@@ -17,6 +19,6 @@ public interface IJwtSigningKeyWriteRepository {
      *
      * @param jwksAuthKeys les clés de signature des tokens JWT
      */
-    void saveJwksAuthKeys(List<JwksAuthKey> jwksAuthKeys);
+    Uni<Void> saveJwksAuthKeys(List<JwksAuthKey> jwksAuthKeys);
 
 }
