@@ -38,10 +38,6 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
      */
     @Override
     public void filter(ContainerRequestContext requestContext) {
-        if(jwtSigningKeyService.getJwksAuthKeyList() == null || jwtSigningKeyService.getJwksAuthKeyList().isEmpty()){
-            jwtSigningKeyService.loadJwksSigningKeys();
-        }
-
         String apiKey = requestContext.getHeaders().getFirst(HTTP_HEADER_API_KEY);
         String rawJWTToken = getAuthBearerFromHeaders(requestContext.getHeaders().getFirst(HttpHeaders.AUTHORIZATION.toLowerCase(Locale.ROOT)));
 

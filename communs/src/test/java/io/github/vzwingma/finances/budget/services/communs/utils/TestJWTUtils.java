@@ -1,6 +1,7 @@
 package io.github.vzwingma.finances.budget.services.communs.utils;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKeys;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
@@ -12,6 +13,8 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -75,6 +78,12 @@ class TestJWTUtils {
         return JWTUtils.decodeJWT(ID_TOKEN).getPayload().getAud().replace(".apps.googleusercontent.com", "");
     }
 
+    static Map<String , JwksAuthKey> getValidSignaturesKeys(){
+        Map<String , JwksAuthKey>  jwksAuthKeyList = new HashMap<>();
+        Arrays.stream(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys()).forEach(jwksAuthKey -> jwksAuthKeyList.put(jwksAuthKey.getKid(), jwksAuthKey));
+        return jwksAuthKeyList;
+    }
+
     @Test
     void testDecode() {
 
@@ -92,7 +101,7 @@ class TestJWTUtils {
 
         LOG.info(LocalDateTime.now().toString());
         LOG.info(token.expiredAt().toString());
-        assertFalse(JWTUtils.isValid(token, null, Arrays.asList(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys())));
+        assertFalse(JWTUtils.isValid(token, null, getValidSignaturesKeys()));
 
         JWTUtils.encodeJWT(token);
 
@@ -129,7 +138,7 @@ class TestJWTUtils {
         String rawToken = ID_TOKEN_BAD_APP;
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
-        assertFalse(JWTUtils.isValid(token, generateValidParams(), Arrays.asList(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys())));
+        assertFalse(JWTUtils.isValid(token, generateValidParams(), getValidSignaturesKeys()));
     }
 
 
@@ -139,7 +148,7 @@ class TestJWTUtils {
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
 
-        assertFalse(JWTUtils.isValid(token, generateValidParams(), Arrays.asList(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys())));
+        assertFalse(JWTUtils.isValid(token, generateValidParams(), getValidSignaturesKeys()));
     }
 
 
@@ -149,7 +158,7 @@ class TestJWTUtils {
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
         generateValidParams();
-        assertTrue(JWTUtils.hasValidSignature(token, Arrays.asList(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys())));
+        assertTrue(JWTUtils.hasValidSignature(token, getValidSignaturesKeys()));
     }
 
 
@@ -159,7 +168,7 @@ class TestJWTUtils {
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
         generateValidParams();
-        assertFalse(JWTUtils.hasValidSignature(token, Arrays.asList(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys())));
+        assertFalse(JWTUtils.hasValidSignature(token, getValidSignaturesKeys()));
     }
 
 
@@ -169,7 +178,7 @@ class TestJWTUtils {
         assertNotNull(rawToken);
         JWTAuthToken token = JWTUtils.decodeJWT(rawToken);
 
-        assertTrue(JWTUtils.isValid(token, generateValidParams(), Arrays.asList(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys())));
+        assertTrue(JWTUtils.isValid(token, generateValidParams(), getValidSignaturesKeys()));
     }
 
 }

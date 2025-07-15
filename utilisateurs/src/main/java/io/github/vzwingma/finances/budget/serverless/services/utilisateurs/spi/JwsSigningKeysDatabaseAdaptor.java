@@ -23,6 +23,7 @@ public class JwsSigningKeysDatabaseAdaptor implements IJwtSigningKeyReadReposito
      */
     @Override
     public Multi<JwksAuthKey> getJwksSigningAuthKeys() {
+
         return streamAll();
     }
 }
