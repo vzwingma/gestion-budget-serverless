@@ -41,7 +41,7 @@ public class JwtSecurityContext implements IJwtSecurityContext {
     /**
      * Les clés de signature JWT.
      */
-    public static List<JwksAuthKey> JWKS_AUTH_KEYS = new ArrayList<>();
+    private List<JwksAuthKey> jwksAuthKeyList = new ArrayList<>();
 
     @ConfigProperty(name = "oidc.jwt.id.appusercontent")
     Instance<String> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
@@ -50,6 +50,12 @@ public class JwtSecurityContext implements IJwtSecurityContext {
     @Inject
     public JwtSecurityContext() {
 
+    }
+
+
+    public List<JwksAuthKey> getJwksAuthKeyList() {
+        LOG.debug("getJwksAuthKeyList : {}", jwksAuthKeyList.size() + " clés");
+        return jwksAuthKeyList;
     }
 
     /**
