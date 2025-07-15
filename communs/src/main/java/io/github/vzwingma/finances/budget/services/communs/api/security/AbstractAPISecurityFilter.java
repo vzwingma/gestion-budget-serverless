@@ -39,7 +39,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
      */
     @Override
     public void filter(ContainerRequestContext requestContext) {
-        if(JwtSecurityContext.JWKS_AUTH_KEYS == null || JwtSecurityContext.JWKS_AUTH_KEYS.isEmpty()){
+        if(securityContext.getJwksAuthKeyList() == null || securityContext.getJwksAuthKeyList().isEmpty()){
             loadJwksSigningAuthKeys();
         }
 
@@ -49,7 +49,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
         if (rawJWTToken != null && !rawJWTToken.isEmpty() && !"null".equals(rawJWTToken)) {
             try {
                 JWTAuthToken jwToken = JWTUtils.decodeJWT(rawJWTToken);
-                if(JWTUtils.isValid(jwToken, securityContext.getIdAppUserContent().get())){
+                if(JWTUtils.isValid(jwToken, securityContext.getIdAppUserContent().get(), securityContext.getJwksAuthKeyList())){
                     securityContext.setJwtValidatedToken(jwToken);
                 }
                 else {
@@ -94,7 +94,10 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
         Multi<JwksAuthKey> jwksAuthKeyMulti =
                 jwtSigningKeyService.loadJwksSigningKeys();
         if(jwksAuthKeyMulti != null){
-            jwksAuthKeyMulti.subscribe().with(jwksAuthKey -> JwtSecurityContext.JWKS_AUTH_KEYS.add(jwksAuthKey));
+            jwksAuthKeyMulti.subscribe().with(jwksAuthKey -> {
+                securityContext.getJwksAuthKeyList().add(jwksAuthKey);
+                logger.info(" - Clé de signature JWKS chargée : {}", jwksAuthKey.getKid());
+            }, failure -> logger.error("Erreur lors du chargement des clés de signature JWKS", failure));
         }
     }
 }

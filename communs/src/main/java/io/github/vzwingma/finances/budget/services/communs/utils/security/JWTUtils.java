@@ -1,6 +1,5 @@
 package io.github.vzwingma.finances.budget.services.communs.utils.security;
 
-import io.github.vzwingma.finances.budget.services.communs.api.security.JwtSecurityContext;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.*;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.EncodeException;
@@ -149,9 +148,9 @@ public class JWTUtils {
      * Vérifie si le token JWT est signé en utilisant les clés publiques de Google.
      * @return true si la signature est valide, false sinon.
      */
-    public static boolean hasValidSignature(JWTAuthToken token) {
+    public static boolean hasValidSignature(JWTAuthToken token, List<JwksAuthKey> jwksAuthKeyList) {
         if(token.getRawContent() != null && token.isHasSignature()){
-            return isTokenSignatureValid(token.getRawContent(), JwtSecurityContext.JWKS_AUTH_KEYS);  // Vérifie la signature du token JWT
+            return isTokenSignatureValid(token.getRawContent(), jwksAuthKeyList);  // Vérifie la signature du token JWT
         }
         else{
             LOG.warn("Le token n'est pas signé");
@@ -169,10 +168,11 @@ public class JWTUtils {
      * - Le token doit être destiné à l'application utilisateur spécifiée dans les paramètres de validation.
      *
      * @param idAppUserContent Les paramètres de validation du token : l'identifiant de l'application utilisateur.
+     * @param jwksAuthKeyList Liste des
      * @return true si le token est valide selon les critères ci-dessus, false sinon.
      */
-    public static boolean isValid(JWTAuthToken token, String idAppUserContent){
-        return isFromGoogle(token) && isFromUserAppContent(token, idAppUserContent) && hasValidSignature(token) && isNotExpired(token);
+    public static boolean isValid(JWTAuthToken token, String idAppUserContent, List<JwksAuthKey> jwksAuthKeyList){
+        return isFromGoogle(token) && isFromUserAppContent(token, idAppUserContent) && hasValidSignature(token, jwksAuthKeyList) && isNotExpired(token);
     }
 
     /**
