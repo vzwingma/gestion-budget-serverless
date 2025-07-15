@@ -54,7 +54,7 @@ public class JwtSecurityContext implements IJwtSecurityContext {
 
 
     public List<JwksAuthKey> getJwksAuthKeyList() {
-        LOG.debug("getJwksAuthKeyList : {}", jwksAuthKeyList.size() + " clés");
+        LOG.debug("getJwksAuthKeyList : {} clés", jwksAuthKeyList.size());
         return jwksAuthKeyList;
     }
 
