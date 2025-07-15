@@ -41,7 +41,9 @@ public class JwtSecurityContext implements IJwtSecurityContext {
 
 
     @Inject
-    public JwtSecurityContext() { }
+    public JwtSecurityContext() {
+        // Method pour injection
+    }
 
 
     /**
