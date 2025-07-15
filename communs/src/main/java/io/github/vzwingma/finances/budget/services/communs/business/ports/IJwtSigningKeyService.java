@@ -1,9 +1,11 @@
 package io.github.vzwingma.finances.budget.services.communs.business.ports;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
-import io.smallrye.mutiny.Multi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -23,10 +25,27 @@ public interface IJwtSigningKeyService {
 
     IJwtSigningKeyReadRepository getSigningKeyReadRepository();
 
+    /**
+     * Les clés de signature JWT.
+     */
+    List<JwksAuthKey> jwksAuthKeyList = new ArrayList<>();
 
-    default Multi<JwksAuthKey> loadJwksSigningKeys(){
+    /**
+     *
+     * @return la liste des clés
+     */
+    default List<JwksAuthKey> getJwksAuthKeyList() {
+        logger.debug("getJwksAuthKeyList : {} clés", jwksAuthKeyList.size());
+        return jwksAuthKeyList;
+    }
+
+
+    default void loadJwksSigningKeys(){
         logger.info("Chargement des clés de signature JWT");
-        return getSigningKeyReadRepository().getJwksSigningAuthKeys();
+            getSigningKeyReadRepository().getJwksSigningAuthKeys().onItem().invoke(jwksAuthKey -> {
+                jwksAuthKeyList.add(jwksAuthKey);
+                logger.info(" - Clé de signature JWKS chargée : {}", jwksAuthKey.getKid());
+            });
     }
 
 }
