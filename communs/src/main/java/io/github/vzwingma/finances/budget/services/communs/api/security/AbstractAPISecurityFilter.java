@@ -41,6 +41,10 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
         String apiKey = requestContext.getHeaders().getFirst(HTTP_HEADER_API_KEY);
         String rawJWTToken = getAuthBearerFromHeaders(requestContext.getHeaders().getFirst(HttpHeaders.AUTHORIZATION.toLowerCase(Locale.ROOT)));
 
+        if(jwtSigningKeyService.getJwksAuthKeyList().isEmpty()){
+            jwtSigningKeyService.loadJwksSigningKeys();
+        }
+
         if (rawJWTToken != null && !rawJWTToken.isEmpty() && !"null".equals(rawJWTToken)) {
             try {
                 JWTAuthToken jwToken = JWTUtils.decodeJWT(rawJWTToken);
@@ -55,7 +59,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
             }
         }
         else {
-            logger.warn("Token JWT non trouvé. Accès anonyme.");
+            logger.warn("Token JWT non trouvé [{}]. Accès anonyme.", rawJWTToken);
         }
         if(apiKey == null || apiKey.isEmpty()){
             logger.warn("Clé API non trouvée");

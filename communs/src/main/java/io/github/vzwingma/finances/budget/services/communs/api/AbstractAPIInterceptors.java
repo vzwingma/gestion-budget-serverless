@@ -33,7 +33,7 @@ public abstract class AbstractAPIInterceptors {
         String apiKey = requestContext.getHeaderString(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY);
         String jwt = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
         LOG.debug("[HTTP] > [uri:{} {}]", requestContext.getMethod(), path);
-        LOG.trace("[HTTP] > [api-key:{}][jwt:{}]", apiKey, jwt);
+        LOG.debug("[HTTP] > [api-key:{}][jwt:{}]", apiKey, jwt);
     }
 
     /**

@@ -35,7 +35,7 @@ public interface IJwtSigningKeyService {
      * @return la liste des clés
      */
     default Map<String,JwksAuthKey> getJwksAuthKeyList() {
-        logger.info("getJwksAuthKeyList : {} clés", jwksAuthKeyList.size());
+        logger.trace("getJwksAuthKeyList : {} clés", jwksAuthKeyList.size());
         return jwksAuthKeyList;
     }
 
