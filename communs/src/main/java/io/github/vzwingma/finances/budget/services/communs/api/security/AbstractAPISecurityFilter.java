@@ -41,10 +41,6 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
         String apiKey = requestContext.getHeaders().getFirst(HTTP_HEADER_API_KEY);
         String rawJWTToken = getAuthBearerFromHeaders(requestContext.getHeaders().getFirst(HttpHeaders.AUTHORIZATION.toLowerCase(Locale.ROOT)));
 
-        if(jwtSigningKeyService.getJwksAuthKeyList().isEmpty()){
-            jwtSigningKeyService.loadJwksSigningKeys().subscribe().with(jwksAuthKeyList -> logger.info("JWKS clés de signature chargées : {}",  jwksAuthKeyList));
-        }
-
         if (rawJWTToken != null && !rawJWTToken.isEmpty() && !"null".equals(rawJWTToken)) {
             try {
                 JWTAuthToken jwToken = JWTUtils.decodeJWT(rawJWTToken);
