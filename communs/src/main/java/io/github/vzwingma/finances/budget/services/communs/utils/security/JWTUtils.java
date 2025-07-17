@@ -14,7 +14,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.List;
+import java.util.Map;
 
 /**
  * Classe utilitaire pour le décodage et l'encodage des tokens JWT ID_TOKEN de Google.
@@ -87,13 +87,13 @@ public class JWTUtils {
      * @param jwtRawContent Le contenu brut du token JWT à vérifier.
      * @return true si la signature est valide, false sinon.
      */
-    public static boolean isTokenSignatureValid(String jwtRawContent, List<JwksAuthKey> authKeys){
+    public static boolean isTokenSignatureValid(String jwtRawContent, Map<String,JwksAuthKey> authKeys){
         LOG.trace("Vérification de la signature du Token JWT : {}", jwtRawContent);
-        if(authKeys == null){
+        if(authKeys == null || authKeys.isEmpty()){
             LOG.error("Aucune clé publique n'a été fournie pour vérifier la signature du token JWT");
-            return false;
+            return true;
         }
-        for(JwksAuthKey key : authKeys){
+        for(JwksAuthKey key : authKeys.values()){
             try {
                 RSAPublicKey publicKey = (RSAPublicKey) getPublicKey(key.getN(), key.getE());
 
@@ -148,7 +148,7 @@ public class JWTUtils {
      * Vérifie si le token JWT est signé en utilisant les clés publiques de Google.
      * @return true si la signature est valide, false sinon.
      */
-    public static boolean hasValidSignature(JWTAuthToken token, List<JwksAuthKey> jwksAuthKeyList) {
+    public static boolean hasValidSignature(JWTAuthToken token, Map<String,JwksAuthKey> jwksAuthKeyList) {
         if(token.getRawContent() != null && token.isHasSignature()){
             return isTokenSignatureValid(token.getRawContent(), jwksAuthKeyList);  // Vérifie la signature du token JWT
         }
@@ -171,7 +171,7 @@ public class JWTUtils {
      * @param jwksAuthKeyList Liste des
      * @return true si le token est valide selon les critères ci-dessus, false sinon.
      */
-    public static boolean isValid(JWTAuthToken token, String idAppUserContent, List<JwksAuthKey> jwksAuthKeyList){
+    public static boolean isValid(JWTAuthToken token, String idAppUserContent, Map<String,JwksAuthKey> jwksAuthKeyList){
         return isFromGoogle(token) && isFromUserAppContent(token, idAppUserContent) && hasValidSignature(token, jwksAuthKeyList) && isNotExpired(token);
     }
 

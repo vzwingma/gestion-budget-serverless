@@ -3,7 +3,6 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.api;
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.BudgetService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.OperationsService;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
@@ -28,6 +27,7 @@ import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.HashMap;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
@@ -40,7 +40,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 class BudgetsResourceTest {
 
     @Inject
-    IBudgetAppProvider budgetService;
+    BudgetService budgetService;
 
     @Inject
     IJwtSigningKeyReadRepository jwtSigningKeyReadRepository;
@@ -59,6 +59,7 @@ class BudgetsResourceTest {
 
     @Test
     void testInfoEndpoint() {
+        Mockito.when(budgetService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
         given()
                 .when().get(OperationsAPIEnum.BUDGET_BASE + "/_info")
                 .then()

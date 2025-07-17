@@ -2,9 +2,7 @@ package io.github.vzwingma.finances.budget.services.communs.api.security;
 
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
-import io.smallrye.mutiny.Multi;
 import io.vertx.core.json.DecodeException;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -28,6 +26,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
     @Inject
     JwtSecurityContext securityContext;
 
+
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     IJwtSigningKeyService jwtSigningKeyService;
@@ -39,17 +38,17 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
      */
     @Override
     public void filter(ContainerRequestContext requestContext) {
-        if(securityContext.getJwksAuthKeyList() == null || securityContext.getJwksAuthKeyList().isEmpty()){
-            loadJwksSigningAuthKeys();
-        }
-
         String apiKey = requestContext.getHeaders().getFirst(HTTP_HEADER_API_KEY);
         String rawJWTToken = getAuthBearerFromHeaders(requestContext.getHeaders().getFirst(HttpHeaders.AUTHORIZATION.toLowerCase(Locale.ROOT)));
+
+        if(jwtSigningKeyService.getJwksAuthKeyList().isEmpty()){
+            jwtSigningKeyService.loadJwksSigningKeys().subscribe().with(jwksAuthKeyList -> logger.info("JWKS clés de signature chargées : {}",  jwksAuthKeyList));
+        }
 
         if (rawJWTToken != null && !rawJWTToken.isEmpty() && !"null".equals(rawJWTToken)) {
             try {
                 JWTAuthToken jwToken = JWTUtils.decodeJWT(rawJWTToken);
-                if(JWTUtils.isValid(jwToken, securityContext.getIdAppUserContent().get(), securityContext.getJwksAuthKeyList())){
+                if(JWTUtils.isValid(jwToken, securityContext.getIdAppUserContent().get(), jwtSigningKeyService.getJwksAuthKeyList())){
                     securityContext.setJwtValidatedToken(jwToken);
                 }
                 else {
@@ -60,7 +59,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
             }
         }
         else {
-            logger.warn("Token JWT non trouvé. Accès anonyme.");
+            logger.warn("Token JWT non trouvé [{}]. Accès anonyme.", rawJWTToken);
         }
         if(apiKey == null || apiKey.isEmpty()){
             logger.warn("Clé API non trouvée");
@@ -84,20 +83,6 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
         } else {
             logger.trace("Auth is null");
             return null;
-        }
-    }
-
-    /**
-     * Chargement des clés de signature JWKS
-     */
-    private void loadJwksSigningAuthKeys() {
-        Multi<JwksAuthKey> jwksAuthKeyMulti =
-                jwtSigningKeyService.loadJwksSigningKeys();
-        if(jwksAuthKeyMulti != null){
-            jwksAuthKeyMulti.subscribe().with(jwksAuthKey -> {
-                securityContext.getJwksAuthKeyList().add(jwksAuthKey);
-                logger.info(" - Clé de signature JWKS chargée : {}", jwksAuthKey.getKid());
-            }, failure -> logger.error("Erreur lors du chargement des clés de signature JWKS", failure));
         }
     }
 }

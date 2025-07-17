@@ -3,7 +3,6 @@ package io.github.vzwingma.finances.budget.serverless.services.utilisateurs.api;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.api.enums.UtilisateursAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.UtilisateursService;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.model.Utilisateur;
-import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.ports.IUtilisateursAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.data.MockDataUtilisateur;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
@@ -12,7 +11,6 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAut
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
-import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.UserAccessForbiddenException;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -27,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
@@ -35,7 +34,7 @@ import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
 class UtilisateursResourceTest {
 
     @Inject
-    IUtilisateursAppProvider utilisateurService;
+    UtilisateursService utilisateurService;
 
     @Inject
     IJwtSigningKeyReadRepository jwtSigningKeyReadRepository;
@@ -53,6 +52,7 @@ class UtilisateursResourceTest {
     }
     @Test
     void testInfoEndpoint() {
+        Mockito.when(utilisateurService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
         given()
                 .when().get(UtilisateursAPIEnum.USERS_BASE + "/_info")
                 .then()
@@ -61,7 +61,7 @@ class UtilisateursResourceTest {
     }
 
     @Test
-    void testGetLastAccessDate() throws UserAccessForbiddenException {
+    void testGetLastAccessDate() {
         // Init des données
         Utilisateur utilisateurExpected = MockDataUtilisateur.getTestUtilisateurWithDate();
         Mockito.when(utilisateurService.getLastAccessDate(Mockito.anyString()))
@@ -96,7 +96,7 @@ class UtilisateursResourceTest {
 
 
     @Test
-    void testForUtilisateurUnkown() throws UserAccessForbiddenException {
+    void testForUtilisateurUnkown() {
         // Init des données
         Mockito.when(utilisateurService.getLastAccessDate(Mockito.anyString()))
                 .thenReturn(Uni.createFrom().nullItem());

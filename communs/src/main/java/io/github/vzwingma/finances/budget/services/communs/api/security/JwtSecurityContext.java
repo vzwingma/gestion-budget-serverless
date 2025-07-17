@@ -3,7 +3,6 @@ package io.github.vzwingma.finances.budget.services.communs.api.security;
 import com.sun.security.auth.UserPrincipal;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -15,8 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Implémentation personnalisée de {@link SecurityContext} pour gérer la sécurité basée sur les tokens JWT OIDC de Google.
@@ -38,10 +35,6 @@ public class JwtSecurityContext implements IJwtSecurityContext {
      */
     private String apiKey;
 
-    /**
-     * Les clés de signature JWT.
-     */
-    private List<JwksAuthKey> jwksAuthKeyList = new ArrayList<>();
 
     @ConfigProperty(name = "oidc.jwt.id.appusercontent")
     Instance<String> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
@@ -49,14 +42,9 @@ public class JwtSecurityContext implements IJwtSecurityContext {
 
     @Inject
     public JwtSecurityContext() {
-
+        // Method pour injection
     }
 
-
-    public List<JwksAuthKey> getJwksAuthKeyList() {
-        LOG.debug("getJwksAuthKeyList : {} clés", jwksAuthKeyList.size());
-        return jwksAuthKeyList;
-    }
 
     /**
      * Récupère le principal de l'utilisateur à partir du token JWT.
