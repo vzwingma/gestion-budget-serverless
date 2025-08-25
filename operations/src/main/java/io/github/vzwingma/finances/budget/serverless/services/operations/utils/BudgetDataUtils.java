@@ -245,7 +245,7 @@ public class BudgetDataUtils {
                 }
             });
             Optional<LigneOperation> maxDate = listeOperations.stream().max(comparator);
-            if (maxDate.get().retrieveDateOperation() != null) {
+            if (maxDate.isPresent() && maxDate.get().retrieveDateOperation() != null) {
                 localDateDerniereOperation = maxDate.get().retrieveDateOperation();
             }
         }
