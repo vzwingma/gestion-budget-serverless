@@ -8,6 +8,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBanc
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
+import io.github.vzwingma.finances.budget.services.communs.utils.security.SecurityUtils;
 import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -79,7 +80,10 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     @Override
     public Multi<ProjectionBudgetSoldes> chargeSoldesBudgetMensuel(String idCompte, Month mois, Integer annee){
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
-        LOGGER.info("Chargement des soldes {}{} du compte {} ", mois != null ? mois +"/" : "", annee != null ? annee : " de toutes les années", idCompte);
+        
+        String anneeS = annee != null ? annee.toString().replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_") : " de toutes les années";
+        String moisS = mois != null ? (mois +"/").replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_") : "";
+        LOGGER.info("Chargement des soldes {}{} du compte {} ", moisS, anneeS, idCompte);
         String query = ATTRIBUT_COMPTE_ID + " = ?1";
         if(annee != null) {
             query += " and " + ATTRIBUT_ANNEE + " = ?2";

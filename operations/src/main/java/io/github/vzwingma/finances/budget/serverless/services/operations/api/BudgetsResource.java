@@ -121,6 +121,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         if(idCompte == null) {
             return Multi.createFrom().failure(new BadParametersException("IdCompte doit être renseigné"));
         }
+        
         idCompte = idCompte.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
 
