@@ -35,7 +35,7 @@ class BudgetServiceTest {
     private IComptesServiceProvider mockCompteServiceProvider;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
         mockCompteServiceProvider = Mockito.mock(IComptesServiceProvider.class);
 

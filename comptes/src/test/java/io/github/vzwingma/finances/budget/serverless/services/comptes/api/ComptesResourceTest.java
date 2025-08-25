@@ -20,7 +20,7 @@ class ComptesResourceTest {
     @Inject
     ComptesService comptesService;
     @BeforeAll
-    public static void init() {
+    static void init() {
         QuarkusMock.installMockForType(Mockito.mock(ComptesService.class), ComptesService.class);
     }
 

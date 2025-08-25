@@ -29,7 +29,7 @@ class OperationsServiceTest {
     private IOperationsRepository mockOperationDataProvider;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
         operationsAppProvider = Mockito.spy(new OperationsService());
         IBudgetAppProvider budgetAppProvider = Mockito.mock(BudgetService.class);

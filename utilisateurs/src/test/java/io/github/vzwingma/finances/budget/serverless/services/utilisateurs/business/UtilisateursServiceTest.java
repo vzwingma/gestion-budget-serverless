@@ -28,7 +28,7 @@ class UtilisateursServiceTest {
     private IUtilisateursRepository serviceDataProvider;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         serviceDataProvider = Mockito.mock(IUtilisateursRepository.class);
         appProvider = Mockito.spy(new UtilisateursService(serviceDataProvider));
 

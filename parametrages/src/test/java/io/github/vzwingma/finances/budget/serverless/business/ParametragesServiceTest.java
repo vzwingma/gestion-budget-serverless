@@ -25,7 +25,7 @@ class ParametragesServiceTest {
     private IParametragesRepository parametrageServiceProvider;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         parametrageServiceProvider = Mockito.mock(IParametragesRepository.class);
         IJwtSigningKeyWriteRepository signingKeyRepository = Mockito.mock(IJwtSigningKeyWriteRepository.class);
         IJwtSigningKeyReadRepository signingKeyRRepository = Mockito.mock(IJwtSigningKeyReadRepository.class);

@@ -17,12 +17,6 @@ import java.util.*;
 public interface IJwtSigningKeyService {
 
 
-
-    /**
-     * Logger
-     */
-    Logger logger = LoggerFactory.getLogger(IJwtSigningKeyService.class);
-
     IJwtSigningKeyReadRepository getSigningKeyReadRepository();
 
     /**
@@ -35,7 +29,6 @@ public interface IJwtSigningKeyService {
      * @return la liste des clés
      */
     default Map<String,JwksAuthKey> getJwksAuthKeyList() {
-        logger.trace("getJwksAuthKeyList : {} clés", jwksAuthKeyList.size());
         return jwksAuthKeyList;
     }
 
@@ -45,8 +38,6 @@ public interface IJwtSigningKeyService {
      * @return chargement des clés JWKS
      */
     default Uni<Map<String, JwksAuthKey>> loadJwksSigningKeys() {
-        logger.info("(Re)chargement des clés de signature JWT [{}] ", jwksAuthKeyList.size());
         return getSigningKeyReadRepository().getJwksSigningAuthKeys().collect().asMap(JwksAuthKey::getKid).invoke(jwksAuthKeyList::putAll);
-
     }
 }
