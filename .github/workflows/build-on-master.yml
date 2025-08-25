@@ -260,37 +260,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-3
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         id: downloadServiceParametrage
         name: Download Service Paramétrages
         with:
           name: parametrages-function
           path: parametrages
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         id: downloadServiceUtilisateurs
         name: Download Service Utilisateurs
         with:
           name: utilisateurs-function
           path: utilisateurs
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         id: downloadServiceComptes
         name: Download Service Comptes
         with:
           name: comptes-function
           path: comptes
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         id: downloadServiceOperations
         name: Download Service Opérations
         with:
           name: operations-function
           path: operations
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         id: downloadSAMFunction
         name: Download SAM Function
         with:
           name: function-sam
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         id: downloadSAM
         name: Download SAM Config
         with:
