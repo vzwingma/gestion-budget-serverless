@@ -2,9 +2,6 @@ package io.github.vzwingma.finances.budget.services.communs.business.ports;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.smallrye.mutiny.Uni;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.*;
 
 
