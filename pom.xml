@@ -32,7 +32,7 @@
         <quarkus.platform.version>3.28.4</quarkus.platform.version>
         <lombok.version>1.18.42</lombok.version>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
-        <jacoco.version>0.8.13</jacoco.version>
+        <jacoco.version>0.8.14</jacoco.version>
         <sonar.core.codeCoveragePlugin>jacoco</sonar.core.codeCoveragePlugin>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.jacoco.reportPath>target/jacoco.exec</sonar.jacoco.reportPath>
