@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -95,9 +96,10 @@ class TestJWTUtils {
         assertNotNull(token.getPayload());
         assertEquals("https://accounts.google.com", token.getPayload().getIss());
         assertNotNull(token.issuedAt());
-        assertEquals(LocalDateTime.of(2023, 1, 2, 13, 46, 42), token.issuedAt());
+        ZoneId parisZoneId = ZoneId.of("Europe/Paris");
+        assertEquals(LocalDateTime.of(2023, 1, 2, 12, 46, 42).atZone(parisZoneId), token.issuedAt().atZone(parisZoneId));
         assertNotNull(token.expiredAt());
-        assertEquals(LocalDateTime.of(2023, 1, 2, 14, 46, 42), token.expiredAt());
+        assertEquals(LocalDateTime.of(2023, 1, 2, 13, 46, 42).atZone(parisZoneId), token.expiredAt().atZone(parisZoneId));
 
         LOG.info(LocalDateTime.now().toString());
         LOG.info(token.expiredAt().toString());
