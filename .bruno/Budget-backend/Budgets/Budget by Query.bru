@@ -1,0 +1,26 @@
+meta {
+  name: Budget by Query
+  type: http
+  seq: 3
+}
+
+get {
+  url: https://{{backend-url}}/budgets/v2/query?idCompte=lclV&mois=11&annee=2025
+  body: none
+  auth: inherit
+}
+
+params:query {
+  idCompte: lclV
+  mois: 11
+  annee: 2025
+}
+
+headers {
+  x-api-key: {{api-key}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

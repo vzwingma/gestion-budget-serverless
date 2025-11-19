@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Budget-backend",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
