@@ -1,0 +1,55 @@
+meta {
+  name: Maj Opération
+  type: http
+  seq: 6
+}
+
+post {
+  url: https://{{backend-url}}/budgets/v2/lclV_2020_12/operations/e4509972-d56f-4559-9c35-96f0970af89a
+  body: json
+  auth: inherit
+}
+
+headers {
+  x-api-key: {{api-key}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "id": "e4509972-d56f-4559-9c35-96f0970af89a",
+    "libelle": "test",
+    "categorie": {
+      "id": "8f1614c9-503c-4e7d-8cb5-0c9a9218b84a",
+      "libelle": "Alimentation"
+    },
+    "ssCategorie": {
+      "id": "467496e4-9059-4b9b-8773-21f230c8c5c6",
+      "libelle": "Courses"
+    },
+    "typeOperation": "DEPENSE",
+    "etat": "PREVUE",
+    "valeur": -1,
+    "periodique": false,
+    "tagDerniereOperation": false,
+    "autresInfos": {
+      "dateCreate": null,
+      "dateOperation": null,
+      "dateMaj": [
+        2020,
+        12,
+        7,
+        13,
+        10,
+        42,
+        658000000
+      ],
+      "auteur": null
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Query Liste operation by Mois
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://{{backend-url}}/budgets/v2/query?idCompte=lclV&annee=2025&mois=11
+  body: none
+  auth: inherit
+}
+
+params:query {
+  idCompte: lclV
+  annee: 2025
+  mois: 11
+}
+
+headers {
+  x-api-key: {{api-key}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
