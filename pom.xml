@@ -196,11 +196,9 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <systemPropertyVariables>
-                                <quarkus.jacoco.data-file>${project.build.directory}/jacoco.exec
-                                </quarkus.jacoco.data-file>
+                                <quarkus.jacoco.data-file>${project.build.directory}/jacoco.exec</quarkus.jacoco.data-file>
                                 <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
-                                <quarkus.jacoco.report-location>${project.build.directory}/coverage
-                                </quarkus.jacoco.report-location>
+                                <quarkus.jacoco.report-location>${project.build.directory}/coverage</quarkus.jacoco.report-location>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
