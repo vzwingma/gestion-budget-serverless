@@ -1,0 +1,21 @@
+meta {
+  name: Reinit budget
+  type: http
+  seq: 8
+}
+
+delete {
+  url: https://{{backend-url}}/budgets/v2/lclV_2022_07
+  body: none
+  auth: inherit
+}
+
+headers {
+  x-api-key: {{api-key}}
+  Content-Type: application/json
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

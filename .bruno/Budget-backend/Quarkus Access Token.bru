@@ -1,0 +1,16 @@
+meta {
+  name: Quarkus Access Token
+  type: http
+  seq: 7
+}
+
+get {
+  url: https://www.googleapis.com/oauth2/v3/userinfo
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

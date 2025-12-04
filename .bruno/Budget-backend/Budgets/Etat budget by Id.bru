@@ -1,0 +1,24 @@
+meta {
+  name: Etat budget by Id
+  type: http
+  seq: 4
+}
+
+get {
+  url: https://{{backend-url}}/budgets/v2/lclV_2025_11/etat?actif=true
+  body: none
+  auth: inherit
+}
+
+params:query {
+  actif: true
+}
+
+headers {
+  x-api-key: {{api-key}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github.vzwingma.finances.budget.serverless</groupId>
     <artifactId>services</artifactId>
-    <version>23.2.0-SNAPSHOT</version>
+    <version>24.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Services serverless</name>
 
@@ -196,11 +196,9 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <systemPropertyVariables>
-                                <quarkus.jacoco.data-file>${project.build.directory}/jacoco.exec
-                                </quarkus.jacoco.data-file>
+                                <quarkus.jacoco.data-file>${project.build.directory}/jacoco.exec</quarkus.jacoco.data-file>
                                 <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
-                                <quarkus.jacoco.report-location>${project.build.directory}/coverage
-                                </quarkus.jacoco.report-location>
+                                <quarkus.jacoco.report-location>${project.build.directory}/coverage</quarkus.jacoco.report-location>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

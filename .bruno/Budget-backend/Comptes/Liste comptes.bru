@@ -1,0 +1,20 @@
+meta {
+  name: Liste comptes
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://{{backend-url}}/comptes/v2/tous
+  body: none
+  auth: inherit
+}
+
+headers {
+  x-api-key: {{api-key}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Liste catégories
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://{{backend-url}}/parametres/v2/categories
+  body: none
+  auth: inherit
+}
+
+headers {
+  x-api-key: {{api-key}}
+  Accept-Encoding: gzip, deflate, br
+  Accept: application/json
+  Content-Type: application/json
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

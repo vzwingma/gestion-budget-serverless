@@ -1,0 +1,20 @@
+meta {
+  name: Libellés opérations
+  type: http
+  seq: 5
+}
+
+get {
+  url: https://{{backend-url}}/budgets/v2/compte/lclV/operations/libelles
+  body: none
+  auth: inherit
+}
+
+headers {
+  x-api-key: {{api-key}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

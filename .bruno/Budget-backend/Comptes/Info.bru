@@ -1,0 +1,20 @@
+meta {
+  name: Info
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://{{backend-url}}/comptes/v2/_info
+  body: none
+  auth: inherit
+}
+
+headers {
+  x-api-key: {{api-key}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

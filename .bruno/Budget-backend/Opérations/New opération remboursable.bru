@@ -1,0 +1,55 @@
+meta {
+  name: New opération remboursable
+  type: http
+  seq: 7
+}
+
+post {
+  url: https://{{backend-url}}/budgets/v2/lclV_2023_09/operations
+  body: json
+  auth: inherit
+}
+
+headers {
+  x-api-key: {{api-key}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "id": "e4509972-d56f-4669-9c35-96f0970af89a",
+    "libelle": "testCreateRemboursement",
+    "categorie": {
+      "id": "b20a46a5-92ab-47a8-a70d-ecb64ddf02ce",
+      "libelle": "Frais remboursables"
+    },
+    "ssCategorie": {
+      "id": "bd28c498-a774-4a67-b6ec-a135d39fca46",
+      "libelle": "Professionel"
+    },
+    "typeOperation": "DEPENSE",
+    "etat": "PREVUE",
+    "valeur": 10,
+    "periodique": false,
+    "tagDerniereOperation": false,
+    "autresInfos": {
+      "dateCreate": null,
+      "dateOperation": null,
+      "dateMaj": [
+        2023,
+        9,
+        19,
+        13,
+        10,
+        42,
+        658000000
+      ],
+      "auteur": null
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
