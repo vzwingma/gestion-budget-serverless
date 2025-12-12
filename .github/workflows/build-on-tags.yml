@@ -58,12 +58,12 @@ jobs:
       - name: Find and Replace in Serverless Application Manager
         run: sed -e "s/__ENV__/PROD/g" -e "s/__VERSION__/${{ steps.get_version.outputs.VERSION }}/g" -e "s/__DATABASE_URL__/${{ secrets.DATABASE_URL }}/g" -e "s/__DATABASE_NAME__/${{ secrets.DATABASE_NAME }}/g" -e "s/__APP_CONFIG_URL_IHM__/${{ vars.APP_CONFIG_URL_IHM }}/g" -e "s/__APP_CONFIG_URL_BACKENDS__/${{ vars.APP_CONFIG_URL_BACKENDS }}/g" -e "s/__OIDC_JWT_ID_APPUSERCONTENT__/${{ secrets.OIDC_JWT_ID_APPUSERCONTENT }}/g" -e "s/__QUARKUS_LOG_LEVEL__/${{ vars.QUARKUS_LOG_LEVEL }}/g" -e "s/__MONGODB_LOG_LEVEL__/${{ vars.MONGODB_LOG_LEVEL }}/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         name: Upload SAM Function Configuration
         with:
           name: function-sam
           path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         name: Upload SAM Configuration
         with:
           name: sam
@@ -108,7 +108,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         name: Upload Fonction serverless Paramétrages
         with:
           name: parametrages-function
@@ -150,7 +150,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         name: Upload Fonction serverless Utilisateurs
         with:
           name: utilisateurs-function
@@ -192,7 +192,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         name: Upload Fonction serverless Comptes
         with:
           name: comptes-function
@@ -234,7 +234,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         name: Upload Fonction serverless Opérations
         with:
           name: operations-function
@@ -264,37 +264,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-3
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         id: downloadServiceParametrage
         name: Download Service Paramétrages
         with:
           name: parametrages-function
           path: parametrages
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         id: downloadServiceUtilisateurs
         name: Download Service Utilisateurs
         with:
           name: utilisateurs-function
           path: utilisateurs
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         id: downloadServiceComptes
         name: Download Service Comptes
         with:
           name: comptes-function
           path: comptes
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         id: downloadServiceOperations
         name: Download Service Opérations
         with:
           name: operations-function
           path: operations
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         id: downloadSAMFunction
         name: Download SAM Function
         with:
           name: function-sam
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         id: downloadSAM
         name: Download SAM Config
         with:
