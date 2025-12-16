@@ -15,10 +15,10 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 public abstract class AbstractAPIResource {
 
-    @ConfigProperty(name = "quarkus.application.name")
+    @ConfigProperty(name = "quarkus.application.name", defaultValue = "µService Budget")
     String applicationName;
 
-    @ConfigProperty(name = "quarkus.application.version")
+    @ConfigProperty(name = "quarkus.application.version", defaultValue = "0.0.0")
     String applicationVersion;
 
     @SuppressWarnings("CdiInjectionPointsInspection")
