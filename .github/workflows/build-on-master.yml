@@ -45,6 +45,11 @@ jobs:
         run: mvn --batch-mode deploy -DskipTests=true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Find and Replace in Serverless Application Manager Config
+        run: sed "s/__ENV__/QUA/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.template.toml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
+      - name: Find and Replace in Serverless Application Manager
+        run: sed -e "s/__ENV__/QUA/g" -e "s/__VERSION__/SNAPSHOT/g" -e "s/__DATABASE_URL__/$DATABASE_URL/g" -e "s/__DATABASE_NAME__/$DATABASE_NAME/g" -e "s/__APP_CONFIG_URL_IHM__/$APP_CONFIG_URL_IHM/g" -e "s/__APP_CONFIG_URL_BACKENDS__/$APP_CONFIG_URL_BACKENDS/g" -e "s/__OIDC_JWT_ID_APPUSERCONTENT__/$OIDC_JWT_ID_APPUSERCONTENT/g" -e "s/__QUARKUS_LOG_LEVEL__/$QUARKUS_LOG_LEVEL/g" -e "s/__MONGODB_LOG_LEVEL__/$MONGODB_LOG_LEVEL/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
+        env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
           OIDC_JWT_ID_APPUSERCONTENT: ${{ secrets.OIDC_JWT_ID_APPUSERCONTENT }}
@@ -52,11 +57,6 @@ jobs:
           APP_CONFIG_URL_BACKENDS: ${{ vars.APP_CONFIG_URL_BACKENDS }}
           QUARKUS_LOG_LEVEL: ${{ vars.QUARKUS_LOG_LEVEL }}
           MONGODB_LOG_LEVEL: ${{ vars.MONGODB_LOG_LEVEL }}
-
-      - name: Find and Replace in Serverless Application Manager Config
-        run: sed "s/__ENV__/QUA/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.template.toml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
-      - name: Find and Replace in Serverless Application Manager
-        run: sed -e "s/__ENV__/QUA/g" -e "s/__VERSION__/SNAPSHOT/g" -e "s/__DATABASE_URL__/$DATABASE_URL/g" -e "s/__DATABASE_NAME__/$DATABASE_NAME/g" -e "s/__APP_CONFIG_URL_IHM__/$APP_CONFIG_URL_IHM/g" -e "s/__APP_CONFIG_URL_BACKENDS__/$APP_CONFIG_URL_BACKENDS/g" -e "s/__OIDC_JWT_ID_APPUSERCONTENT__/$OIDC_JWT_ID_APPUSERCONTENT/g" -e "s/__QUARKUS_LOG_LEVEL__/$QUARKUS_LOG_LEVEL/g" -e "s/__MONGODB_LOG_LEVEL__/$MONGODB_LOG_LEVEL/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
 
       - uses: actions/upload-artifact@v6
         name: Upload SAM Function Configuration
