@@ -1,0 +1,27 @@
+meta {
+  name: ADMIN - Libellés opérations Override
+  type: http
+  seq: 9
+}
+
+post {
+  url: https://{{backend-url}}/budgets/v2/admin/compte/lclV/operations/libelles/override
+  body: json
+  auth: inherit
+}
+
+headers {
+  x-api-key: {{api-key}}
+}
+
+body:json {
+  [
+    { "avant": "*** Alignement ***", "apres": "Alignement" },
+    { "avant": "13 eme mois", "apres": "13ème mois" }
+  ]
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
