@@ -1,4 +1,4 @@
-package io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation;
+package io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.ADMIN;
 
 import lombok.Getter;
 import lombok.Setter;

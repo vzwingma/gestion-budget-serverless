@@ -4,6 +4,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationPeriodiciteEnum;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationStatutEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataCategories;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
@@ -57,7 +58,7 @@ class BudgetDataUtilsTest {
         List<LigneOperation> depenses = new ArrayList<>(Arrays.asList(depense1, depense2, depense3));
         LocalDate cd = BudgetDataUtils.getMaxDateListeOperations(depenses);
 
-        assertEquals(Month.OCTOBER.getValue(), cd.get(ChronoField.MONTH_OF_YEAR));
+        assertEquals(Month.OCTOBER, cd.getMonth());
     }
 
 
@@ -180,7 +181,7 @@ class BudgetDataUtilsTest {
 
     @Test
     void testClonePeriodiqueLigneOperationNonPeriodique() {
-        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(MockDataOperations.getOperationPrelevement());
+        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(MockDataOperations.getOperationPrelevement(), Month.JANUARY, 2010);
         assertNotNull(clones);
         assertEquals(1, clones.size());
 
@@ -198,17 +199,17 @@ class BudgetDataUtilsTest {
         operationMensuelle.getMensualite().setProchaineEcheance(1);
         operationMensuelle.setEtat(OperationEtatEnum.REPORTEE);
 
-        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(operationMensuelle);
+        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(operationMensuelle, Month.JANUARY, 2010);
         assertNotNull(clones);
         assertEquals(2, clones.size());
 
-        LigneOperation opPrec = clones.get(0);
+        LigneOperation opPrec = clones.getFirst();
         assertNotNull(opPrec);
         assertEquals(OperationEtatEnum.PREVUE, opPrec.getEtat());
         assertNotNull(opPrec.getAutresInfos());
         assertEquals(OperationPeriodiciteEnum.PONCTUELLE, opPrec.getMensualite().getPeriode());
         assertEquals(-1, opPrec.getMensualite().getProchaineEcheance());
-
+        assertEquals(operationMensuelle.getMensualite().getDateFin(), opPrec.getMensualite().getDateFin());
 
         LigneOperation clone = clones.get(1);
         assertNotNull(clone);
@@ -219,13 +220,36 @@ class BudgetDataUtilsTest {
 
 
     @Test
+    void testClonePeriodiqueLigneOperationPeriodiqueEnRetard() {
+
+        LigneOperation operationMensuelle = MockDataOperations.getOperationMensuelleRealisee();
+        operationMensuelle.getMensualite().setProchaineEcheance(1);
+        operationMensuelle.setEtat(OperationEtatEnum.REPORTEE);
+
+        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(operationMensuelle, Month.JANUARY, 2010);
+        assertNotNull(clones);
+        assertEquals(2, clones.size());
+
+        LigneOperation opPrec = clones.getFirst();
+        assertNotNull(opPrec);
+        assertEquals(OperationEtatEnum.PREVUE, opPrec.getEtat());
+        assertNotNull(opPrec.getAutresInfos());
+        assertEquals(OperationPeriodiciteEnum.PONCTUELLE, opPrec.getMensualite().getPeriode());
+        assertEquals(-1, opPrec.getMensualite().getProchaineEcheance());
+        assertEquals(operationMensuelle.getMensualite().getDateFin(), opPrec.getMensualite().getDateFin());
+        assertEquals(OperationStatutEnum.EN_RETARD, opPrec.getStatuts().getFirst());
+    }
+
+
+
+    @Test
     void testClonePeriodiqueLigneOperationPeriodiqueRealisee() {
 
         LigneOperation operationMensuelle = MockDataOperations.getOperationMensuelleRealisee();
         operationMensuelle.getMensualite().setProchaineEcheance(0);
         operationMensuelle.setEtat(OperationEtatEnum.REALISEE);
 
-        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(operationMensuelle);
+        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(operationMensuelle, Month.JANUARY, 2010);
         assertNotNull(clones);
         assertEquals(1, clones.size());
 

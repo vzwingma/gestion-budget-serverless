@@ -2,15 +2,13 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.utils;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibellesOperationEnum;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationPeriodiciteEnum;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.*;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Array;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
@@ -152,6 +150,7 @@ public class BudgetDataUtils {
         ligneOperationClonee.setEtat(OperationEtatEnum.PREVUE);
         ligneOperationClonee.setTypeOperation(ligneOperation.getTypeOperation());
         ligneOperationClonee.putValeurFromSaisie(Math.abs(ligneOperation.getValeur()));
+        // On ne copie pas les statuts (car nouvelle opération) et on recalcule les status
         return ligneOperationClonee;
     }
 
@@ -161,12 +160,14 @@ public class BudgetDataUtils {
      *
      * @return Ligne dépense clonée
      */
-    public static List<LigneOperation> cloneOperationPeriodiqueToMoisSuivant(final LigneOperation ligneOperation) {
+    public static List<LigneOperation> cloneOperationPeriodiqueToMoisSuivant(final LigneOperation ligneOperation, Month moisCible, int anneeCible) {
         List<LigneOperation> lignesOperationClonees = new ArrayList<>();
 
         LigneOperation ligneOperationClonee = cloneOperationToMoisSuivant(ligneOperation);
 
-        // Recalcul des mensualités
+        /*
+         *  Recalcul des mensualités et des récurrences
+         */
         if (ligneOperation.getMensualite() != null && ligneOperation.getMensualite().getPeriode() != null) {
             LigneOperation.Mensualite mensualiteClonee = new LigneOperation.Mensualite();
             mensualiteClonee.setPeriode(ligneOperation.getMensualite().getPeriode());
@@ -178,6 +179,7 @@ public class BudgetDataUtils {
                     && OperationEtatEnum.REPORTEE.equals(ligneOperation.getEtat())) {
                 cloneOperationAEcheanceReportee(lignesOperationClonees, ligneOperation);
             }
+
             // Si la mensualité arrive à échéance, elle est prévue, et la prochaine échéance est réinitalisée
             if (prochaineMensualite == 0) {
                 ligneOperationClonee.setEtat(OperationEtatEnum.PREVUE);
@@ -211,9 +213,12 @@ public class BudgetDataUtils {
             LOGGER.warn("L'opération périodique {} est reportée : en retard", ligneOperation.getMensualite().getPeriode().name());
         }
         LigneOperation ligneOperationEcheanceReportee = cloneOperationToMoisSuivant(ligneOperation);
-        if (ligneOperationEcheanceReportee.getLibelle() != null
-                && !ligneOperationEcheanceReportee.getLibelle().startsWith(LibellesOperationEnum.EN_RETARD.getLibelle())) {
-            ligneOperationEcheanceReportee.setLibelle(LibellesOperationEnum.EN_RETARD.getLibelle() + ligneOperation.getLibelle());
+        if (ligneOperationEcheanceReportee.getStatuts() == null){
+            ligneOperationEcheanceReportee.setStatuts(new ArrayList<>());
+        }
+        if(ligneOperationEcheanceReportee.getStatuts().isEmpty()
+        || !ligneOperationEcheanceReportee.getStatuts().contains(OperationStatutEnum.EN_RETARD)){
+            ligneOperationEcheanceReportee.getStatuts().add(OperationStatutEnum.EN_RETARD);
         }
         LigneOperation.Mensualite echeanceReportee = new LigneOperation.Mensualite();
         echeanceReportee.setPeriode(OperationPeriodiciteEnum.PONCTUELLE);

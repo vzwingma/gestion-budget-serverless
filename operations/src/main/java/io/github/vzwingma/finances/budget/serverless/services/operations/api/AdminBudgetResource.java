@@ -1,7 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.api;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleAvantApres;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.ADMIN.LibelleAvantApres;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IBudgetAdminAppProvider;
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIInterceptors;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;

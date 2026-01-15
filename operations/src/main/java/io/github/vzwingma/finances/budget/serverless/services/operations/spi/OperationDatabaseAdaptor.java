@@ -1,7 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleAvantApres;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.ADMIN.LibelleAvantApres;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
@@ -80,7 +80,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     @Override
     public Multi<ProjectionBudgetSoldes> chargeSoldesBudgetMensuel(String idCompte, Month mois, Integer annee){
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, idCompte);
-        
+
         String anneeS = annee != null ? annee.toString().replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_") : " de toutes les années";
         String moisS = mois != null ? (mois +"/").replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_") : "";
         LOGGER.info("Chargement des soldes {}{} du compte {} ", moisS, anneeS, idCompte);

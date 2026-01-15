@@ -1,6 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business.ports;
 
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleAvantApres;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.ADMIN.LibelleAvantApres;
 import io.smallrye.mutiny.Multi;
 
 import java.util.List;

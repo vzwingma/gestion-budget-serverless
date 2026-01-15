@@ -19,6 +19,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -68,6 +69,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
     @Schema(description = "Autres infos")
     private AddInfos autresInfos;
 
+    private List<OperationStatutEnum> statuts;
     /**
      * Constructeur
      *
@@ -153,22 +155,6 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
         }
     }
 
-    @JsonIgnore
-    @BsonIgnore
-    // Pour ne pas avoir de pb avec Panache, les méthodes "techniques" n'utilisent pas les mots clés "get" et "set"
-    public Double retrieveValeurToSaisie() {
-        return Math.abs(this.valeur);
-    }
-
-    /**
-     * @return dateMaj
-     */
-    @JsonIgnore
-    @BsonIgnore
-    // Pour ne pas avoir de pb avec Panache, les méthodes "techniques" n'utilisent pas les mots clés "get" et "set"
-    public LocalDateTime retrieveDateMaj() {
-        return getAutresInfos() != null ? getAutresInfos().getDateMaj() : null;
-    }
 
     /**
      * @return dateOpération
@@ -278,6 +264,10 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
         private int rangPeriode = -1;
         @Schema(description = "nb mois avant la prochaine échéance")
         private int prochaineEcheance = -1;
+        @Schema(description = "Date de fin de la périodicité")
+        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+        @JsonSerialize(using = LocalDateTimeSerializer.class)
+        private LocalDateTime dateFin;
 
         public void setPeriode(OperationPeriodiciteEnum periode) {
             this.periode = periode;
@@ -286,7 +276,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
 
         @Override
         public String toString() {
-            return "Mensualite = { période=" + rangPeriode + "/" + periode + " , prochaine échéance dans = " + prochaineEcheance + " mois }";
+            return "Mensualite = { période = " + rangPeriode + "/" + periode + " , prochaine échéance dans " + prochaineEcheance + " mois, fin des échéances = " + dateFin + "}";
         }
     }
 }

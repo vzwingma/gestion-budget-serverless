@@ -316,9 +316,11 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      * @param budgetPrecedent budget du mois précédent
      */
     private BudgetMensuel initBudgetFromBudgetPrecedent(BudgetMensuel budgetInitVide, BudgetMensuel budgetPrecedent) {
+
         // Calcul
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, budgetInitVide.getId());
         if (budgetPrecedent != null) {
+            LOGGER.info("Initialisation du budget à partir du budget précédent {}", budgetPrecedent.getId());
             recalculSoldes(budgetPrecedent);
             budgetInitVide.setIdCompteBancaire(budgetPrecedent.getIdCompteBancaire());
             // #116 : Le résultat du moins précédent est le compte réel, pas le compte avancé
@@ -343,7 +345,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                                 .filter(op -> op.getMensualite() != null && !OperationPeriodiciteEnum.PONCTUELLE.equals(op.getMensualite().getPeriode()))
                                 .peek(op -> LOGGER.info("Opération périodique reportée à copier : {}", op))
                                 // Les opérations périodiques peuvent créer de nouvelles opérations (période suivante)
-                                .map(BudgetDataUtils::cloneOperationPeriodiqueToMoisSuivant)
+                                .map(ligneOperation -> BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(ligneOperation, budgetInitVide.getMois(), budgetInitVide.getAnnee()))
                                 .flatMap(List::stream)
                                 .toList());
             }
