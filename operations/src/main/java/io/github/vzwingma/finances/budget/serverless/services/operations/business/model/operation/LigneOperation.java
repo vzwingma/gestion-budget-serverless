@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.jspecify.annotations.NonNull;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -176,15 +177,12 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
     }
 
     @Override
-    public int compareTo(LigneOperation o) {
-        if (o != null) {
-            LocalDateTime dateC = this.getAutresInfos() != null && this.getAutresInfos().getDateCreate() != null ?
-                    this.getAutresInfos().getDateCreate() : LocalDateTime.MIN;
-            LocalDateTime dateCo = o.getAutresInfos() != null && o.getAutresInfos().getDateCreate() != null ?
-                    o.getAutresInfos().getDateCreate() : LocalDateTime.MIN;
-            return dateC.compareTo(dateCo);
-        }
-        return 0;
+    public int compareTo(@NonNull LigneOperation o) {
+        LocalDateTime dateC = this.getAutresInfos() != null && this.getAutresInfos().getDateCreate() != null ?
+                this.getAutresInfos().getDateCreate() : LocalDateTime.MIN;
+        LocalDateTime dateCo = o.getAutresInfos() != null && o.getAutresInfos().getDateCreate() != null ?
+                o.getAutresInfos().getDateCreate() : LocalDateTime.MIN;
+        return dateC.compareTo(dateCo);
     }
 
     @Override
@@ -267,7 +265,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
         @Schema(description = "Date de fin de la périodicité")
         @JsonDeserialize(using = LocalDateTimeDeserializer.class)
         @JsonSerialize(using = LocalDateTimeSerializer.class)
-        private LocalDateTime dateFin;
+        private LocalDate dateFin;
 
         public void setPeriode(OperationPeriodiciteEnum periode) {
             this.periode = periode;

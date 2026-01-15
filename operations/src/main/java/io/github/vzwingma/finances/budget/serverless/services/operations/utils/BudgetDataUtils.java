@@ -8,7 +8,6 @@ import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.Budg
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Array;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
@@ -169,6 +168,7 @@ public class BudgetDataUtils {
          *  Recalcul des mensualités et des récurrences
          */
         if (ligneOperation.getMensualite() != null && ligneOperation.getMensualite().getPeriode() != null) {
+
             LigneOperation.Mensualite mensualiteClonee = new LigneOperation.Mensualite();
             mensualiteClonee.setPeriode(ligneOperation.getMensualite().getPeriode());
 
@@ -194,6 +194,20 @@ public class BudgetDataUtils {
             else {
                 ligneOperationClonee.setEtat(OperationEtatEnum.PLANIFIEE);
                 mensualiteClonee.setProchaineEcheance(prochaineMensualite);
+            }
+
+            LocalDate dateFinMensualite = ligneOperation.getMensualite().getDateFin();
+            LocalDate dateBudgetCible = LocalDate.now().withMonth(moisCible.getValue()).withYear(anneeCible);
+            if(dateFinMensualite != null && dateFinMensualite.getMonthValue() == dateBudgetCible.getMonthValue() && dateFinMensualite.getYear() == dateBudgetCible.getYear()){
+                // La date de fin de mensualité est atteinte - dernière échéance
+                if (ligneOperationClonee.getStatuts() == null){
+                    ligneOperationClonee.setStatuts(new ArrayList<>());
+                }
+                ligneOperationClonee.getStatuts().add(OperationStatutEnum.DERNIERE_ECHEANCE);
+            }
+            else if(dateFinMensualite != null && dateFinMensualite.isBefore(dateBudgetCible)){
+                // La date de fin de mensualité est dépassée - ne pas cloner
+                return lignesOperationClonees;
             }
             ligneOperationClonee.setMensualite(mensualiteClonee);
         }
@@ -223,6 +237,7 @@ public class BudgetDataUtils {
         LigneOperation.Mensualite echeanceReportee = new LigneOperation.Mensualite();
         echeanceReportee.setPeriode(OperationPeriodiciteEnum.PONCTUELLE);
         echeanceReportee.setProchaineEcheance(-1);
+        echeanceReportee.setDateFin(null);
         ligneOperationEcheanceReportee.setMensualite(echeanceReportee);
         lignesOperationClonees.add(ligneOperationEcheanceReportee);
     }
@@ -250,7 +265,7 @@ public class BudgetDataUtils {
                 }
             });
             Optional<LigneOperation> maxDate = listeOperations.stream().max(comparator);
-            if (maxDate.isPresent() && maxDate.get().retrieveDateOperation() != null) {
+            if (maxDate.get().retrieveDateOperation() != null) {
                 localDateDerniereOperation = maxDate.get().retrieveDateOperation();
             }
         }

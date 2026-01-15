@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.Month;
-import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -185,7 +184,7 @@ class BudgetDataUtilsTest {
         assertNotNull(clones);
         assertEquals(1, clones.size());
 
-        LigneOperation clone = clones.get(0);
+        LigneOperation clone = clones.getFirst();
         assertNotNull(clone);
         assertNotNull(clone.getAutresInfos());
         assertNull(clone.getMensualite());
@@ -241,6 +240,30 @@ class BudgetDataUtilsTest {
     }
 
 
+    @Test
+    void testClonePeriodiqueLigneOperationPeriodiqueEnRetardAEcheance() {
+
+        LigneOperation operationMensuelle = MockDataOperations.getOperationMensuelleRealisee();
+        operationMensuelle.getMensualite().setProchaineEcheance(1);
+        LocalDate dateFinMinusOneMonth = operationMensuelle.getMensualite().getDateFin().minusMonths(1);
+        operationMensuelle.getMensualite().setDateFin(dateFinMinusOneMonth);
+        operationMensuelle.setEtat(OperationEtatEnum.REPORTEE);
+
+        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(operationMensuelle, Month.JANUARY, 2010);
+        assertNotNull(clones);
+        assertEquals(2, clones.size());
+
+        LigneOperation opPrec = clones.getFirst();
+        assertNotNull(opPrec);
+        assertEquals(OperationEtatEnum.PREVUE, opPrec.getEtat());
+        assertNotNull(opPrec.getAutresInfos());
+        assertEquals(OperationPeriodiciteEnum.PONCTUELLE, opPrec.getMensualite().getPeriode());
+        assertEquals(-1, opPrec.getMensualite().getProchaineEcheance());
+        assertNull(opPrec.getMensualite().getDateFin());
+        assertEquals(OperationStatutEnum.EN_RETARD, opPrec.getStatuts().getFirst());
+    }
+
+
 
     @Test
     void testClonePeriodiqueLigneOperationPeriodiqueRealisee() {
@@ -253,12 +276,51 @@ class BudgetDataUtilsTest {
         assertNotNull(clones);
         assertEquals(1, clones.size());
 
-        LigneOperation clone = clones.get(0);
+        LigneOperation clone = clones.getFirst();
         assertNotNull(clone);
         assertEquals(OperationEtatEnum.PREVUE, clone.getEtat());
         assertNotNull(clone.getAutresInfos());
         assertNotNull(clone.getMensualite());
     }
 
+
+
+    @Test
+    void testClonePeriodiqueLigneOperationPeriodiqueDerniereEcheance() {
+
+        LigneOperation operationMensuelle = MockDataOperations.getOperationMensuelleAEcheance();
+        operationMensuelle.getMensualite().setProchaineEcheance(0);
+        operationMensuelle.setEtat(OperationEtatEnum.REALISEE);
+
+        LocalDate dateFin = LocalDate.now();
+        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(operationMensuelle, dateFin.getMonth(), dateFin.getYear());
+        assertNotNull(clones);
+        assertEquals(1, clones.size());
+
+        LigneOperation clone = clones.getFirst();
+        assertNotNull(clone);
+        assertEquals(OperationEtatEnum.PREVUE, clone.getEtat());
+        assertNotNull(clone.getAutresInfos());
+        assertNotNull(clone.getMensualite());
+        assertEquals(OperationStatutEnum.DERNIERE_ECHEANCE, clone.getStatuts().getFirst());
+    }
+
+
+
+
+    @Test
+    void testClonePeriodiqueLigneOperationPeriodiqueEcheanceDepassee() {
+
+        LigneOperation operationMensuelle = MockDataOperations.getOperationMensuelleAEcheance();
+        operationMensuelle.getMensualite().setProchaineEcheance(0);
+        LocalDate dateFinMinusOneMonth = operationMensuelle.getMensualite().getDateFin().minusMonths(1);
+        operationMensuelle.getMensualite().setDateFin(dateFinMinusOneMonth);
+        operationMensuelle.setEtat(OperationEtatEnum.REALISEE);
+
+        LocalDate dateFin = LocalDate.now();
+        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(operationMensuelle, dateFin.getMonth(), dateFin.getYear());
+        assertNotNull(clones);
+        assertEquals(0, clones.size());
+    }
 
 }
