@@ -171,6 +171,7 @@ public class BudgetDataUtils {
 
             LigneOperation.Mensualite mensualiteClonee = new LigneOperation.Mensualite();
             mensualiteClonee.setPeriode(ligneOperation.getMensualite().getPeriode());
+            mensualiteClonee.setDateFin(ligneOperation.getMensualite().getDateFin());
 
             int prochaineMensualite = ligneOperation.getMensualite().getProchaineEcheance() - 1;
 
