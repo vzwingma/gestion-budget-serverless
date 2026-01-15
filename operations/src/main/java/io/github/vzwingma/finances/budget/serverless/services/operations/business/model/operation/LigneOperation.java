@@ -263,8 +263,8 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
         @Schema(description = "nb mois avant la prochaine échéance")
         private int prochaineEcheance = -1;
         @Schema(description = "Date de fin de la périodicité")
-        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-        @JsonSerialize(using = LocalDateTimeSerializer.class)
+        @JsonDeserialize(using = LocalDateDeserializer.class)
+        @JsonSerialize(using = LocalDateSerializer.class)
         private LocalDate dateFin;
 
         public void setPeriode(OperationPeriodiciteEnum periode) {
