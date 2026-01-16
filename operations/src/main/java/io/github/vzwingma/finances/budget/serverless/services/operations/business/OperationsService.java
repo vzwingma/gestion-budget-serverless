@@ -260,7 +260,7 @@ public class OperationsService implements IOperationsAppProvider {
                         OperationTypeEnum.CREDIT,
                         Math.abs(operationSource.getValeur()),
                         OperationEtatEnum.REPORTEE),
-                auteur);
+                        auteur);
     }
 
 
@@ -301,7 +301,7 @@ public class OperationsService implements IOperationsAppProvider {
                         OperationTypeEnum.CREDIT,
                         Math.abs(ligneOperationSource.getValeur()),
                         etatDepenseTransfert, mensualiteTransfert),
-                auteur);
+                        auteur);
         LOGGER.debug("Ajout de l'opération Virement interne [{}] dans le budget", ligneRentreeVirementInterne);
 
         operations.add(ligneRentreeVirementInterne);
@@ -332,7 +332,7 @@ public class OperationsService implements IOperationsAppProvider {
                     return tuple.getItem2().stream().map(doc -> {
                         Document attributes = doc.get("operationLibelleAttributes", Document.class);
                         LibelleCategorieOperation libelleCategorieOperation = new LibelleCategorieOperation();
-                        // Suppression des tags [En Retard][Intercompte], et du commentaire - xxx
+                        // Suppression des tags[Intercompte], et du commentaire - xxx
                         libelleCategorieOperation.setLibelle(BudgetDataUtils.deleteTagFromString(attributes.getString("libelle")).split("-")[0].trim());
                         String catId = attributes.getString("categorieId");
                         String ssCatId = attributes.getString("ssCategorieId");

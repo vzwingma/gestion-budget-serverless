@@ -8,6 +8,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -88,6 +89,24 @@ public class MockDataOperations {
         lo.setMensualite(new LigneOperation.Mensualite());
         lo.getMensualite().setPeriode(OperationPeriodiciteEnum.MENSUELLE);
         lo.getMensualite().setProchaineEcheance(-1);
+        LocalDate dateFin = LocalDate.now().plusMonths(1);
+        lo.getMensualite().setDateFin(dateFin);
+        return lo;
+
+    }
+
+
+    public static LigneOperation getOperationMensuelleAEcheance() {
+        LigneOperation lo = new LigneOperation();
+        lo.setId("C1_B2_L4");
+        lo.setEtat(OperationEtatEnum.REALISEE);
+        lo.setValeur(200D);
+        lo.setLibelle("Opération 4");
+        lo.setMensualite(new LigneOperation.Mensualite());
+        lo.getMensualite().setPeriode(OperationPeriodiciteEnum.MENSUELLE);
+        lo.getMensualite().setProchaineEcheance(-1);
+        LocalDate dateFin = LocalDate.now();
+        lo.getMensualite().setDateFin(dateFin);
         return lo;
 
     }

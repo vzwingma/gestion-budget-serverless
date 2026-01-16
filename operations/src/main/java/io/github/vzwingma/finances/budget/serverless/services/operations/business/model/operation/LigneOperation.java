@@ -14,11 +14,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.jspecify.annotations.NonNull;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -68,6 +70,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
     @Schema(description = "Autres infos")
     private AddInfos autresInfos;
 
+    private List<OperationStatutEnum> statuts;
     /**
      * Constructeur
      *
@@ -153,22 +156,6 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
         }
     }
 
-    @JsonIgnore
-    @BsonIgnore
-    // Pour ne pas avoir de pb avec Panache, les méthodes "techniques" n'utilisent pas les mots clés "get" et "set"
-    public Double retrieveValeurToSaisie() {
-        return Math.abs(this.valeur);
-    }
-
-    /**
-     * @return dateMaj
-     */
-    @JsonIgnore
-    @BsonIgnore
-    // Pour ne pas avoir de pb avec Panache, les méthodes "techniques" n'utilisent pas les mots clés "get" et "set"
-    public LocalDateTime retrieveDateMaj() {
-        return getAutresInfos() != null ? getAutresInfos().getDateMaj() : null;
-    }
 
     /**
      * @return dateOpération
@@ -190,15 +177,12 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
     }
 
     @Override
-    public int compareTo(LigneOperation o) {
-        if (o != null) {
-            LocalDateTime dateC = this.getAutresInfos() != null && this.getAutresInfos().getDateCreate() != null ?
-                    this.getAutresInfos().getDateCreate() : LocalDateTime.MIN;
-            LocalDateTime dateCo = o.getAutresInfos() != null && o.getAutresInfos().getDateCreate() != null ?
-                    o.getAutresInfos().getDateCreate() : LocalDateTime.MIN;
-            return dateC.compareTo(dateCo);
-        }
-        return 0;
+    public int compareTo(@NonNull LigneOperation o) {
+        LocalDateTime dateC = this.getAutresInfos() != null && this.getAutresInfos().getDateCreate() != null ?
+                this.getAutresInfos().getDateCreate() : LocalDateTime.MIN;
+        LocalDateTime dateCo = o.getAutresInfos() != null && o.getAutresInfos().getDateCreate() != null ?
+                o.getAutresInfos().getDateCreate() : LocalDateTime.MIN;
+        return dateC.compareTo(dateCo);
     }
 
     @Override
@@ -278,6 +262,10 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
         private int rangPeriode = -1;
         @Schema(description = "nb mois avant la prochaine échéance")
         private int prochaineEcheance = -1;
+        @Schema(description = "Date de fin de la périodicité")
+        @JsonDeserialize(using = LocalDateDeserializer.class)
+        @JsonSerialize(using = LocalDateSerializer.class)
+        private LocalDate dateFin;
 
         public void setPeriode(OperationPeriodiciteEnum periode) {
             this.periode = periode;
@@ -286,7 +274,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
 
         @Override
         public String toString() {
-            return "Mensualite = { période=" + rangPeriode + "/" + periode + " , prochaine échéance dans = " + prochaineEcheance + " mois }";
+            return "Mensualite = { période = " + rangPeriode + "/" + periode + " , prochaine échéance dans " + prochaineEcheance + " mois, fin des échéances = " + dateFin + "}";
         }
     }
 }

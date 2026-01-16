@@ -6,15 +6,17 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 import lombok.Getter;
 
 /**
- * Libellé dans les opérations
+ * Type de dépenses
  *
  * @author vzwingma
  */
 @Getter
-public enum LibellesOperationEnum {
+public enum OperationStatutEnum {
 
-    // Libellé en retard
-    EN_RETARD("retard", "[En Retard]");
+    // Ligne en retard
+    EN_RETARD("enretard", "En retard"),
+    // Ligne passée
+    DERNIERE_ECHEANCE("derniereecheance", "Dernière échéance");
 
 
     private final String id;
@@ -26,7 +28,7 @@ public enum LibellesOperationEnum {
      * @param id      : id de l'enum
      * @param libelle : libellé de l'enum
      */
-    LibellesOperationEnum(String id, String libelle) {
+    OperationStatutEnum(String id, String libelle) {
         this.id = id;
         this.libelle = libelle;
     }
