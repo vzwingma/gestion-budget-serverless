@@ -334,7 +334,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                                 .stream()
                                 .filter(op -> OperationEtatEnum.REPORTEE.equals(op.getEtat())
                                         && (op.getMensualite() == null || OperationPeriodiciteEnum.PONCTUELLE.equals(op.getMensualite().getPeriode())))
-                                .peek(op -> LOGGER.info("Opération reportée à copier : {}", op))
+                                // .peek(op -> LOGGER.info("Opération reportée à copier : {}", op))
                                 .map(BudgetDataUtils::cloneOperationToMoisSuivant)
                                 .toList());
 
@@ -343,7 +343,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                         budgetPrecedent.getListeOperations()
                                 .stream()
                                 .filter(op -> op.getMensualite() != null && !OperationPeriodiciteEnum.PONCTUELLE.equals(op.getMensualite().getPeriode()))
-                                .peek(op -> LOGGER.info("Opération périodique reportée à copier : {}", op))
+                                // .peek(op -> LOGGER.info("Opération périodique reportée à copier : {}", op))
                                 // Les opérations périodiques peuvent créer de nouvelles opérations (période suivante)
                                 .map(ligneOperation -> BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(ligneOperation, budgetInitVide.getMois(), budgetInitVide.getAnnee()))
                                 .flatMap(List::stream)
