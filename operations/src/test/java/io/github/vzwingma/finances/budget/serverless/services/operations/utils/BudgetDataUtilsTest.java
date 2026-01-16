@@ -208,7 +208,7 @@ class BudgetDataUtilsTest {
         assertNotNull(opPrec.getAutresInfos());
         assertEquals(OperationPeriodiciteEnum.PONCTUELLE, opPrec.getMensualite().getPeriode());
         assertEquals(-1, opPrec.getMensualite().getProchaineEcheance());
-        assertEquals(operationMensuelle.getMensualite().getDateFin(), opPrec.getMensualite().getDateFin());
+        assertNull(opPrec.getMensualite().getDateFin());
 
         LigneOperation clone = clones.get(1);
         assertNotNull(clone);
@@ -235,7 +235,7 @@ class BudgetDataUtilsTest {
         assertNotNull(opPrec.getAutresInfos());
         assertEquals(OperationPeriodiciteEnum.PONCTUELLE, opPrec.getMensualite().getPeriode());
         assertEquals(-1, opPrec.getMensualite().getProchaineEcheance());
-        assertEquals(operationMensuelle.getMensualite().getDateFin(), opPrec.getMensualite().getDateFin());
+        assertNull(opPrec.getMensualite().getDateFin());
         assertEquals(OperationStatutEnum.EN_RETARD, opPrec.getStatuts().getFirst());
     }
 
