@@ -8,6 +8,7 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractAPIObjectModel;
+import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperationTypeEnum;
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -51,7 +52,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
     @Schema(description = "Catégorie")
     private Categorie categorie;
     @Schema(description = "Sous catégorie")
-    private Categorie ssCategorie;
+    private SsCategorie ssCategorie;
 
     // Type de dépense
     @Schema(description = "Type de dépense")
@@ -82,7 +83,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
      */
     public LigneOperation(SsCategorieOperations ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat) {
         Categorie c = null;
-        Categorie ssc = null;
+        SsCategorie ssc = null;
         if (ssCategorie != null && ssCategorie.getCategorieParente() != null) {
             c = new Categorie();
             c.setId(ssCategorie.getCategorieParente().getId());
@@ -90,9 +91,10 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
             setCategorie(c);
         }
         if (ssCategorie != null) {
-            ssc = new Categorie();
+            ssc = new SsCategorie();
             ssc.setId(ssCategorie.getId());
             ssc.setLibelle(ssCategorie.getLibelle());
+            ssc.setType(ssCategorie.getType());
             setSsCategorie(ssc);
         }
         buildLigneOperation(c, ssc, libelle, typeDepense, absValeur, etat, null);
@@ -109,7 +111,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
      * @param absValeur   valeur montant en valeur absolue
      * @param etat        état
      */
-    public LigneOperation(Categorie categorie, Categorie ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Mensualite mensualite) {
+    public LigneOperation(Categorie categorie, SsCategorie ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Mensualite mensualite) {
         buildLigneOperation(categorie, ssCategorie, libelle, typeDepense, absValeur, etat, mensualite);
     }
 
@@ -123,7 +125,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
      * @param absValeur   valeur montant en valeur absolue
      * @param etat        état
      */
-    private void buildLigneOperation(Categorie categorie, Categorie ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Mensualite mensualite) {
+    private void buildLigneOperation(Categorie categorie, SsCategorie ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Mensualite mensualite) {
         this.id = UUID.randomUUID().toString();
         this.libelle = libelle;
         this.typeOperation = typeDepense;
@@ -213,11 +215,27 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
         @Schema(description = "Libellé")
         private String libelle;
 
+        @Schema(description = "Type de catégorie")
+        private CategorieOperationTypeEnum type;
+
         @Override
         public String toString() {
             return libelle;
         }
     }
+
+
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @Schema(description = "Sous Catégorie")
+    public static class SsCategorie extends Categorie implements Serializable {
+
+        @Schema(description = "Type de catégorie")
+        private CategorieOperationTypeEnum type;
+    }
+
 
     @Getter
     @Setter
