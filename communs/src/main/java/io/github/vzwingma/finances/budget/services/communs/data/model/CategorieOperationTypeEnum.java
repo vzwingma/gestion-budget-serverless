@@ -15,6 +15,6 @@ public enum CategorieOperationTypeEnum {
     // plaisir
     PLAISIR,
     // épargne
-    ECONOMIES;
+    ECONOMIES
 
 }

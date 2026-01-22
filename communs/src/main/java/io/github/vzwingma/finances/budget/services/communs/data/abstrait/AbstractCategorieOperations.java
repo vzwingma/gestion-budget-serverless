@@ -1,8 +1,5 @@
 package io.github.vzwingma.finances.budget.services.communs.data.abstrait;
 
-import lombok.Getter;
-import lombok.Setter;
-
 import java.io.Serial;
 import java.util.UUID;
 
@@ -19,14 +16,6 @@ public abstract class AbstractCategorieOperations extends AbstractAPIObjectModel
      * Identifiant
      */
     String id;
-    /**
-     * Libelle
-     */
-    String libelle;
-    /**
-     * Actif
-     */
-    boolean actif;
     /**
      * Constructeur pour Spring Data MongSB
      */
