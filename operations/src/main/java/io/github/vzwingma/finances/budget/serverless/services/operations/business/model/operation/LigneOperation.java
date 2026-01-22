@@ -215,9 +215,6 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
         @Schema(description = "Libellé")
         private String libelle;
 
-        @Schema(description = "Type de catégorie")
-        private CategorieOperationTypeEnum type;
-
         @Override
         public String toString() {
             return libelle;

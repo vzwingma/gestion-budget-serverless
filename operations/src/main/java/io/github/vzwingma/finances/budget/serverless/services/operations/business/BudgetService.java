@@ -16,6 +16,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.spi.pro
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
+import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperationTypeEnum;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
@@ -258,7 +259,10 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
         LOGGER.info("(Re)Calcul des soldes du budget");
         BudgetDataUtils.razCalculs(budget);
 
-        this.operationsAppProvider.calculSoldes(budget.getListeOperations(), budget.getSoldes(), budget.getTotauxParCategories(), budget.getTotauxParSSCategories());
+        this.operationsAppProvider.calculSoldes(budget.getListeOperations(), budget.getSoldes(),
+                budget.getTotauxParCategories(),
+                budget.getTotauxParSSCategories(),
+                budget.getTotauxParTypeCategories());
     }
 
 
@@ -445,6 +449,11 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      */
     @Override
     public Uni<BudgetMensuel> addOrUpdateOperationInBudget(String idBudget, LigneOperation ligneOperation, String auteur) {
+
+        // #125 : Type de la catégorie = ESSENTIEL si non défini
+        if (ligneOperation.getSsCategorie() != null && ligneOperation.getSsCategorie().getType() == null) {
+            ligneOperation.getSsCategorie().setType(CategorieOperationTypeEnum.ESSENTIEL);
+        }
 
         Uni<BudgetMensuel> budgetSurCompteActif = getBudgetAndCompteActif(idBudget)
                 // Si pas d'erreur, update de l'opération

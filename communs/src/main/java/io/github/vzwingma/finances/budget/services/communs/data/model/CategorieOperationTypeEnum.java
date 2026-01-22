@@ -12,8 +12,8 @@ public enum CategorieOperationTypeEnum {
 
     // Revenu
     REVENUS,
-    // obligatoire
-    OBLIGATOIRE,
+    // essentiel
+    ESSENTIEL,
     // plaisir
     PLAISIR,
     // épargne

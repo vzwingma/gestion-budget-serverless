@@ -24,7 +24,7 @@ public interface IOperationsAppProvider {
      * @param totauxCategorieMap    map des totaux par catégorie
      * @param totauxSsCategoriesMap map des totaux par sous catégorie
      */
-    void calculSoldes(List<LigneOperation> operations, BudgetMensuel.Soldes soldes, Map<String, TotauxCategorie> totauxCategorieMap, Map<String, TotauxCategorie> totauxSsCategoriesMap);
+    void calculSoldes(List<LigneOperation> operations, BudgetMensuel.Soldes soldes, Map<String, TotauxCategorie> totauxCategorieMap, Map<String, TotauxCategorie> totauxSsCategoriesMap, Map<String, TotauxCategorie> totauxTypesCategoriesMap);
 
     /**
      * Ajout d'une ligne de virement interne (rentrée d'argent)

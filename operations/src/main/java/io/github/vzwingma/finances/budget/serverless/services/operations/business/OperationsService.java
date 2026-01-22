@@ -67,7 +67,10 @@ public class OperationsService implements IOperationsAppProvider {
      * @param totauxSsCategoriesMap map des totaux par sous catégorie
      */
     @Override
-    public void calculSoldes(List<LigneOperation> operations, BudgetMensuel.Soldes soldes, Map<String, TotauxCategorie> totauxCategorieMap, Map<String, TotauxCategorie> totauxSsCategoriesMap) {
+    public void calculSoldes(List<LigneOperation> operations, BudgetMensuel.Soldes soldes,
+                             Map<String, TotauxCategorie> totauxCategorieMap,
+                             Map<String, TotauxCategorie> totauxSsCategoriesMap,
+                             Map<String, TotauxCategorie> totauxTypesCategoriesMap) {
 
         for (LigneOperation operation : operations) {
             LOGGER.trace("     > {}", operation);
@@ -77,6 +80,8 @@ public class OperationsService implements IOperationsAppProvider {
             calculBudgetTotalCategories(totauxCategorieMap, operation);
             // Calcul par sous catégories
             calculBudgetTotalSsCategories(totauxSsCategoriesMap, operation);
+            // Calcul par type catégories
+            calculBudgetTotalTypesCategories(totauxTypesCategoriesMap, operation);
             // Calcul des totaux
             if (operation.getEtat().equals(OperationEtatEnum.REALISEE)) {
                 BudgetDataUtils.ajouteASoldeNow(soldes, valeurOperation);
@@ -147,6 +152,37 @@ public class OperationsService implements IOperationsAppProvider {
     }
 
 
+    /**
+     * Calcul du total de la sous catégorie du budget via l'opération en cours
+     *
+     * @param totauxTypesCategoriesMap à calculer
+     * @param operation             opération à traiter
+     */
+    private void calculBudgetTotalTypesCategories(Map<String, TotauxCategorie> totauxTypesCategoriesMap, LigneOperation operation) {
+        if (operation.getSsCategorie() != null && operation.getSsCategorie().getId() != null) {
+            if(operation.getSsCategorie().getType() == null){
+                operation.getSsCategorie().setType(CategorieOperationTypeEnum.ESSENTIEL);
+            }
+
+            Double valeurOperation = operation.getValeur();
+            TotauxCategorie valeursTypes = new TotauxCategorie();
+            if (totauxTypesCategoriesMap.get(operation.getSsCategorie().getType().name()) != null) {
+                valeursTypes = totauxTypesCategoriesMap.get(operation.getSsCategorie().getType().name());
+            }
+            valeursTypes.setLibelleCategorie(operation.getSsCategorie().getType().name());
+            if (operation.getEtat().equals(OperationEtatEnum.REALISEE)) {
+                valeursTypes.ajouterATotalAtMaintenant(valeurOperation);
+                valeursTypes.ajouterATotalAtFinMoisCourant(valeurOperation);
+            }
+            if (operation.getEtat().equals(OperationEtatEnum.PREVUE)) {
+                valeursTypes.ajouterATotalAtFinMoisCourant(valeurOperation);
+            }
+            LOGGER.trace("Total par type catégorie [typeCat={} : {}]", operation.getSsCategorie().getType(), valeursTypes);
+            totauxTypesCategoriesMap.put(operation.getSsCategorie().getType().name(), valeursTypes);
+        } else {
+            LOGGER.warn("L'opération [{}]  n'a pas de sous-catégorie [{}]", operation, operation.getSsCategorie());
+        }
+    }
     @Override
     public void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur, SsCategorieOperations ssCategorieRemboursement) throws DataNotFoundException {
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, ligneOperation.getId());

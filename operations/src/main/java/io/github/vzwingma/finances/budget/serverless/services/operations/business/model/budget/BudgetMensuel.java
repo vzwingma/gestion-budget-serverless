@@ -87,7 +87,8 @@ public class BudgetMensuel extends AbstractAPIObjectModel {
     private Map<String, TotauxCategorie> totauxParCategories = new HashMap<>();
     @Schema(description = "Totaux par sous catégories")
     private Map<String, TotauxCategorie> totauxParSSCategories = new HashMap<>();
-
+    @Schema(description = "Totaux par type de catégories")
+    private Map<String, TotauxCategorie> totauxParTypeCategories = new HashMap<>();
 
     /**
      * @return the id
