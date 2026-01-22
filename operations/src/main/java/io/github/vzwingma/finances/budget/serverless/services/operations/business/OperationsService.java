@@ -91,7 +91,9 @@ public class OperationsService implements IOperationsAppProvider {
             }
         }
         LOGGER.debug("Solde prévu\t| {} | {}", soldes.getSoldeAtMaintenant(), soldes.getSoldeAtFinMoisCourant());
-
+        LOGGER.debug("Totaux par catégorie : {}", totauxCategorieMap);
+        LOGGER.debug("Totaux par sous-catégorie : {}", totauxSsCategoriesMap);
+        LOGGER.debug("Totaux par type de catégorie : {}", totauxTypesCategoriesMap);
     }
 
 

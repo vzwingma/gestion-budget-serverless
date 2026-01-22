@@ -90,6 +90,7 @@ public class BudgetDataUtils {
     public static void razCalculs(BudgetMensuel budget) {
         budget.getTotauxParCategories().clear();
         budget.getTotauxParSSCategories().clear();
+        budget.getTotauxParTypeCategories().clear();
         budget.getSoldes().setSoldeAtMaintenant(budget.getSoldes().getSoldeAtFinMoisPrecedent());
         budget.getSoldes().setSoldeAtFinMoisCourant(budget.getSoldes().getSoldeAtFinMoisPrecedent());
     }
