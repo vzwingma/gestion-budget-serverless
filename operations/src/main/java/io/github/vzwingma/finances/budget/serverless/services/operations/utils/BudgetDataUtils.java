@@ -133,7 +133,7 @@ public class BudgetDataUtils {
             ligneOperationClonee.setCategorie(cat);
         }
         if (ligneOperation.getSsCategorie() != null) {
-            LigneOperation.Categorie ssCatClonee = new LigneOperation.Categorie();
+            LigneOperation.SsCategorie ssCatClonee = new LigneOperation.SsCategorie();
             ssCatClonee.setId(ligneOperation.getSsCategorie().getId());
             ssCatClonee.setLibelle(ligneOperation.getSsCategorie().getLibelle());
             ligneOperationClonee.setSsCategorie(ssCatClonee);

@@ -13,6 +13,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
+import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperationTypeEnum;
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
@@ -290,9 +291,10 @@ public class OperationsService implements IOperationsAppProvider {
         LigneOperation.Categorie catVirementInterne = new LigneOperation.Categorie();
         catVirementInterne.setId(IdsCategoriesEnum.CAT_RENTREES.getId());
         catVirementInterne.setLibelle(IdsCategoriesEnum.CAT_RENTREES.getLibelle());
-        LigneOperation.Categorie sscatVirementInterne = new LigneOperation.Categorie();
+        LigneOperation.SsCategorie sscatVirementInterne = new LigneOperation.SsCategorie();
         sscatVirementInterne.setId(IdsCategoriesEnum.SS_CAT_RENTREE_VIREMENT_INTERNE.getId());
         sscatVirementInterne.setLibelle(IdsCategoriesEnum.SS_CAT_RENTREE_VIREMENT_INTERNE.getLibelle());
+        sscatVirementInterne.setType(CategorieOperationTypeEnum.REVENUS);
 
         LigneOperation ligneRentreeVirementInterne = completeOperationAttributes(
                 new LigneOperation(

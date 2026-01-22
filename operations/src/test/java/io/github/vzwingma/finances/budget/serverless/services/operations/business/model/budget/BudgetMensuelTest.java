@@ -17,7 +17,7 @@ class BudgetMensuelTest {
         b.getSoldes().setSoldeAtFinMoisPrecedent(100D);
         BudgetDataUtils.razCalculs(b);
         LigneOperation o = new LigneOperation();
-        o.setSsCategorie(new LigneOperation.Categorie());
+        o.setSsCategorie(new LigneOperation.SsCategorie());
         o.getSsCategorie().setId("d005de34-f768-4e96-8ccd-70399792c48f");
         o.setValeur(123D);
         o.setTypeOperation(OperationTypeEnum.CREDIT);
