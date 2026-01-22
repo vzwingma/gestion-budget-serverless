@@ -1,6 +1,8 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.test.data;
 
+import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,8 +15,8 @@ public class MockDataCategories {
      * @param listeCategories liste des catégories
      * @return catégorie correspondante
      */
-    public static CategorieOperations getCategorieById(String id, List<CategorieOperations> listeCategories) {
-        CategorieOperations categorie = null;
+    public static AbstractCategorieOperations getCategorieById(String id, List<CategorieOperations> listeCategories) {
+        AbstractCategorieOperations categorie = null;
         if (id != null && listeCategories != null && !listeCategories.isEmpty()) {
             // Recherche parmi les catégories
             Optional<CategorieOperations> cat = listeCategories.parallelStream()
@@ -25,7 +27,7 @@ public class MockDataCategories {
             }
             // Sinon les sous catégories
             else {
-                Optional<CategorieOperations> ssCats = listeCategories.parallelStream()
+                Optional<SsCategorieOperations> ssCats = listeCategories.parallelStream()
                         .flatMap(c -> c.getListeSSCategories().stream())
                         .filter(ss -> id.equals(ss.getId()))
                         .findFirst();

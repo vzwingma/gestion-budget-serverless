@@ -6,7 +6,9 @@ import io.github.vzwingma.finances.budget.serverless.services.parametrages.busin
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametragesRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyWriteRepository;
+import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,25 +52,28 @@ class ParametragesServiceTest {
     @Test
     void testGetCategorieById() {
         // Lancement du test
-        CategorieOperations cat = parametrageAppProvider.getCategorieById("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a").await().indefinitely();
+        AbstractCategorieOperations cat = parametrageAppProvider.getCategorieById("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a").await().indefinitely();
         // Vérification
         assertNotNull(cat);
-        assertEquals("Alimentation", cat.getLibelle());
-        assertTrue(cat.isCategorie());
+        assertInstanceOf(CategorieOperations.class, cat);
+        CategorieOperations catOp = (CategorieOperations) cat;
+        assertEquals("Alimentation", catOp.getLibelle());
         // 1 seul appel à la BDD
         Mockito.verify(parametrageServiceProvider, Mockito.times(1)).chargeCategories();
-        assertEquals(1, cat.getListeSSCategories().size());
+        assertEquals(1, catOp.getListeSSCategories().size());
     }
 
 
     @Test
     void testGetSsCategorieById() {
         // Lancement du test
-        CategorieOperations cat = parametrageAppProvider.getCategorieById("467496e4-9059-4b9b-8773-21f230c8c5c6").await().indefinitely();
+        AbstractCategorieOperations cat = parametrageAppProvider.getCategorieById("467496e4-9059-4b9b-8773-21f230c8c5c6").await().indefinitely();
         // Vérification
         assertNotNull(cat);
-        assertEquals("Courses", cat.getLibelle());
-        assertFalse(cat.isCategorie());
+        assertInstanceOf(SsCategorieOperations.class, cat);
+        SsCategorieOperations ssCat = (SsCategorieOperations) cat;
+        assertEquals("Courses", ssCat.getLibelle());
+        assertNotNull(ssCat.getCategorieParente());
         // 1 seul appel à la BDD
         Mockito.verify(parametrageServiceProvider, Mockito.times(1)).chargeCategories();
     }

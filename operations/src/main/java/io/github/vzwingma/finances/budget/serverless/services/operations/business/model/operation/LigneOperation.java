@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractAPIObjectModel;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -80,7 +81,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
      * @param absValeur   valeur montant en valeur absolue
      * @param etat        état
      */
-    public LigneOperation(CategorieOperations ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat) {
+    public LigneOperation(SsCategorieOperations ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat) {
         Categorie c = null;
         Categorie ssc = null;
         if (ssCategorie != null && ssCategorie.getCategorieParente() != null) {

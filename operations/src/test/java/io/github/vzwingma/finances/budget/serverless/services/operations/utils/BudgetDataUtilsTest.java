@@ -7,8 +7,10 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationStatutEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataCategories;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataOperations;
+import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import org.junit.jupiter.api.Test;
 
@@ -93,28 +95,27 @@ class BudgetDataUtilsTest {
         CategorieOperations catAlimentation = new CategorieOperations();
         catAlimentation.setId("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a");
         catAlimentation.setActif(true);
-        catAlimentation.setCategorie(true);
         catAlimentation.setLibelle("Alimentation");
 
 
-        CategorieOperations ssCatCourse = new CategorieOperations();
+        SsCategorieOperations ssCatCourse = new SsCategorieOperations();
         ssCatCourse.setActif(true);
-        ssCatCourse.setCategorie(false);
         ssCatCourse.setId("467496e4-9059-4b9b-8773-21f230c8c5c6");
         ssCatCourse.setLibelle("Courses");
-        ssCatCourse.setCategorieParente(new CategorieOperations.CategorieParente(catAlimentation.getId(), catAlimentation.getLibelle()));
+        ssCatCourse.setCategorieParente(new SsCategorieOperations.CategorieParente(catAlimentation.getId(), catAlimentation.getLibelle()));
         catAlimentation.setListeSSCategories(new HashSet<>());
         catAlimentation.getListeSSCategories().add(ssCatCourse);
         categoriesFromDB.add(catAlimentation);
 
 
-        CategorieOperations cat = MockDataCategories.getCategorieById("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a", categoriesFromDB);
+        AbstractCategorieOperations cat = MockDataCategories.getCategorieById("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a", categoriesFromDB);
         assertNotNull(cat);
 
-        CategorieOperations ssCat = MockDataCategories.getCategorieById("467496e4-9059-4b9b-8773-21f230c8c5c6", categoriesFromDB);
+        AbstractCategorieOperations ssCat = MockDataCategories.getCategorieById("467496e4-9059-4b9b-8773-21f230c8c5c6", categoriesFromDB);
         assertNotNull(ssCat);
-        assertNotNull(ssCat.getCategorieParente());
-        assertEquals("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a", ssCat.getCategorieParente().getId());
+        assertInstanceOf(SsCategorieOperations.class, ssCat);
+        assertNotNull(((SsCategorieOperations)ssCat).getCategorieParente());
+        assertEquals("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a", ((SsCategorieOperations)ssCat).getCategorieParente().getId());
     }
 
 
@@ -140,16 +141,14 @@ class BudgetDataUtilsTest {
             CategorieOperations cat = new CategorieOperations();
             cat.setId("ID" + i);
             cat.setActif(true);
-            cat.setCategorie(true);
             cat.setLibelle("CAT" + i);
 
             for (int j = 0; j < 9; j++) {
-                CategorieOperations ssCat = new CategorieOperations();
+                SsCategorieOperations ssCat = new SsCategorieOperations();
                 ssCat.setActif(true);
-                ssCat.setCategorie(false);
                 ssCat.setId("ID" + i + j);
                 ssCat.setLibelle("SSCAT" + j);
-                ssCat.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
+                ssCat.setCategorieParente(new SsCategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
                 cat.setListeSSCategories(new HashSet<>());
                 cat.getListeSSCategories().add(ssCat);
 
@@ -158,13 +157,15 @@ class BudgetDataUtilsTest {
             categoriesFromDB.add(cat);
         }
 
-        CategorieOperations cat = MockDataCategories.getCategorieById("ID8", categoriesFromDB);
+        AbstractCategorieOperations cat = MockDataCategories.getCategorieById("ID8", categoriesFromDB);
         assertNotNull(cat);
 
-        CategorieOperations ssCat = MockDataCategories.getCategorieById("ID88", categoriesFromDB);
+        AbstractCategorieOperations ssCat = MockDataCategories.getCategorieById("ID88", categoriesFromDB);
         assertNotNull(ssCat);
-        assertNotNull(ssCat.getCategorieParente());
-        assertEquals("ID8", ssCat.getCategorieParente().getId());
+        assertInstanceOf(SsCategorieOperations.class, ssCat);
+
+        assertNotNull(((SsCategorieOperations)ssCat).getCategorieParente());
+        assertEquals("ID8", ((SsCategorieOperations)ssCat).getCategorieParente().getId());
     }
 
 

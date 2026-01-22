@@ -18,6 +18,7 @@ import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSi
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
@@ -462,7 +463,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                 // Ajout des opérations standard et remboursement (si non nulle)
                 .invoke(tuple -> {
                     try {
-                        this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, (CategorieOperations) tuple.getItem3());
+                        this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, (SsCategorieOperations) tuple.getItem3());
                     } catch (DataNotFoundException e) {
                         tuple.mapItem1(u -> Uni.createFrom().failure(e));
                     }

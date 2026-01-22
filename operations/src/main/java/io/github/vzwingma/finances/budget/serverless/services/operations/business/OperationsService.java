@@ -13,7 +13,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
-import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
@@ -54,6 +54,7 @@ public class OperationsService implements IOperationsAppProvider {
     @ApplicationScoped
     IParametragesServiceProvider parametragesService;
 
+    @SuppressWarnings("unused") // Used in tests
     @Inject
     IBudgetAppProvider budgetService;
     /**
@@ -146,7 +147,7 @@ public class OperationsService implements IOperationsAppProvider {
 
 
     @Override
-    public void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur, CategorieOperations ssCategorieRemboursement) throws DataNotFoundException {
+    public void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur, SsCategorieOperations ssCategorieRemboursement) throws DataNotFoundException {
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, ligneOperation.getId());
         // Si mise à jour d'une opération, on l'enlève
         LigneOperation ligneOperationToUpdate = operations.stream().filter(op -> op.getId().equals(ligneOperation.getId())).findFirst().orElse(null);
@@ -249,9 +250,9 @@ public class OperationsService implements IOperationsAppProvider {
      * @return ligne de remboursement
      */
 
-    private LigneOperation createOperationRemboursement(LigneOperation operationSource, String auteur, CategorieOperations ssCategorieRemboursement) {
+    private LigneOperation createOperationRemboursement(LigneOperation operationSource, String auteur, SsCategorieOperations ssCategorieRemboursement) {
         // Workaround de #26
-        CategorieOperations.CategorieParente categorieParente = new CategorieOperations.CategorieParente(IdsCategoriesEnum.CAT_RENTREES.getId(), IdsCategoriesEnum.CAT_RENTREES.getLibelle());
+        SsCategorieOperations.CategorieParente categorieParente = new SsCategorieOperations.CategorieParente(IdsCategoriesEnum.CAT_RENTREES.getId(), IdsCategoriesEnum.CAT_RENTREES.getLibelle());
         ssCategorieRemboursement.setCategorieParente(categorieParente);
         // Si l'opération est une opération de remboursement, on ajoute la catégorie de remboursement
         return completeOperationAttributes(new LigneOperation(
@@ -324,9 +325,9 @@ public class OperationsService implements IOperationsAppProvider {
                 .asTuple()
                 .onItem()
                 .transform(tuple -> {
-                    List<CategorieOperations> ssCategoriesParams = tuple.getItem1()
+                    List<SsCategorieOperations> ssCategoriesParams = tuple.getItem1()
                             .stream().flatMap(cat -> cat.getListeSSCategories().stream())
-                            .filter(CategorieOperations::isActif)
+                            .filter(SsCategorieOperations::isActif)
                             .toList();
 
                     return tuple.getItem2().stream().map(doc -> {

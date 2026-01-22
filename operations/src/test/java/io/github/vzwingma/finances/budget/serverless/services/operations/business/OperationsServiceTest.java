@@ -9,6 +9,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Assertions;
@@ -169,9 +170,9 @@ class OperationsServiceTest {
     void testAddOperationRemboursement() throws DataNotFoundException {
 
         // When
-        CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE.getId());
+        SsCategorieOperations dep = new SsCategorieOperations(IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE.getId());
         dep.setLibelle(IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE.getLibelle());
-        CategorieOperations.CategorieParente cat = new CategorieOperations.CategorieParente(IdsCategoriesEnum.CAT_FRAIS_REMBOURSABLE_SANTE.getId(), IdsCategoriesEnum.CAT_FRAIS_REMBOURSABLE_SANTE.getLibelle());
+        SsCategorieOperations.CategorieParente cat = new SsCategorieOperations.CategorieParente(IdsCategoriesEnum.CAT_FRAIS_REMBOURSABLE_SANTE.getId(), IdsCategoriesEnum.CAT_FRAIS_REMBOURSABLE_SANTE.getLibelle());
         dep.setCategorieParente(cat);
         // Test
         List<LigneOperation> operations = new ArrayList<>();
