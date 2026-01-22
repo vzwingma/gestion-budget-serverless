@@ -10,6 +10,8 @@ import lombok.Getter;
 @Getter
 public enum CategorieOperationTypeEnum {
 
+    // Revenu
+    REVENU,
     // obligatoire
     OBLIGATOIRE,
     // plaisir
