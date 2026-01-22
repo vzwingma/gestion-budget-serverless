@@ -11,7 +11,7 @@ import lombok.Getter;
 public enum CategorieOperationTypeEnum {
 
     // Revenu
-    REVENU,
+    REVENUS,
     // obligatoire
     OBLIGATOIRE,
     // plaisir
