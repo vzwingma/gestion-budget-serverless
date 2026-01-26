@@ -145,10 +145,8 @@ public class ParametragesService implements IParametrageAppProvider, IJwtSigning
                             ssCClone.setCategorieParente(new SsCategorieOperations.CategorieParente(clone.getId(), clone.getLibelle()));
                             setSSCatsClones.add(ssCClone);
                         });
-                LOGGER.debug("Clonage des sous-catégories : {}", setSSCatsClones);
                 clone.setListeSSCategories(setSSCatsClones);
             }
-            LOGGER.debug("Clonée de la catégorie : {} : [{}]", clone, clone.getListeSSCategories());
             return clone;
         }
         return null;
