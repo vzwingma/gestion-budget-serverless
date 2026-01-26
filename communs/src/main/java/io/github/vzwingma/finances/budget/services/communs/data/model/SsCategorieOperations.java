@@ -23,6 +23,25 @@ import java.io.Serial;
 @EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
 public class SsCategorieOperations extends AbstractCategorieOperations implements Comparable<SsCategorieOperations> { //
 
+    @Serial
+    private static final long serialVersionUID = -2116580858329551756L;
+    /**
+     * Identifiant
+     */
+    //@Id
+    @Schema(description = "Identifiant")
+    private String id;
+    /**
+     * Libelle
+     */
+    @EqualsAndHashCode.Include
+    @Schema(description = "Libellé")
+    private String libelle;
+    /**
+     * Actif
+     */
+    @Schema(description = "Etat d'activité")
+    private boolean actif;
     /**
      * Catégorie
      */
@@ -47,7 +66,7 @@ public class SsCategorieOperations extends AbstractCategorieOperations implement
      * Constructeur pour Spring Data MongDB
      */
     public SsCategorieOperations(String guidCategorie) {
-        super(guidCategorie);
+        this.id = guidCategorie;
     }
 
     /* (non-Javadoc)
@@ -55,7 +74,7 @@ public class SsCategorieOperations extends AbstractCategorieOperations implement
      */
     @Override
     public String toString() {
-        return (this.categorieParente != null ? this.categorieParente.libelle : "?") + "/" + this.getLibelle();
+        return (this.categorieParente != null ? this.categorieParente.libelle : "-") + "/" + this.libelle;
     }
 
     /* (non-Javadoc)
@@ -63,7 +82,7 @@ public class SsCategorieOperations extends AbstractCategorieOperations implement
      */
     @Override
     public int compareTo(@NonNull SsCategorieOperations o) {
-        return this.getLibelle().compareTo(o.getLibelle());
+        return this.libelle.compareTo(o.getLibelle());
     }
 
     @Getter

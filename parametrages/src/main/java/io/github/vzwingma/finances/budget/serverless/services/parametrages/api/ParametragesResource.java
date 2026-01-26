@@ -66,7 +66,7 @@ public class ParametragesResource extends AbstractAPIInterceptors {
         return paramsServices.getCategorieById(idCategorie)
                 .invoke(categorie -> {
                     if (categorie != null) {
-                        LOG.info("[idCategorie={}] Chargement de la {}catégorie : {}", idCategorie, (categorie instanceof CategorieOperations) ? "" : "sous-", categorie);
+                        LOG.info( "[idCategorie={}] Chargement de la {}catégorie : {}", idCategorie, (categorie instanceof CategorieOperations) ? "" : "sous-", categorie);
                     } else {
                         LOG.error("[idCategorie={}] Impossible de trouver la catégorie", idCategorie);
                     }

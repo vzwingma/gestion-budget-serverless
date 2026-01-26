@@ -323,6 +323,7 @@ public class OperationsService implements IOperationsAppProvider {
             mensualiteTransfert = new LigneOperation.Mensualite();
             mensualiteTransfert.setPeriode(ligneOperationSource.getMensualite().getPeriode());
             mensualiteTransfert.setProchaineEcheance(ligneOperationSource.getMensualite().getProchaineEcheance());
+            mensualiteTransfert.setDateFin(ligneOperationSource.getMensualite().getDateFin());
         }
 
         // Catégorie de virements
