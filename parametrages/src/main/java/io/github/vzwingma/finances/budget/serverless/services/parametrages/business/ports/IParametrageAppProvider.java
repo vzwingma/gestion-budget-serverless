@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports;
 
+import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.smallrye.mutiny.Uni;
 
@@ -20,5 +21,5 @@ public interface IParametrageAppProvider {
      * @param idCategorie identifiant de la catégorie
      * @return catégorie par son id depuis le service (hexagone business)
      */
-    Uni<CategorieOperations> getCategorieById(String idCategorie);
+    Uni<AbstractCategorieOperations> getCategorieById(String idCategorie);
 }

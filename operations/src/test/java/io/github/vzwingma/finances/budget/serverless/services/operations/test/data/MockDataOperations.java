@@ -7,6 +7,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationTypeEnum;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -48,9 +49,9 @@ public class MockDataOperations {
      */
     public static LigneOperation getOperationIntercompte() {
         String transfertIntercompte = "ed3f6100-5dbd-4b68-860e-0c97ae1bbc63";
-        CategorieOperations dep = new CategorieOperations(transfertIntercompte);
+        SsCategorieOperations dep = new SsCategorieOperations(transfertIntercompte);
         CategorieOperations cat = new CategorieOperations(transfertIntercompte);
-        dep.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
+        dep.setCategorieParente(new SsCategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
         LigneOperation test1 = new LigneOperation(dep, "TestIntercompte", OperationTypeEnum.CREDIT, 123D, OperationEtatEnum.PREVUE);
         test1.setId("TestIntercompte");
         return test1;
@@ -62,18 +63,18 @@ public class MockDataOperations {
      */
     public static LigneOperation getOperationPrelevement() {
         String abonnement = "b4827cca-bbb4-43af-89e1-4f2ced806343";
-        CategorieOperations dep = new CategorieOperations(abonnement);
+        SsCategorieOperations dep = new SsCategorieOperations(abonnement);
         CategorieOperations cat = new CategorieOperations(abonnement);
-        dep.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
+        dep.setCategorieParente(new SsCategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
         LigneOperation test1 = new LigneOperation(dep, "TEST1", OperationTypeEnum.CREDIT, 123D, OperationEtatEnum.PREVUE);
         test1.setId("TEST1");
         return test1;
     }
 
     public static LigneOperation getOperationRemboursement() {
-        CategorieOperations dep = new CategorieOperations(IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE.getId());
+        SsCategorieOperations dep = new SsCategorieOperations(IdsCategoriesEnum.SS_CAT_FRAIS_REMBOURSABLE_SANTE_PHARMACIE.getId());
         CategorieOperations cat = new CategorieOperations(IdsCategoriesEnum.CAT_FRAIS_REMBOURSABLE_SANTE.getId());
-        dep.setCategorieParente(new CategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
+        dep.setCategorieParente(new SsCategorieOperations.CategorieParente(cat.getId(), cat.getLibelle()));
         LigneOperation remboursement = new LigneOperation(dep, "TestRemboursement", OperationTypeEnum.DEPENSE, 123D, OperationEtatEnum.REALISEE);
         remboursement.setId("TestRemboursement");
         return remboursement;

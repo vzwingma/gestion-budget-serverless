@@ -18,5 +18,4 @@ public class RegisterPanacheCodecs implements CodecProvider {
         }
         return null;
     }
-
 }

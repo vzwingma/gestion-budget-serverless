@@ -7,7 +7,9 @@ import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.I
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyWriteRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
+import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -84,7 +86,7 @@ public class ParametragesService implements IParametrageAppProvider, IJwtSigning
                 //async call for log
                 .invoke(c -> {
                     LOGGER.debug("[{}][{}] {}", c.isActif() ? "v" : "X", c.getId(), c);
-                    c.getListeSSCategories().forEach(s -> LOGGER.debug("[{}][{}]\t\t{}", s.isActif() ? "v" : "X", s.getId(), s));
+                    c.getListeSSCategories().forEach(s -> LOGGER.debug("[{}][{}]\t{}\t\t[{}]", s.isActif() ? "v" : "X", s.getId(), s, s.getType()));
                 })
                 .collect().asList();
     }
@@ -94,25 +96,25 @@ public class ParametragesService implements IParametrageAppProvider, IJwtSigning
      * @return la catégorie correspondante à l'id
      */
     @Override
-    public Uni<CategorieOperations> getCategorieById(String idCategorie) {
+    public Uni<AbstractCategorieOperations> getCategorieById(String idCategorie) {
 
         return getCategories()
                 .flatMap(categories -> {
-                    final AtomicReference<CategorieOperations> categorie = new AtomicReference<>();
+                    final AtomicReference<AbstractCategorieOperations> categorie = new AtomicReference<>();
                     categories.forEach(c -> {
                         if (c.getId().equals(idCategorie)) {
                             categorie.set(c);
                         }
                         c.getListeSSCategories().forEach(s -> {
                             if (s.getId().equals(idCategorie)) {
-                                s.setCategorieParente(new CategorieOperations.CategorieParente(c.getId(), c.getLibelle()));
+                                s.setCategorieParente(new SsCategorieOperations.CategorieParente(c.getId(), c.getLibelle()));
                                 LOGGER.info("Sous Catégorie trouvée : {}/{}", s.getCategorieParente(), s);
                                 categorie.set(s);
                             }
                         });
                     });
                     if (categorie.get() == null) {
-                        return Uni.createFrom().failure(new DataNotFoundException("[idCategorie=" + idCategorie + "] Categorie non trouvée"));
+                        return Uni.createFrom().failure(new DataNotFoundException("[idCategorie=" + idCategorie + "] (Ss)Categorie non trouvée"));
                     } else {
                         return Uni.createFrom().item(categorie.get());
                     }
@@ -128,20 +130,19 @@ public class ParametragesService implements IParametrageAppProvider, IJwtSigning
             CategorieOperations clone = new CategorieOperations();
             clone.setId(categorie.getId());
             clone.setActif(categorie.isActif());
-            clone.setCategorie(categorie.isCategorie());
             // Pas de clone de la catégorie parente pour éviter les récursions
             clone.setLibelle(categorie.getLibelle());
-            Set<CategorieOperations> setSSCatsClones = new HashSet<>();
+            Set<SsCategorieOperations> setSSCatsClones = new HashSet<>();
             if (categorie.getListeSSCategories() != null && !categorie.getListeSSCategories().isEmpty()) {
 
                 categorie.getListeSSCategories()
                         .stream()
                         // #125
-                        .filter(CategorieOperations::isActif)
+                        .filter(SsCategorieOperations::isActif)
                         .forEach(ssC -> {
-                            CategorieOperations ssCClone = cloneCategorie(ssC);
+                            SsCategorieOperations ssCClone = cloneSsCategorie(ssC);
                             // Réinjection de la catégorie parente
-                            ssCClone.setCategorieParente(new CategorieOperations.CategorieParente(clone.getId(), clone.getLibelle()));
+                            ssCClone.setCategorieParente(new SsCategorieOperations.CategorieParente(clone.getId(), clone.getLibelle()));
                             setSSCatsClones.add(ssCClone);
                         });
                 clone.setListeSSCategories(setSSCatsClones);
@@ -150,6 +151,24 @@ public class ParametragesService implements IParametrageAppProvider, IJwtSigning
         }
         return null;
     }
+
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#clone()
+     */
+    private SsCategorieOperations cloneSsCategorie(SsCategorieOperations categorie) {
+        if (categorie != null && categorie.isActif()) {
+            SsCategorieOperations clone = new SsCategorieOperations();
+            clone.setId(categorie.getId());
+            clone.setActif(categorie.isActif());
+            clone.setType(categorie.getType());
+            // Pas de clone de la catégorie parente pour éviter les récursions
+            clone.setLibelle(categorie.getLibelle());
+            return clone;
+        }
+        return null;
+    }
+
 
     /**
      * @return le repository des clés de signature

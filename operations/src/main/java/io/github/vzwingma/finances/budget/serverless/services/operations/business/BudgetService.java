@@ -16,8 +16,9 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.spi.pro
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
-import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperationTypeEnum;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
@@ -258,7 +259,10 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
         LOGGER.info("(Re)Calcul des soldes du budget");
         BudgetDataUtils.razCalculs(budget);
 
-        this.operationsAppProvider.calculSoldes(budget.getListeOperations(), budget.getSoldes(), budget.getTotauxParCategories(), budget.getTotauxParSSCategories());
+        this.operationsAppProvider.calculSoldes(budget.getListeOperations(), budget.getSoldes(),
+                budget.getTotauxParCategories(),
+                budget.getTotauxParSSCategories(),
+                budget.getTotauxParTypeCategories());
     }
 
 
@@ -446,6 +450,11 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     @Override
     public Uni<BudgetMensuel> addOrUpdateOperationInBudget(String idBudget, LigneOperation ligneOperation, String auteur) {
 
+        // #125 : Type de la catégorie = ESSENTIEL si non défini
+        if (ligneOperation.getSsCategorie() != null && ligneOperation.getSsCategorie().getType() == null) {
+            ligneOperation.getSsCategorie().setType(CategorieOperationTypeEnum.ESSENTIEL);
+        }
+
         Uni<BudgetMensuel> budgetSurCompteActif = getBudgetAndCompteActif(idBudget)
                 // Si pas d'erreur, update de l'opération
                 .onItem()
@@ -462,7 +471,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                 // Ajout des opérations standard et remboursement (si non nulle)
                 .invoke(tuple -> {
                     try {
-                        this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, (CategorieOperations) tuple.getItem3());
+                        this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, (SsCategorieOperations) tuple.getItem3());
                     } catch (DataNotFoundException e) {
                         tuple.mapItem1(u -> Uni.createFrom().failure(e));
                     }

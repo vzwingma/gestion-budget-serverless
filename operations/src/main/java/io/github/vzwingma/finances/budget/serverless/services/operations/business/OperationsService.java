@@ -13,7 +13,8 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
-import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperationTypeEnum;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
@@ -54,6 +55,7 @@ public class OperationsService implements IOperationsAppProvider {
     @ApplicationScoped
     IParametragesServiceProvider parametragesService;
 
+    @SuppressWarnings("unused") // Used in tests
     @Inject
     IBudgetAppProvider budgetService;
     /**
@@ -65,7 +67,10 @@ public class OperationsService implements IOperationsAppProvider {
      * @param totauxSsCategoriesMap map des totaux par sous catégorie
      */
     @Override
-    public void calculSoldes(List<LigneOperation> operations, BudgetMensuel.Soldes soldes, Map<String, TotauxCategorie> totauxCategorieMap, Map<String, TotauxCategorie> totauxSsCategoriesMap) {
+    public void calculSoldes(List<LigneOperation> operations, BudgetMensuel.Soldes soldes,
+                             Map<String, TotauxCategorie> totauxCategorieMap,
+                             Map<String, TotauxCategorie> totauxSsCategoriesMap,
+                             Map<String, TotauxCategorie> totauxTypesCategoriesMap) {
 
         for (LigneOperation operation : operations) {
             LOGGER.trace("     > {}", operation);
@@ -75,6 +80,8 @@ public class OperationsService implements IOperationsAppProvider {
             calculBudgetTotalCategories(totauxCategorieMap, operation);
             // Calcul par sous catégories
             calculBudgetTotalSsCategories(totauxSsCategoriesMap, operation);
+            // Calcul par type catégories
+            calculBudgetTotalTypesCategories(totauxTypesCategoriesMap, operation);
             // Calcul des totaux
             if (operation.getEtat().equals(OperationEtatEnum.REALISEE)) {
                 BudgetDataUtils.ajouteASoldeNow(soldes, valeurOperation);
@@ -84,7 +91,9 @@ public class OperationsService implements IOperationsAppProvider {
             }
         }
         LOGGER.debug("Solde prévu\t| {} | {}", soldes.getSoldeAtMaintenant(), soldes.getSoldeAtFinMoisCourant());
-
+        LOGGER.debug("Totaux par catégorie : {}", totauxCategorieMap);
+        LOGGER.debug("Totaux par sous-catégorie : {}", totauxSsCategoriesMap);
+        LOGGER.debug("Totaux par type de catégorie : {}", totauxTypesCategoriesMap);
     }
 
 
@@ -145,8 +154,39 @@ public class OperationsService implements IOperationsAppProvider {
     }
 
 
+    /**
+     * Calcul du total de la sous catégorie du budget via l'opération en cours
+     *
+     * @param totauxTypesCategoriesMap à calculer
+     * @param operation             opération à traiter
+     */
+    private void calculBudgetTotalTypesCategories(Map<String, TotauxCategorie> totauxTypesCategoriesMap, LigneOperation operation) {
+        if (operation.getSsCategorie() != null && operation.getSsCategorie().getId() != null) {
+            if(operation.getSsCategorie().getType() == null){
+                operation.getSsCategorie().setType(CategorieOperationTypeEnum.ESSENTIEL);
+            }
+
+            Double valeurOperation = operation.getValeur();
+            TotauxCategorie valeursTypes = new TotauxCategorie();
+            if (totauxTypesCategoriesMap.get(operation.getSsCategorie().getType().name()) != null) {
+                valeursTypes = totauxTypesCategoriesMap.get(operation.getSsCategorie().getType().name());
+            }
+            valeursTypes.setLibelleCategorie(operation.getSsCategorie().getType().name());
+            if (operation.getEtat().equals(OperationEtatEnum.REALISEE)) {
+                valeursTypes.ajouterATotalAtMaintenant(valeurOperation);
+                valeursTypes.ajouterATotalAtFinMoisCourant(valeurOperation);
+            }
+            if (operation.getEtat().equals(OperationEtatEnum.PREVUE)) {
+                valeursTypes.ajouterATotalAtFinMoisCourant(valeurOperation);
+            }
+            LOGGER.trace("Total par type catégorie [typeCat={} : {}]", operation.getSsCategorie().getType(), valeursTypes);
+            totauxTypesCategoriesMap.put(operation.getSsCategorie().getType().name(), valeursTypes);
+        } else {
+            LOGGER.warn("L'opération [{}]  n'a pas de sous-catégorie [{}]", operation, operation.getSsCategorie());
+        }
+    }
     @Override
-    public void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur, CategorieOperations ssCategorieRemboursement) throws DataNotFoundException {
+    public void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur, SsCategorieOperations ssCategorieRemboursement) throws DataNotFoundException {
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, ligneOperation.getId());
         // Si mise à jour d'une opération, on l'enlève
         LigneOperation ligneOperationToUpdate = operations.stream().filter(op -> op.getId().equals(ligneOperation.getId())).findFirst().orElse(null);
@@ -249,9 +289,9 @@ public class OperationsService implements IOperationsAppProvider {
      * @return ligne de remboursement
      */
 
-    private LigneOperation createOperationRemboursement(LigneOperation operationSource, String auteur, CategorieOperations ssCategorieRemboursement) {
+    private LigneOperation createOperationRemboursement(LigneOperation operationSource, String auteur, SsCategorieOperations ssCategorieRemboursement) {
         // Workaround de #26
-        CategorieOperations.CategorieParente categorieParente = new CategorieOperations.CategorieParente(IdsCategoriesEnum.CAT_RENTREES.getId(), IdsCategoriesEnum.CAT_RENTREES.getLibelle());
+        SsCategorieOperations.CategorieParente categorieParente = new SsCategorieOperations.CategorieParente(IdsCategoriesEnum.CAT_RENTREES.getId(), IdsCategoriesEnum.CAT_RENTREES.getLibelle());
         ssCategorieRemboursement.setCategorieParente(categorieParente);
         // Si l'opération est une opération de remboursement, on ajoute la catégorie de remboursement
         return completeOperationAttributes(new LigneOperation(
@@ -283,15 +323,17 @@ public class OperationsService implements IOperationsAppProvider {
             mensualiteTransfert = new LigneOperation.Mensualite();
             mensualiteTransfert.setPeriode(ligneOperationSource.getMensualite().getPeriode());
             mensualiteTransfert.setProchaineEcheance(ligneOperationSource.getMensualite().getProchaineEcheance());
+            mensualiteTransfert.setDateFin(ligneOperationSource.getMensualite().getDateFin());
         }
 
         // Catégorie de virements
         LigneOperation.Categorie catVirementInterne = new LigneOperation.Categorie();
         catVirementInterne.setId(IdsCategoriesEnum.CAT_RENTREES.getId());
         catVirementInterne.setLibelle(IdsCategoriesEnum.CAT_RENTREES.getLibelle());
-        LigneOperation.Categorie sscatVirementInterne = new LigneOperation.Categorie();
+        LigneOperation.SsCategorie sscatVirementInterne = new LigneOperation.SsCategorie();
         sscatVirementInterne.setId(IdsCategoriesEnum.SS_CAT_RENTREE_VIREMENT_INTERNE.getId());
         sscatVirementInterne.setLibelle(IdsCategoriesEnum.SS_CAT_RENTREE_VIREMENT_INTERNE.getLibelle());
+        sscatVirementInterne.setType(CategorieOperationTypeEnum.REVENUS);
 
         LigneOperation ligneRentreeVirementInterne = completeOperationAttributes(
                 new LigneOperation(
@@ -324,9 +366,9 @@ public class OperationsService implements IOperationsAppProvider {
                 .asTuple()
                 .onItem()
                 .transform(tuple -> {
-                    List<CategorieOperations> ssCategoriesParams = tuple.getItem1()
+                    List<SsCategorieOperations> ssCategoriesParams = tuple.getItem1()
                             .stream().flatMap(cat -> cat.getListeSSCategories().stream())
-                            .filter(CategorieOperations::isActif)
+                            .filter(SsCategorieOperations::isActif)
                             .toList();
 
                     return tuple.getItem2().stream().map(doc -> {

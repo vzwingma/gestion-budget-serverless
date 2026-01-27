@@ -4,7 +4,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.TotauxCategorie;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LibelleCategorieOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
-import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.smallrye.mutiny.Multi;
 
@@ -24,7 +24,7 @@ public interface IOperationsAppProvider {
      * @param totauxCategorieMap    map des totaux par catégorie
      * @param totauxSsCategoriesMap map des totaux par sous catégorie
      */
-    void calculSoldes(List<LigneOperation> operations, BudgetMensuel.Soldes soldes, Map<String, TotauxCategorie> totauxCategorieMap, Map<String, TotauxCategorie> totauxSsCategoriesMap);
+    void calculSoldes(List<LigneOperation> operations, BudgetMensuel.Soldes soldes, Map<String, TotauxCategorie> totauxCategorieMap, Map<String, TotauxCategorie> totauxSsCategoriesMap, Map<String, TotauxCategorie> totauxTypesCategoriesMap);
 
     /**
      * Ajout d'une ligne de virement interne (rentrée d'argent)
@@ -54,7 +54,7 @@ public interface IOperationsAppProvider {
      * @param ligneOperation           ligne de dépense
      * @param ssCategorieRemboursement catégorie Remboursement
      */
-    void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur, CategorieOperations ssCategorieRemboursement) throws DataNotFoundException;
+    void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur, SsCategorieOperations ssCategorieRemboursement) throws DataNotFoundException;
 
     /**
      * Récupération des libellés des opérations

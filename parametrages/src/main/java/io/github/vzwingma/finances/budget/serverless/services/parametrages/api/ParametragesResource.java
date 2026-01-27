@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.serverless.services.parametrages.api;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.api.enums.ParametragesAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIInterceptors;
+import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
@@ -59,13 +60,13 @@ public class ParametragesResource extends AbstractAPIInterceptors {
     @PermitAll
     @Path(ParametragesAPIEnum.PARAMS_CATEGORIES + ParametragesAPIEnum.PARAMS_CATEGORIE_ID)
     @Produces(MediaType.APPLICATION_JSON)
-    public Uni<CategorieOperations> getCategorieById(@RestPath String idCategorie) {
+    public Uni<AbstractCategorieOperations> getCategorieById(@RestPath String idCategorie) {
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
 
         return paramsServices.getCategorieById(idCategorie)
                 .invoke(categorie -> {
                     if (categorie != null) {
-                        LOG.info("[idCategorie={}] Chargement de la {}catégorie : {}", idCategorie, categorie.isCategorie() ? "" : "sous-", categorie);
+                        LOG.info( "[idCategorie={}] Chargement de la {}catégorie : {}", idCategorie, (categorie instanceof CategorieOperations) ? "" : "sous-", categorie);
                     } else {
                         LOG.error("[idCategorie={}] Impossible de trouver la catégorie", idCategorie);
                     }
