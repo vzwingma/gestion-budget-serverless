@@ -182,32 +182,10 @@ public class BudgetDataUtils {
                 cloneOperationAEcheanceReportee(lignesOperationClonees, ligneOperation);
             }
 
-            // Si la mensualité arrive à échéance, elle est prévue, et la prochaine échéance est réinitalisée
-            if (prochaineMensualite == 0) {
-                ligneOperationClonee.setEtat(OperationEtatEnum.PREVUE);
-                mensualiteClonee.setProchaineEcheance(mensualiteClonee.getPeriode().getNbMois());
-            }
-            // Si l'échéance est dans le passé, on laisse la mensualité de base et prévue - tagguée en retard
-            else if (prochaineMensualite < 0) {
-                ligneOperationClonee.setEtat(OperationEtatEnum.PREVUE);
-                mensualiteClonee.setProchaineEcheance(prochaineMensualite);
-            }
-            // Si l'échéance est dans le futur, on laisse la mensualité de base et reportée
-            else {
-                ligneOperationClonee.setEtat(OperationEtatEnum.PLANIFIEE);
-                mensualiteClonee.setProchaineEcheance(prochaineMensualite);
-            }
+            defnirEtatEtEcheance(ligneOperationClonee, mensualiteClonee, prochaineMensualite);
 
-            LocalDate dateFinMensualite = ligneOperation.getMensualite().getDateFin();
             LocalDate dateBudgetCible = LocalDate.now().withMonth(moisCible.getValue()).withYear(anneeCible);
-            if(dateFinMensualite != null && dateFinMensualite.getMonthValue() == dateBudgetCible.getMonthValue() && dateFinMensualite.getYear() == dateBudgetCible.getYear()){
-                // La date de fin de mensualité est atteinte - dernière échéance
-                if (ligneOperationClonee.getStatuts() == null){
-                    ligneOperationClonee.setStatuts(new ArrayList<>());
-                }
-                ligneOperationClonee.getStatuts().add(OperationStatutEnum.DERNIERE_ECHEANCE);
-            }
-            else if(dateFinMensualite != null && dateFinMensualite.isBefore(dateBudgetCible)){
+            if(!gererDateFinMensualite(ligneOperationClonee, ligneOperation.getMensualite().getDateFin(), dateBudgetCible)){
                 // La date de fin de mensualité est dépassée - ne pas cloner
                 return lignesOperationClonees;
             }
@@ -216,6 +194,56 @@ public class BudgetDataUtils {
 
         lignesOperationClonees.add(ligneOperationClonee);
         return lignesOperationClonees;
+    }
+
+    /**
+     * Définir l'état et l'échéance de la mensualité clonée
+     *
+     * @param ligneOperationClonee opération clonée
+     * @param mensualiteClonee mensualité clonée
+     * @param prochaineMensualite prochaine échéance
+     */
+    private static void defnirEtatEtEcheance(LigneOperation ligneOperationClonee, LigneOperation.Mensualite mensualiteClonee, int prochaineMensualite) {
+        // Si la mensualité arrive à échéance, elle est prévue, et la prochaine échéance est réinitalisée
+        if (prochaineMensualite == 0) {
+            ligneOperationClonee.setEtat(OperationEtatEnum.PREVUE);
+            mensualiteClonee.setProchaineEcheance(mensualiteClonee.getPeriode().getNbMois());
+        }
+        // Si l'échéance est dans le passé, on laisse la mensualité de base et prévue - tagguée en retard
+        else if (prochaineMensualite < 0) {
+            ligneOperationClonee.setEtat(OperationEtatEnum.PREVUE);
+            mensualiteClonee.setProchaineEcheance(prochaineMensualite);
+        }
+        // Si l'échéance est dans le futur, on laisse la mensualité de base et reportée
+        else {
+            ligneOperationClonee.setEtat(OperationEtatEnum.PLANIFIEE);
+            mensualiteClonee.setProchaineEcheance(prochaineMensualite);
+        }
+    }
+
+    /**
+     * Gérer la date de fin de mensualité
+     *
+     * @param ligneOperationClonee opération clonée
+     * @param dateFinMensualite date de fin de mensualité
+     * @param dateBudgetCible date budget cible
+     * @return true si on doit continuer le clonage, false sinon
+     */
+    private static boolean gererDateFinMensualite(LigneOperation ligneOperationClonee, LocalDate dateFinMensualite, LocalDate dateBudgetCible) {
+        if(dateFinMensualite == null){
+            return true;
+        }
+
+        if(dateFinMensualite.getMonthValue() == dateBudgetCible.getMonthValue() && dateFinMensualite.getYear() == dateBudgetCible.getYear()){
+            // La date de fin de mensualité est atteinte - dernière échéance
+            if (ligneOperationClonee.getStatuts() == null){
+                ligneOperationClonee.setStatuts(new ArrayList<>());
+            }
+            ligneOperationClonee.getStatuts().add(OperationStatutEnum.DERNIERE_ECHEANCE);
+            return true;
+        }
+
+        return !dateFinMensualite.isBefore(dateBudgetCible);
     }
 
     /**

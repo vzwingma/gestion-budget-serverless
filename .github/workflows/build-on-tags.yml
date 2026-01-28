@@ -323,7 +323,8 @@ jobs:
   #
   clean-github-packages:
     name: Clean packages
-    permissions: write-all
+    permissions:
+      packages: write
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     steps:
