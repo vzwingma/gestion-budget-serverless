@@ -12,10 +12,10 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieO
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.Setter;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
-import org.jspecify.annotations.NonNull;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -227,7 +227,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
     @Setter
     @NoArgsConstructor
     @Schema(description = "Sous Catégorie")
-    public static class SsCategorie extends Categorie implements Serializable {
+    public static class SsCategorie extends Categorie {
 
         @Schema(description = "Type de catégorie")
         private CategorieOperationTypeEnum type;

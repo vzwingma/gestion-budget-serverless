@@ -26,7 +26,6 @@ public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
     private static final Logger LOG = LoggerFactory.getLogger(ComptePanacheCodec.class);
     private final Codec<Document> documentCodec;
 
-    @SuppressWarnings("null")
     public ComptePanacheCodec() {
         this.documentCodec = MongoClientSettings.getDefaultCodecRegistry().get(Document.class);
     }
@@ -71,13 +70,12 @@ public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
         compteBancaire.setOrdre(document.getInteger("ordre"));
         // feat #67 & compatibilité asc : ajout des multiples propriétaires
 
-        @SuppressWarnings("null")
         Document proprietaireDocument = document.get("proprietaire", Document.class);
         if(proprietaireDocument != null) {
             CompteBancaire.Proprietaire proprietaire = decode(proprietaireDocument);
             compteBancaire.setProprietaires(List.of(proprietaire));
         }
-        @SuppressWarnings("null")
+
         List<Document> proprietairesDocument = document.getList("proprietaires", Document.class);
         if(proprietairesDocument != null) {
             compteBancaire.setProprietaires(new ArrayList<>());
@@ -95,7 +93,6 @@ public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
         LOG.warn("Encoding is not implemented");
     }
 
-    @SuppressWarnings("null")
     @Override
     public Class<CompteBancaire> getEncoderClass() {
         return CompteBancaire.class;

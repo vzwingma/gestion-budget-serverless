@@ -6,9 +6,9 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.Setter;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
-import org.jspecify.annotations.NonNull;
 
 import java.io.Serial;
 
