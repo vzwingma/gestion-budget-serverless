@@ -17,6 +17,9 @@ public enum CategorieOperationTypeEnum {
     // plaisir
     PLAISIR,
     // épargne
-    ECONOMIES
-
+    ECONOMIES,
+    // imprévus
+    IMPREVUS,
+    // extras
+    EXTRAS;
 }
