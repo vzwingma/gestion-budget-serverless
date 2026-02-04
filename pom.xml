@@ -29,7 +29,7 @@
 
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-        <quarkus.platform.version>3.31.1</quarkus.platform.version>
+        <quarkus.platform.version>3.31.2</quarkus.platform.version>
         <lombok.version>1.18.42</lombok.version>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
