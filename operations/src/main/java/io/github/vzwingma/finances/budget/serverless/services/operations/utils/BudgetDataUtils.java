@@ -91,8 +91,22 @@ public class BudgetDataUtils {
         budget.getTotauxParCategories().clear();
         budget.getTotauxParSSCategories().clear();
         budget.getTotauxParTypeCategories().clear();
-        budget.getSoldes().setSoldeAtMaintenant(budget.getSoldes().getSoldeAtFinMoisPrecedent());
-        budget.getSoldes().setSoldeAtFinMoisCourant(budget.getSoldes().getSoldeAtFinMoisPrecedent());
+
+        /*
+         * #129 - Si le budget contient des actifs investis, on ne reporte pas le solde du mois précédent, et on remet à 0 les soldes à maintenant et à fin de mois courant
+         * Le recalcul des soldes se fera à partir des opérations du mois (dont les actifs), et non à partir du solde du mois précédent
+         * **/
+        boolean hasActifsInvests = budget.getListeOperations() != null && budget.getListeOperations().stream()
+                .anyMatch(op -> op.getCategorie() != null && IdsCategoriesEnum.CAT_ACTIFS_INVESTS.getId().equals(op.getCategorie().getId()));
+
+        if (hasActifsInvests) {
+            budget.getSoldes().setSoldeAtMaintenant(0D);
+            budget.getSoldes().setSoldeAtFinMoisCourant(0D);
+        }
+        else {
+            budget.getSoldes().setSoldeAtMaintenant(budget.getSoldes().getSoldeAtFinMoisPrecedent());
+            budget.getSoldes().setSoldeAtFinMoisCourant(budget.getSoldes().getSoldeAtFinMoisPrecedent());
+        }
     }
 
 

@@ -16,6 +16,9 @@ public enum IdsCategoriesEnum {
     SS_CAT_VIREMENT_INTERNE("ed3f6100-5dbd-4b68-860e-0c97ae1bbc63", "Virements internes"),
     SS_CAT_RENTREE_VIREMENT_INTERNE("ed3f6100-5dbd-4b68-860e-0c97ae1bbc74", "Virements internes"),
 
+    // Actifs & investissements
+    CAT_ACTIFS_INVESTS("33bef45d-9494-4a69-94ea-228a22bbc699", "Investissements/Actifs"),
+
     // Gestion des frais remboursables
     SS_CAT_REMBOURSEMENT("885e0d9a-6f3c-4002-b521-30169baf7123", "Remboursement"),
 

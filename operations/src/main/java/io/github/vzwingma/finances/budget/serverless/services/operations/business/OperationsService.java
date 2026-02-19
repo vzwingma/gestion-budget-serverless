@@ -185,6 +185,16 @@ public class OperationsService implements IOperationsAppProvider {
             LOGGER.warn("L'opération [{}]  n'a pas de sous-catégorie [{}]", operation, operation.getSsCategorie());
         }
     }
+
+
+    /**
+     * action de mise à jour d'une ligne de dépense dans la liste d'un budget
+     * @param operations               liste des opérations à mettre à jour budget
+     * @param ligneOperation           ligne de dépense à ajouter ou à mettre à jour
+     * @param auteur                   auteur de l'action
+     * @param ssCategorieRemboursement catégorie Remboursement
+     * @throws DataNotFoundException en cas de catégorie de remboursement non trouvée pour une opération remboursable
+     */
     @Override
     public void addOrReplaceOperation(List<LigneOperation> operations, LigneOperation ligneOperation, String auteur, SsCategorieOperations ssCategorieRemboursement) throws DataNotFoundException {
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, ligneOperation.getId());
