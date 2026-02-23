@@ -9,6 +9,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.bson.Document;
 
+import java.time.Instant;
 import java.time.Month;
 import java.util.List;
 
@@ -37,6 +38,11 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
      * @return liste des soldes et totaux par catégorie
      */
     Multi<ProjectionBudgetSoldes> chargeSoldesBudgetMensuel(String idCompte, Month mois, Integer annee);
+
+
+
+    Uni<Instant[]> chargeIntervalleBudgets(String idCompte);
+
     /**
      * Activité Budget
      *

@@ -7,6 +7,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.spi.pro
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
+import java.time.Instant;
 import java.time.Month;
 
 /**
@@ -106,4 +107,11 @@ public interface IBudgetAppProvider {
      * @return libelles des opérations
      */
     Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte, String auteur);
+
+    /**
+     * Récupration de l'intervalle des budgets mensuels pour un compte
+     * @param idCompte id du compte
+     * @return intervalle des budgets mensuels pour un compte
+     */
+    Uni<Instant[]> getiIntervalleBudgets(String idCompte);
 }

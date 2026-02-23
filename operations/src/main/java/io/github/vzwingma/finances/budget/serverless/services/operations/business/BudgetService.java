@@ -36,6 +36,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
@@ -592,8 +593,20 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     @Override
     public Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte, String auteur) {
         return this.operationsAppProvider.getLibellesOperations(idCompte);
-
     }
+
+
+
+    /**
+     * Récupration de l'intervalle des budgets mensuels pour un compte
+     * @param idCompte id du compte
+     * @return intervalle des budgets mensuels pour un compte
+     */
+    @Override
+    public Uni<Instant[]> getiIntervalleBudgets(String idCompte){
+        return this.operationsAppProvider.getIntervalleBudgets(idCompte);
+    }
+
     /**
      * @return le dépôt des clés de signature
      */

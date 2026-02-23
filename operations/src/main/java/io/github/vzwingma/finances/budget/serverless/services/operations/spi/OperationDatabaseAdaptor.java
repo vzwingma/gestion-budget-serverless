@@ -17,10 +17,9 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.time.Month;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Service de données en MongoDB fournissant les opérations.
@@ -99,6 +98,50 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                     LOGGER.error("Erreur lors du chargement des budgets de {}", idCompte, e);
                     return new BudgetNotFoundException("Erreur lors du chargement des budgets " + idCompte);
                 });
+    }
+
+    /**
+     * charger l'intervalle des budgets mensuels pour un compte
+     * @param idCompte id du compte
+     * @return intervalle des budgets mensuels pour un compte
+     */
+    @Override
+    public Uni<Instant[]> chargeIntervalleBudgets(String idCompte) {
+        LOGGER.debug("Recherche de l'intervalle des budgets du compte {}", idCompte);
+        return mongoCollection()
+                .aggregate(
+                        Arrays.asList(
+                                new Document("$match",
+                                        new Document(ATTRIBUT_COMPTE_ID, idCompte)),
+                                new Document("$group",
+                                        new Document("_id", null)
+                                                .append("minDate", new Document("$min", new Document("$dateFromParts",
+                                                        new Document("year", "$" + ATTRIBUT_ANNEE)
+                                                                .append("month", "$" + ATTRIBUT_MOIS)
+                                                                .append("day", 1))))
+                                                .append("maxDate", new Document("$max", new Document("$dateFromParts",
+                                                        new Document("year", "$" + ATTRIBUT_ANNEE)
+                                                                .append("month", "$" + ATTRIBUT_MOIS)
+                                                                .append("day", 1)))))
+                        )
+                , Document.class)
+                .collect().first()
+                .onItem().transform(document -> {
+                    if(document == null || document.get("minDate") == null || document.get("maxDate") == null) {
+                        LOGGER.warn("Aucun budget trouvé pour le compte {}", idCompte);
+                        return new Instant[]{};
+                    }
+                    Instant minDate = document.get("minDate", Date.class).toInstant();
+                    Instant maxDate = document.get("maxDate", Date.class).toInstant();
+                    LOGGER.debug("Intervalle des budgets du compte {} : minDate={}, maxDate={}", idCompte, minDate, maxDate);
+                    return new Instant[]{minDate, maxDate};
+                })
+                .onFailure()
+                .transform(e -> {
+                    LOGGER.error("Erreur lors du chargement de l'intervalle des budgets du compte {}", idCompte, e);
+                    return new BudgetNotFoundException("Erreur lors du chargement de l'intervalle des budgets du compte " + idCompte);
+                });
+
     }
 
 

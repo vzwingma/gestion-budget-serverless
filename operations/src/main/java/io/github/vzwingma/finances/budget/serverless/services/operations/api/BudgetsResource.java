@@ -32,6 +32,7 @@ import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.time.Month;
 import java.util.UUID;
 
@@ -94,7 +95,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
 
 
     /**
-     * Retour le budget d'un utilisateur
+     * Retourne le solde du budget d'un utilisateur
      *
      * @param idCompte id du compte
      * @param mois     mois du budget
@@ -121,7 +122,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         if(idCompte == null) {
             return Multi.createFrom().failure(new BadParametersException("IdCompte doit être renseigné"));
         }
-        
+
         idCompte = idCompte.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
 
@@ -141,6 +142,40 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         }
     }
 
+
+    /**
+     * Retourne l'intervalles des budgets disponibles pour le compte
+     *
+     * @param idCompte id du compte
+     * @return intervalle des budgets disponibles pour le compte
+     */
+    @Operation(description = "Recherche l'intervalle des budgets disponibles pour un compte d'un utilisateur")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "200", description = "Opération réussie",
+                    content = {@Content(mediaType = "application/json", schema = @Schema(implementation = BudgetMensuel.class))}),
+            @APIResponse(responseCode = "401", description = "Utilisateur non authentifié"),
+            @APIResponse(responseCode = "403", description = "Opération non autorisée"),
+            @APIResponse(responseCode = "404", description = "Données introuvables")
+    })
+    @GET
+    @RolesAllowed({OperationsAPIEnum.OPERATIONS_ROLE})
+    @Path(value = OperationsAPIEnum.BUDGET_INTERVALLES)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<Instant[]> getiIntervalleBudgets(
+            @RestQuery("idCompte") String idCompte) {
+
+        if(idCompte == null) {
+            return Uni.createFrom().failure(new BadParametersException("IdCompte doit être renseigné"));
+        }
+
+        idCompte = idCompte.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
+            try {
+                return budgetService.getiIntervalleBudgets(idCompte);
+            } catch (NumberFormatException e) {
+                return Uni.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
+            }
+    }
 
     /**
      * Mise à jour du budget

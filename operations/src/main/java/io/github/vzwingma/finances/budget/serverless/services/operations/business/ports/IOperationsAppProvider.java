@@ -7,7 +7,9 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -63,4 +65,11 @@ public interface IOperationsAppProvider {
      * @return liste des libellés des opérations
      */
     Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte);
+
+    /**
+     * Récupration de l'intervalle des budgets mensuels pour un compte
+     * @param idCompte id du compte
+     * @return intervalle des budgets mensuels pour un compte
+     */
+    Uni<Instant[]> getIntervalleBudgets(String idCompte);
 }
