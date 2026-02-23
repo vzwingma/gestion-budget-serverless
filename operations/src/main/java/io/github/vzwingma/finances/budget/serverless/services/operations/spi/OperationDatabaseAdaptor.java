@@ -110,8 +110,10 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
         LOGGER.debug("Recherche de l'intervalle des budgets du compte {}", idCompte);
 
         // Conversion du label du mois (ex: "FEBRUARY") en numéro (1-12) via $indexOfArray (+1 car 0-based)
-        List<String> moisLabels = Arrays.asList("JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
-                "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER");
+        List<String> moisLabels = Arrays.stream(Month.values())
+                .sorted(Comparator.comparingInt(Month::getValue))
+                .map(Month::name)
+                .toList();
         Document moisAsInt = new Document("$add", Arrays.asList(
                 new Document("$indexOfArray", Arrays.asList(moisLabels, "$" + ATTRIBUT_MOIS)),
                 1
