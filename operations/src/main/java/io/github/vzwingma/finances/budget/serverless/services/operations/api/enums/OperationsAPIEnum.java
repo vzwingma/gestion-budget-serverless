@@ -30,6 +30,7 @@ public class OperationsAPIEnum {
     // - idCompte & mois & annee
     public static final String BUDGET_QUERY = "/query";
     public static final String BUDGET_SOLDES = "/soldes";
+    public static final String BUDGET_INTERVALLES = "/intervalles";
     // Avec en paramètres :
     // - actif
     public static final String BUDGET_ETAT = "/" + PARAM_ID_BUDGET + "/etat";

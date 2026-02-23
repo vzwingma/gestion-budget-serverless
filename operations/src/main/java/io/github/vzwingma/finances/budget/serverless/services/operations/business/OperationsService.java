@@ -29,6 +29,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -404,6 +405,16 @@ public class OperationsService implements IOperationsAppProvider {
                     .toList();
                 }).onItem().transformToMulti(Multi.createFrom()::iterable)
                 .select().distinct((o1, o2) -> o1.getLibelle().compareToIgnoreCase(o2.getLibelle()));
+    }
+
+    /**
+     * @param idCompte id du compte
+     * @return intervalle des budgets mensuels pour un compte
+     */
+    @Override
+    public Uni<Instant[]> getIntervalleBudgets(String idCompte) {
+        LOGGER.debug("Récupération de l'intervalle des budgets mensuels pour le compte [{}]", idCompte);
+        return dataOperationsProvider.chargeIntervalleBudgets(idCompte);
     }
 
 
