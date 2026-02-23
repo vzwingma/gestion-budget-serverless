@@ -108,6 +108,15 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     @Override
     public Uni<Instant[]> chargeIntervalleBudgets(String idCompte) {
         LOGGER.debug("Recherche de l'intervalle des budgets du compte {}", idCompte);
+
+        // Conversion du label du mois (ex: "FEBRUARY") en numéro (1-12) via $indexOfArray (+1 car 0-based)
+        List<String> moisLabels = Arrays.asList("JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+                "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER");
+        Document moisAsInt = new Document("$add", Arrays.asList(
+                new Document("$indexOfArray", Arrays.asList(moisLabels, "$" + ATTRIBUT_MOIS)),
+                1
+        ));
+
         return mongoCollection()
                 .aggregate(
                         Arrays.asList(
@@ -117,11 +126,11 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                                         new Document("_id", null)
                                                 .append("minDate", new Document("$min", new Document("$dateFromParts",
                                                         new Document("year", "$" + ATTRIBUT_ANNEE)
-                                                                .append("month", "$" + ATTRIBUT_MOIS)
+                                                                .append("month", moisAsInt)
                                                                 .append("day", 1))))
                                                 .append("maxDate", new Document("$max", new Document("$dateFromParts",
                                                         new Document("year", "$" + ATTRIBUT_ANNEE)
-                                                                .append("month", "$" + ATTRIBUT_MOIS)
+                                                                .append("month", moisAsInt)
                                                                 .append("day", 1)))))
                         )
                 , Document.class)
