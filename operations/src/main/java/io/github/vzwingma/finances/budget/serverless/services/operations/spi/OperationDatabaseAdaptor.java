@@ -135,7 +135,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                                                                 .append("month", moisAsInt)
                                                                 .append("day", 1)))))
                         )
-                , Document.class)
+                        , Document.class)
                 .collect().first()
                 .onItem().transform(document -> {
                     if(document == null || document.get("minDate") == null || document.get("maxDate") == null) {
@@ -240,10 +240,10 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                                                 new Document("$map",
                                                         new Document("input", "$listeOperations")
                                                                 .append("as", "operation")
-                                                                    .append("in",
-                                                                            new Document("libelle", "$$operation.libelle")
-                                                                                 .append("categorieId"   , "$$operation.categorie._id")
-                                                                                 .append("ssCategorieId" , "$$operation.ssCategorie._id"))
+                                                                .append("in",
+                                                                        new Document("libelle", "$$operation.libelle")
+                                                                                .append("categorieId"   , "$$operation.categorie._id")
+                                                                                .append("ssCategorieId" , "$$operation.ssCategorie._id"))
                                                 )
                                         )
                                 ),
@@ -253,7 +253,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                                                 .append("includeArrayIndex", "string")
                                                 .append("preserveNullAndEmptyArrays", false))
                         )
-                , Document.class);
+                        , Document.class);
     }
 
     /**
