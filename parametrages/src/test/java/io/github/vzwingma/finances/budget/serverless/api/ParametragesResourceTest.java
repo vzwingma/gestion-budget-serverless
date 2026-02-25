@@ -92,7 +92,7 @@ class ParametragesResourceTest {
     @Test
     void testGetCategorieById() {
         // Init des données
-        Mockito.when(parametragesService.getCategorieById(Mockito.eq("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a")))
+        Mockito.when(parametragesService.getCategorieById("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a"))
                 .thenReturn(Uni.createFrom().item(MockDataCategoriesOperations.getListeTestCategories().getFirst()));
         // Test
         given()
@@ -106,7 +106,7 @@ class ParametragesResourceTest {
     @Test
     void testGetCategorieByIdIntrouvable() {
         // Init des données
-        Mockito.when(parametragesService.getCategorieById(Mockito.eq("unknown")))
+        Mockito.when(parametragesService.getCategorieById("unknown"))
                 .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Catégorie non trouvée")));
         // Test
         given()

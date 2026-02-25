@@ -54,8 +54,10 @@ class UtilisateursServiceTest {
 
     @Test
     void testGetUtilisateurKO() {
-        Assertions.assertThrows(CompletionException.class, () ->
-                appProvider.getUtilisateur("Test2").await().indefinitely());
+        Assertions.assertThrows(CompletionException.class, () -> {
+            var uni = appProvider.getUtilisateur("Test2");
+            uni.await().indefinitely();
+        });
         Mockito.verify(serviceDataProvider, Mockito.times(1)).chargeUtilisateur(Mockito.anyString());
         Mockito.verify(serviceDataProvider, Mockito.never()).majUtilisateur(Mockito.any());
     }
@@ -70,8 +72,10 @@ class UtilisateursServiceTest {
 
     @Test
     void testGetLastAccessUtilisateurInconnu() {
-        Assertions.assertThrows(CompletionException.class, () ->
-                appProvider.getLastAccessDate("Test2").await().indefinitely());
+        Assertions.assertThrows(CompletionException.class, () -> {
+            var uni = appProvider.getLastAccessDate("Test2");
+            uni.await().indefinitely();
+        });
         Mockito.verify(serviceDataProvider, Mockito.times(1)).chargeUtilisateur(Mockito.anyString());
         Mockito.verify(serviceDataProvider, Mockito.never()).majUtilisateur(Mockito.any());
     }
