@@ -108,7 +108,7 @@ public class JWTUtils {
                     LOG.trace("Le token est signé avec la clé publique : {}", key.getKid());
                     return true;
                 }
-            } catch (GeneralSecurityException e) {
+            } catch (GeneralSecurityException | IllegalArgumentException e) {
                 LOG.error("Erreur lors de la vérification de la signature du token JWT", e);
             }
         }
@@ -135,7 +135,7 @@ public class JWTUtils {
 
             return publicKey;
 
-        } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
+        } catch (InvalidKeySpecException | NoSuchAlgorithmException  | IllegalArgumentException e) {
 
             return null;
         }

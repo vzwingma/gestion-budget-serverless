@@ -4,17 +4,21 @@ import io.github.vzwingma.finances.budget.serverless.data.MockDataCategoriesOper
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametragesRepository;
+import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.IJwtAuthSigningKeyServiceProvider;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyWriteRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKeys;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 
@@ -25,13 +29,16 @@ class ParametragesServiceTest {
 
     private IParametrageAppProvider parametrageAppProvider;
     private IParametragesRepository parametrageServiceProvider;
+    private ParametragesService parametragesService;
+    private IJwtSigningKeyReadRepository signingKeyRRepository;
 
     @BeforeEach
     void setup() {
         parametrageServiceProvider = Mockito.mock(IParametragesRepository.class);
         IJwtSigningKeyWriteRepository signingKeyRepository = Mockito.mock(IJwtSigningKeyWriteRepository.class);
-        IJwtSigningKeyReadRepository signingKeyRRepository = Mockito.mock(IJwtSigningKeyReadRepository.class);
-        parametrageAppProvider = Mockito.spy(new ParametragesService(parametrageServiceProvider, signingKeyRepository, signingKeyRRepository));
+        signingKeyRRepository = Mockito.mock(IJwtSigningKeyReadRepository.class);
+        parametragesService = Mockito.spy(new ParametragesService(parametrageServiceProvider, signingKeyRepository, signingKeyRRepository));
+        parametrageAppProvider = parametragesService;
 
         Mockito.when(parametrageServiceProvider.chargeCategories()).thenReturn(Multi.createFrom().items(MockDataCategoriesOperations.getListeTestCategories().stream()));
     }
@@ -89,5 +96,66 @@ class ParametragesServiceTest {
         assertEquals("io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException", exception.getMessage());
         // 1 seul appel à la BDD
         Mockito.verify(parametrageServiceProvider, Mockito.times(1)).chargeCategories();
+    }
+
+    @Test
+    void testGetCategoriesAvecCategorieInactive() {
+        // Catégorie inactive → filtrée, non retournée
+        CategorieOperations catInactive = new CategorieOperations();
+        catInactive.setId("inactive-id");
+        catInactive.setActif(false);
+        catInactive.setLibelle("Inactive");
+        SsCategorieOperations ssCat = new SsCategorieOperations();
+        ssCat.setId("ss-inactive");
+        ssCat.setActif(true);
+        ssCat.setLibelle("SsInactive");
+        catInactive.setListeSSCategories(new HashSet<>());
+        catInactive.getListeSSCategories().add(ssCat);
+
+        Mockito.when(parametrageServiceProvider.chargeCategories())
+                .thenReturn(Multi.createFrom().item(catInactive));
+        List<CategorieOperations> liste = parametrageAppProvider.getCategories().await().indefinitely();
+        assertTrue(liste.isEmpty());
+    }
+
+    @Test
+    void testGetCategoriesSansSsCategories() {
+        // Catégorie sans sous-catégories → filtrée
+        CategorieOperations catSansSsCat = new CategorieOperations();
+        catSansSsCat.setId("no-ss-cat");
+        catSansSsCat.setActif(true);
+        catSansSsCat.setLibelle("SansSsCat");
+        catSansSsCat.setListeSSCategories(new HashSet<>());
+
+        Mockito.when(parametrageServiceProvider.chargeCategories())
+                .thenReturn(Multi.createFrom().item(catSansSsCat));
+        List<CategorieOperations> liste = parametrageAppProvider.getCategories().await().indefinitely();
+        assertTrue(liste.isEmpty());
+    }
+
+    @Test
+    void testGetSigningKeyReadRepository() {
+        assertNotNull(parametragesService.getSigningKeyReadRepository());
+        assertEquals(signingKeyRRepository, parametragesService.getSigningKeyReadRepository());
+    }
+
+    @Test
+    void testRefreshJwksSigningKeys() throws Exception {
+        IJwtAuthSigningKeyServiceProvider jwtProvider = Mockito.mock(IJwtAuthSigningKeyServiceProvider.class);
+        IJwtSigningKeyWriteRepository writeRepo = Mockito.mock(IJwtSigningKeyWriteRepository.class);
+
+        JwksAuthKeys keys = new JwksAuthKeys();
+        keys.setKeys(new io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey[0]);
+
+        Mockito.when(jwtProvider.getJwksAuthKeys()).thenReturn(Uni.createFrom().item(keys));
+        Mockito.when(writeRepo.saveJwksAuthKeys(Mockito.anyList())).thenReturn(Uni.createFrom().voidItem());
+
+        ParametragesService service2 = Mockito.spy(new ParametragesService(parametrageServiceProvider, writeRepo, signingKeyRRepository));
+        // Injection par réflexion du champ @RestClient
+        java.lang.reflect.Field field = ParametragesService.class.getDeclaredField("jwtAuthSigningKeyServiceProvider");
+        field.setAccessible(true);
+        field.set(service2, jwtProvider);
+
+        assertDoesNotThrow(() -> service2.refreshJwksSigningKeys().await().indefinitely());
     }
 }

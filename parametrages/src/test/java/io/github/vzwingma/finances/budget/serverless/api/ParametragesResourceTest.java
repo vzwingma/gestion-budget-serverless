@@ -10,6 +10,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAut
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -86,6 +87,43 @@ class ParametragesResourceTest {
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString(MockDataCategoriesOperations.getListeTestCategories().getFirst().getLibelle()));
+    }
+
+    @Test
+    void testGetCategorieById() {
+        // Init des données
+        Mockito.when(parametragesService.getCategorieById(Mockito.eq("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a")))
+                .thenReturn(Uni.createFrom().item(MockDataCategoriesOperations.getListeTestCategories().getFirst()));
+        // Test
+        given()
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+                .when().get(ParametragesAPIEnum.PARAMS_BASE + ParametragesAPIEnum.PARAMS_CATEGORIES + "/8f1614c9-503c-4e7d-8cb5-0c9a9218b84a")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("Alimentation"));
+    }
+
+    @Test
+    void testGetCategorieByIdIntrouvable() {
+        // Init des données
+        Mockito.when(parametragesService.getCategorieById(Mockito.eq("unknown")))
+                .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Catégorie non trouvée")));
+        // Test
+        given()
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+                .when().get(ParametragesAPIEnum.PARAMS_BASE + ParametragesAPIEnum.PARAMS_CATEGORIES + "/unknown")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void testRefreshJwksSigningKeys() {
+        Mockito.when(parametragesService.refreshJwksSigningKeys()).thenReturn(Uni.createFrom().voidItem());
+        Mockito.when(parametragesService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
+        given()
+                .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
+                .then()
+                .statusCode(200);
     }
 
 
