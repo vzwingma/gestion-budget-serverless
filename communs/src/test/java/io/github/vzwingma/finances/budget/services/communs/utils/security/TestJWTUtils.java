@@ -14,9 +14,9 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests complémentaires de JWTUtils couvrant les branches non testées
+ * Tests JWTUtils
  */
-class TestJWTUtilsComplement {
+class TestJWTUtils {
 
     private static final String JWKS_GOOGLE_KEYS = """
             {
