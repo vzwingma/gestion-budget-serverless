@@ -40,6 +40,8 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     private static final String ATTRIBUT_COMPTE_ID = "idCompteBancaire";
     private static final String ATTRIBUT_ANNEE = "annee";
     private static final String ATTRIBUT_MOIS = "mois";
+    private static final String ATTRIBUT_MIN_DATE = "minDate";
+    private static final String ATTRIBUT_MAX_DATE = "maxDate";
 
 
     /**
@@ -126,11 +128,11 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                                         new Document(ATTRIBUT_COMPTE_ID, idCompte)),
                                 new Document("$group",
                                         new Document("_id", null)
-                                                .append("minDate", new Document("$min", new Document("$dateFromParts",
+                                                .append(ATTRIBUT_MIN_DATE, new Document("$min", new Document("$dateFromParts",
                                                         new Document("year", "$" + ATTRIBUT_ANNEE)
                                                                 .append("month", moisAsInt)
                                                                 .append("day", 1))))
-                                                .append("maxDate", new Document("$max", new Document("$dateFromParts",
+                                                .append(ATTRIBUT_MAX_DATE, new Document("$max", new Document("$dateFromParts",
                                                         new Document("year", "$" + ATTRIBUT_ANNEE)
                                                                 .append("month", moisAsInt)
                                                                 .append("day", 1)))))
@@ -138,12 +140,12 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                         , Document.class)
                 .collect().first()
                 .onItem().transform(document -> {
-                    if(document == null || document.get("minDate") == null || document.get("maxDate") == null) {
+                    if(document == null || document.get(ATTRIBUT_MIN_DATE) == null || document.get(ATTRIBUT_MAX_DATE) == null) {
                         LOGGER.warn("Aucun budget trouvé pour le compte {}", idCompte);
                         return new Instant[]{};
                     }
-                    Instant minDate = document.get("minDate", Date.class).toInstant();
-                    Instant maxDate = document.get("maxDate", Date.class).toInstant();
+                    Instant minDate = document.get(ATTRIBUT_MIN_DATE, Date.class).toInstant();
+                    Instant maxDate = document.get(ATTRIBUT_MAX_DATE, Date.class).toInstant();
                     LOGGER.debug("Intervalle des budgets du compte {} : minDate={}, maxDate={}", idCompte, minDate, maxDate);
                     return new Instant[]{minDate, maxDate};
                 })
