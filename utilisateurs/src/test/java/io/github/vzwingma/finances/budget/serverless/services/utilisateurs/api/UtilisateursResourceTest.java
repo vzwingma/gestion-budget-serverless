@@ -111,6 +111,29 @@ class UtilisateursResourceTest {
                 .body(Matchers.containsString("\"lastAccessTime\":null"));
     }
 
+    @Test
+    void testGetPreferencesUtilisateurVide() {
+        // Utilisateur sans préférences ni droits
+        Mockito.when(utilisateurService.getUtilisateur(Mockito.anyString()))
+                .thenReturn(Uni.createFrom().nullItem());
+        given()
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+                .when()
+                .get(UtilisateursAPIEnum.USERS_BASE + UtilisateursAPIEnum.USERS_PREFS)
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    void testGetLastAccessDateSansAuth() {
+        // Sans header Authorization → 403
+        given()
+                .when()
+                .get(UtilisateursAPIEnum.USERS_BASE + UtilisateursAPIEnum.USERS_ACCESS_DATE)
+                .then()
+                .statusCode(403);
+    }
+
 
     private String getTestJWTAuthHeader() {
         JwtAuthHeader h = new JwtAuthHeader();
