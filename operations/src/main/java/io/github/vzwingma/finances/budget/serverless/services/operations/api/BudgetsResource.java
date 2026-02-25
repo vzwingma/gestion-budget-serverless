@@ -85,7 +85,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
                 return budgetService.getBudgetMensuel(idCompte, Month.of(mois), annee);
             } catch (NumberFormatException e) {
-                return Uni.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
+                return Uni.createFrom().failure(new BadParametersException("mois et année doivent être des paramètres entiers"));
             }
         }
         else {
@@ -132,7 +132,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
                 return budgetService.getSoldesBudgetMensuel(idCompte, Month.of(mois), annee);
             } catch (NumberFormatException e) {
-                return Multi.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
+                return Multi.createFrom().failure(new BadParametersException("les paramètres mois et année doivent être des entiers"));
             }
         } else if (annee != null) {
             return budgetService.getSoldesBudgetMensuel(idCompte, null, annee);
@@ -170,11 +170,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
 
         idCompte = idCompte.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.COMPTE, idCompte).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
-            try {
-                return budgetService.getiIntervalleBudgets(idCompte);
-            } catch (NumberFormatException e) {
-                return Uni.createFrom().failure(new BadParametersException("Mois et année doivent être des entiers"));
-            }
+        return budgetService.getiIntervalleBudgets(idCompte);
     }
 
     /**
