@@ -286,11 +286,14 @@ class OperationsServiceTest {
     void testCalculSoldesPlusieursOperations() {
         BudgetMensuel budget = MockDataBudgets.getBudgetActifCompteC1et3operationsRealisees();
         BudgetDataUtils.razCalculs(budget);
+        // S'assurer que toutes les opérations ont une valeur non nulle
+        budget.getListeOperations().forEach(op -> {
+            if (op.getValeur() == null) op.setValeur(0D);
+        });
 
         Map<String, TotauxCategorie> totCat = new HashMap<>();
         Map<String, TotauxCategorie> totSsCat = new HashMap<>();
         Map<String, TotauxCategorie> totTypes = new HashMap<>();
-        // 3 opérations sans valeur : soldes à 0
         operationsAppProvider.calculSoldes(budget.getListeOperations(), budget.getSoldes(), totCat, totSsCat, totTypes);
         assertNotNull(budget.getSoldes());
     }

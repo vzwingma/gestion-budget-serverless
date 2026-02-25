@@ -43,7 +43,9 @@ class BudgetServiceTest {
         mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
         mockCompteServiceProvider = Mockito.mock(IComptesServiceProvider.class);
 
-        operationsAppProvider = Mockito.spy(new OperationsService());
+        OperationsService operationsService = Mockito.spy(new OperationsService());
+        operationsService.setDataOperationsProvider(mockOperationDataProvider);
+        operationsAppProvider = operationsService;
 
         budgetAppProvider = Mockito.spy(new BudgetService());
         budgetAppProvider.setDataOperationsProvider(mockOperationDataProvider);
