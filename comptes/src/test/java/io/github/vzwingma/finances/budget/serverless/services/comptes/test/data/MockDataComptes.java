@@ -41,5 +41,4 @@ public class MockDataComptes {
     public static CompteBancaire getCompte1() {
         return getListeComptes().get(0);
     }
-
 }
