@@ -6,6 +6,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IComptesServiceProvider;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataOperations;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
@@ -13,13 +14,16 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBanc
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.time.Instant;
 import java.time.Month;
+import java.util.List;
 import java.util.concurrent.CompletionException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -360,5 +364,45 @@ class BudgetServiceTest {
 
         Mockito.verify(budgetAppProvider, Mockito.times(1)).recalculSoldes(any(BudgetMensuel.class));
         Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
+
+    @Test
+    void testGetBudgetMensuelById() {
+        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
+
+        BudgetMensuel budget = budgetAppProvider.getBudgetMensuel("C1_2022_01").await().indefinitely();
+        assertNotNull(budget);
+        assertEquals("C1_2022_01", budget.getId());
+    }
+
+    @Test
+    void testGetSoldesBudgetMensuel() {
+        ProjectionBudgetSoldes projection = new ProjectionBudgetSoldes();
+        Mockito.when(mockOperationDataProvider.chargeSoldesBudgetMensuel(anyString(), any(), any()))
+                .thenReturn(Multi.createFrom().item(projection));
+
+        List<ProjectionBudgetSoldes> result = budgetAppProvider
+                .getSoldesBudgetMensuel("C1", Month.JANUARY, 2022)
+                .collect().asList().await().indefinitely();
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testGetiIntervalleBudgets() {
+        Instant[] intervalle = {Instant.now().minusSeconds(3600), Instant.now()};
+        Mockito.when(mockOperationDataProvider.chargeIntervalleBudgets(anyString()))
+                .thenReturn(Uni.createFrom().item(intervalle));
+
+        Instant[] result = budgetAppProvider.getiIntervalleBudgets("C1").await().indefinitely();
+        assertNotNull(result);
+        assertEquals(2, result.length);
+    }
+
+    @Test
+    void testGetSigningKeyReadRepository() {
+        assertNull(budgetAppProvider.getSigningKeyReadRepository());
     }
 }
