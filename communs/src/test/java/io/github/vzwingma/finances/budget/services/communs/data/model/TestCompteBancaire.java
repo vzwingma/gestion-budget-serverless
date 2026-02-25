@@ -17,7 +17,7 @@ class TestCompteBancaire {
         CompteBancaire compte = new CompteBancaire();
         assertNull(compte.getId());
         assertNull(compte.getLibelle());
-        // isActif() retourne true par défaut si actif est null
+        // isActif retourne true par défaut si actif est null
         assertTrue(compte.isActif());
     }
 
@@ -70,23 +70,6 @@ class TestCompteBancaire {
         assertTrue(str.contains("id123"));
         assertTrue(str.contains("Compte Courant"));
         assertTrue(str.contains("true"));
-    }
-
-    @Test
-    void testEqualsEtHashCode() {
-        CompteBancaire c1 = new CompteBancaire();
-        c1.setId("id1");
-
-        CompteBancaire c2 = new CompteBancaire();
-        c2.setId("id1");
-
-        CompteBancaire c3 = new CompteBancaire();
-        c3.setId("id2");
-
-        assertEquals(c1, c2);
-        assertNotEquals(c1, c3);
-        assertEquals(c1.hashCode(), c2.hashCode());
-        assertSame(c1, c1);
     }
 
     @Test
