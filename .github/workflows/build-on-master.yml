@@ -58,12 +58,12 @@ jobs:
           QUARKUS_LOG_LEVEL: ${{ vars.QUARKUS_LOG_LEVEL }}
           MONGODB_LOG_LEVEL: ${{ vars.MONGODB_LOG_LEVEL }}
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         name: Upload SAM Function Configuration
         with:
           name: function-sam
           path: /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         name: Upload SAM Configuration
         with:
           name: sam
@@ -143,7 +143,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         name: Upload Fonction serverless Paramétrages
         with:
           name: parametrages-function
@@ -177,7 +177,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         name: Upload Fonction serverless Utilisateurs
         with:
           name: utilisateurs-function
@@ -211,7 +211,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         name: Upload Fonction serverless Comptes
         with:
           name: comptes-function
@@ -245,7 +245,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         name: Upload Fonction serverless Opérations
         with:
           name: operations-function
@@ -275,37 +275,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-3
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         id: downloadServiceParametrage
         name: Download Service Paramétrages
         with:
           name: parametrages-function
           path: parametrages
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         id: downloadServiceUtilisateurs
         name: Download Service Utilisateurs
         with:
           name: utilisateurs-function
           path: utilisateurs
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         id: downloadServiceComptes
         name: Download Service Comptes
         with:
           name: comptes-function
           path: comptes
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         id: downloadServiceOperations
         name: Download Service Opérations
         with:
           name: operations-function
           path: operations
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         id: downloadSAMFunction
         name: Download SAM Function
         with:
           name: function-sam
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         id: downloadSAM
         name: Download SAM Config
         with:
