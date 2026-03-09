@@ -12,6 +12,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieO
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
+import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperationTypeEnum;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -171,17 +172,26 @@ class BudgetDataUtilsTest {
 
     @Test
     void testCloneLigneOperation() {
-        LigneOperation clone = BudgetDataUtils.cloneOperationToMoisSuivant(MockDataOperations.getOperationPrelevement());
+        LigneOperation source = MockDataOperations.getOperationPrelevement();
+        source.getSsCategorie().setType(CategorieOperationTypeEnum.ESSENTIEL);
+
+        LigneOperation clone = BudgetDataUtils.cloneOperationToMoisSuivant(source);
         assertNotNull(clone);
         assertNotEquals(MockDataOperations.getOperationPrelevement().getId(), clone.getId());
         assertNotNull(clone.getAutresInfos());
         assertNull(clone.getMensualite());
+        assertNotNull(clone.getSsCategorie());
+        // #146 : le type de catégorie doit être recopié
+        assertEquals(CategorieOperationTypeEnum.ESSENTIEL, clone.getSsCategorie().getType());
     }
 
 
     @Test
     void testClonePeriodiqueLigneOperationNonPeriodique() {
-        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(MockDataOperations.getOperationPrelevement(), Month.JANUARY, 2010);
+        LigneOperation source = MockDataOperations.getOperationPrelevement();
+        source.getSsCategorie().setType(CategorieOperationTypeEnum.ECONOMIES);
+
+        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(source, Month.JANUARY, 2010);
         assertNotNull(clones);
         assertEquals(1, clones.size());
 
@@ -189,6 +199,9 @@ class BudgetDataUtilsTest {
         assertNotNull(clone);
         assertNotNull(clone.getAutresInfos());
         assertNull(clone.getMensualite());
+        assertNotNull(clone.getSsCategorie());
+        // #146 : le type de catégorie doit être recopié via l'opération périodique
+        assertEquals(CategorieOperationTypeEnum.ECONOMIES, clone.getSsCategorie().getType());
     }
 
 

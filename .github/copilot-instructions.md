@@ -100,6 +100,14 @@ Partagé entre tous les microservices :
 - Résoudre les résultats réactifs dans les tests avec `.await().indefinitely()`.
 - `communs` est publié sur GitHub Packages ; les POM des microservices le référencent en dépendance.
 
+## Utilitaires métier clés
+
+### `BudgetDataUtils` (`operations/.../utils/`)
+- `cloneOperationToMoisSuivant(LigneOperation)` – clone une opération pour le mois suivant : tous les champs de `SsCategorie` doivent être copiés explicitement (id, libelle, **type**).
+- `cloneOperationPeriodiqueToMoisSuivant(...)` – appelle `cloneOperationToMoisSuivant()` en interne, puis gère la périodicité. Un fix sur `cloneOperationToMoisSuivant` se propage automatiquement aux deux cas.
+
+> ⚠️ Lors de tout ajout de champ dans `LigneOperation.SsCategorie` ou `LigneOperation.Categorie`, penser à l'ajouter aussi dans `cloneOperationToMoisSuivant()`.
+
 ## Déploiement
 - La CI build d'abord `communs`, le publie sur GitHub Packages, puis build chaque microservice en parallèle en image native.
 - Les images natives sont déployées sur AWS Lambda via SAM. Les routes d'API sont définies dans `communs/src/aws-deploy/`.
