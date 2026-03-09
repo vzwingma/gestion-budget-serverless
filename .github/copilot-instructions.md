@@ -1,61 +1,61 @@
 # Copilot Instructions – gestion-budget-serverless
 
-This is the **Quarkus/Java 21 backend** of the Budget Management application, deployed as native AWS Lambda functions. The frontend is the companion repo [`gestion-budget-ihm`](../gestion-budget-ihm) (React/TypeScript).
+Il s'agit du **backend Quarkus/Java 21** de l'application de gestion de budget, déployé sous forme de fonctions AWS Lambda natives. Le frontend se trouve dans le dépôt compagnon [`gestion-budget-ihm`](../gestion-budget-ihm) (React/TypeScript).
 
-## Build, Test & Lint
+## Build, Test et Lint
 
 ```bash
-# Build all modules (JVM mode)
+# Construire tous les modules (mode JVM)
 mvn clean package
 
-# Build a single module
+# Construire un seul module
 mvn clean package -f comptes/pom.xml
 
-# Run all tests
+# Exécuter tous les tests
 mvn test
 
-# Run a specific test class
+# Exécuter une classe de test spécifique
 mvn test -Dtest=ComptesServiceTest
 
-# Run a specific test method
+# Exécuter une méthode de test spécifique
 mvn test -Dtest=ComptesServiceTest#testGetComptes
 
-# Run tests in a single module
+# Exécuter les tests d'un seul module
 mvn test -f operations/pom.xml
 
-# Build native Linux executable for Lambda (requires GraalVM/Mandrel)
+# Construire l'exécutable Linux natif pour Lambda (nécessite GraalVM/Mandrel)
 mvn clean package -Pnative -Dquarkus.native.container-build=true
 
-# Run SonarCloud analysis (needs sonar.token)
+# Exécuter l'analyse SonarCloud (nécessite sonar.token)
 mvn verify -Psonar
 ```
 
 ## Architecture
 
-### Multi-module Maven project
+### Projet Maven multi-modules
 ```
 gestion-budget-serverless/
-├── communs/          # Shared library: base classes, models, security, exceptions
-├── parametrages/     # Microservice: system parameters  → /parametres/v2/
-├── utilisateurs/     # Microservice: user auth/profiles → /utilisateurs/v2/
-├── comptes/          # Microservice: bank accounts      → /comptes/v2/
-└── operations/       # Microservice: budgets & ops      → /budgets/v2/
+├── communs/          # Bibliothèque partagée : classes de base, modèles, sécurité, exceptions
+├── parametrages/     # Microservice : paramètres système  → /parametres/v2/
+├── utilisateurs/     # Microservice : auth/profils utilisateur → /utilisateurs/v2/
+├── comptes/          # Microservice : comptes bancaires   → /comptes/v2/
+└── operations/       # Microservice : budgets et opérations → /budgets/v2/
 ```
 
-All microservices (`comptes`, `operations`, `parametrages`, `utilisateurs`) depend on `communs` and follow the same internal layering.
+Tous les microservices (`comptes`, `operations`, `parametrages`, `utilisateurs`) dépendent de `communs` et suivent la même structure interne en couches.
 
-### Hexagonal architecture layers (per microservice)
+### Couches de l'architecture hexagonale (par microservice)
 ```
-api/          – JAX-RS REST controllers, enums for API paths, exception/security overrides
-business/     – Domain logic (@ApplicationScoped services), port interfaces, domain models
-spi/          – Database adapters (MongoDB Panache), inter-service REST client providers
-config/       – Quarkus config classes (OpenAPI, GraalVM reflection hints)
-utils/        – Business utility classes
+api/          – Contrôleurs REST JAX-RS, enums des chemins d'API, surcharges exception/sécurité
+business/     – Logique métier (services @ApplicationScoped), interfaces de ports, modèles métier
+spi/          – Adaptateurs base de données (MongoDB Panache), providers REST inter-services
+config/       – Classes de configuration Quarkus (OpenAPI, hints de réflexion GraalVM)
+utils/        – Classes utilitaires métier
 ```
 
-### Key framework patterns
+### Patterns clés du framework
 
-**REST resources** extend `AbstractAPIInterceptors` (from `communs`) and use standard JAX-RS annotations:
+Les **ressources REST** étendent `AbstractAPIInterceptors` (de `communs`) et utilisent les annotations JAX-RS standard :
 ```java
 @Path(ComptesAPIEnum.COMPTES_BASE)
 public class ComptesResource extends AbstractAPIInterceptors {
@@ -68,39 +68,39 @@ public class ComptesResource extends AbstractAPIInterceptors {
 }
 ```
 
-**Reactive programming** – All service methods and database calls return `Uni<T>` (single value) or `Multi<T>` (stream) from Mutiny. Never block with `.await().indefinitely()` except in tests.
+**Programmation réactive** : toutes les méthodes de service et les appels base de données retournent `Uni<T>` (valeur unique) ou `Multi<T>` (flux) de Mutiny. Ne jamais bloquer avec `.await().indefinitely()` en dehors des tests.
 
-**Dependency injection** – CDI only (`@Inject`, `@ApplicationScoped`). No Spring annotations.
+**Injection de dépendances** : CDI uniquement (`@Inject`, `@ApplicationScoped`). Aucune annotation Spring.
 
-**Port interfaces** – Business logic is always hidden behind an interface in `business/ports/` (e.g. `IBudgetAppProvider`, `IComptesRepository`). REST resources inject the interface, not the implementation.
+**Interfaces de ports** : la logique métier est toujours masquée derrière une interface dans `business/ports/` (ex. `IBudgetAppProvider`, `IComptesRepository`). Les ressources REST injectent l'interface, pas l'implémentation.
 
-**Security** – Every microservice overrides `AbstractAPISecurityFilter` and `IJwtSecurityContext` from `communs`. Endpoints declare `@RolesAllowed` with role constants from their own `*APIEnum`.
+**Sécurité** : chaque microservice surcharge `AbstractAPISecurityFilter` et `IJwtSecurityContext` de `communs`. Les endpoints déclarent `@RolesAllowed` avec les constantes de rôle de leur propre `*APIEnum`.
 
-**Inter-service calls** – Services that need data from other microservices inject a provider interface in `spi/` (e.g. `IComptesServiceProvider`, `IParametragesServiceProvider`) backed by a Quarkus REST client.
+**Appels inter-services** : les services qui ont besoin de données d'autres microservices injectent une interface provider dans `spi/` (ex. `IComptesServiceProvider`, `IParametragesServiceProvider`) appuyée par un client REST Quarkus.
 
-### Database
-- **MongoDB** via Quarkus MongoDB Panache (repository pattern, not Active Record).
-- Connection string: `QUARKUS_MONGODB_CONNECTION_STRING` env var (defaults to `localhost:27017` in dev).
-- Dev database: `v12-app-dev`. Prod database: `QUARKUS_MONGODB_DATABASE` env var.
-- Config lives in `src/main/resources/dev/application.properties` and `src/main/resources/prod/application.properties` per module.
+### Base de données
+- **MongoDB** via Quarkus MongoDB Panache (pattern repository, pas Active Record).
+- Chaîne de connexion : variable d'environnement `QUARKUS_MONGODB_CONNECTION_STRING` (par défaut `localhost:27017` en dev).
+- Base dev : `v12-app-dev`. Base prod : variable d'environnement `QUARKUS_MONGODB_DATABASE`.
+- La configuration se trouve dans `src/main/resources/dev/application.properties` et `src/main/resources/prod/application.properties` pour chaque module.
 
 ### `communs` module
-Shared across all microservices:
-- `api/AbstractAPIResource` – `/info` endpoint base
-- `api/AbstractAPIInterceptors` – request/response logging interceptors
-- `api/security/AbstractAPISecurityFilter` – JWT validation
-- `utils/security/JWTUtils`, `SecurityUtils` – JWT parsing, input sanitization
-- `utils/exceptions/` – typed exceptions (`DataNotFoundException`, `UserNotAuthorizedException`, etc.)
-- `data/trace/BusinessTraceContext` – MDC-style tracing context cleared after each response
-- `aws-deploy/` – AWS SAM templates and API Gateway configuration
+Partagé entre tous les microservices :
+- `api/AbstractAPIResource` – endpoint de base `/info`
+- `api/AbstractAPIInterceptors` – intercepteurs de logs requête/réponse
+- `api/security/AbstractAPISecurityFilter` – validation JWT
+- `utils/security/JWTUtils`, `SecurityUtils` – parsing JWT, sanitation des entrées
+- `utils/exceptions/` – exceptions typées (`DataNotFoundException`, `UserNotAuthorizedException`, etc.)
+- `data/trace/BusinessTraceContext` – contexte de traçage style MDC réinitialisé après chaque réponse
+- `aws-deploy/` – templates AWS SAM et configuration API Gateway
 
-### Testing conventions
-- Use `@QuarkusTest` on test classes.
-- Mock dependencies with `Mockito.mock()` / `Mockito.spy()` in `@BeforeEach`.
-- Resolve reactive results in tests with `.await().indefinitely()`.
-- `communs` is published to GitHub Packages; microservice POMs reference it as a dependency.
+### Conventions de test
+- Utiliser `@QuarkusTest` sur les classes de test.
+- Mocker les dépendances avec `Mockito.mock()` / `Mockito.spy()` dans `@BeforeEach`.
+- Résoudre les résultats réactifs dans les tests avec `.await().indefinitely()`.
+- `communs` est publié sur GitHub Packages ; les POM des microservices le référencent en dépendance.
 
-## Deployment
-- CI builds `communs` first, publishes to GitHub Packages, then builds each microservice in parallel as a native image.
-- Native images are deployed to AWS Lambda via SAM. API routes are defined in `communs/src/aws-deploy/`.
-- SonarCloud runs on master after all builds complete.
+## Déploiement
+- La CI build d'abord `communs`, le publie sur GitHub Packages, puis build chaque microservice en parallèle en image native.
+- Les images natives sont déployées sur AWS Lambda via SAM. Les routes d'API sont définies dans `communs/src/aws-deploy/`.
+- SonarCloud s'exécute sur `master` une fois tous les builds terminés.
