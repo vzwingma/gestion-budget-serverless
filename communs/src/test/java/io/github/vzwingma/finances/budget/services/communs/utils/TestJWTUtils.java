@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -96,10 +96,10 @@ class TestJWTUtils {
         assertNotNull(token.getPayload());
         assertEquals("https://accounts.google.com", token.getPayload().getIss());
         assertNotNull(token.issuedAt());
-        ZoneId parisZoneId = ZoneId.of("Europe/Paris");
-        assertEquals(LocalDateTime.of(2023, 1, 2, 12, 46, 42).atZone(parisZoneId), token.issuedAt().atZone(parisZoneId));
+        assertEquals(1672660002L, token.getPayload().getIat());
         assertNotNull(token.expiredAt());
-        assertEquals(LocalDateTime.of(2023, 1, 2, 13, 46, 42).atZone(parisZoneId), token.expiredAt().atZone(parisZoneId));
+        assertEquals(1672663602L, token.getPayload().getExp());
+        assertEquals(Duration.ofHours(1), Duration.between(token.issuedAt(), token.expiredAt()));
 
         LOG.info(LocalDateTime.now().toString());
         LOG.info(token.expiredAt().toString());
