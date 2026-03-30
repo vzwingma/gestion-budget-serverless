@@ -34,6 +34,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Service fournissant les calculs de budget sur les opérations
@@ -382,29 +384,49 @@ public class OperationsService implements IOperationsAppProvider {
                             .filter(SsCategorieOperations::isActif)
                             .toList();
 
-                    return tuple.getItem2().stream().map(doc -> {
-                        Document attributes = doc.get("operationLibelleAttributes", Document.class);
+                    List<LibelleCategorieOperation> libellesOperations = tuple.getItem2().stream().map(doc -> {
+                        Object attributesObj = doc.get("operationLibelleAttributes");
+                        Document attributes = attributesObj instanceof Document document ? document : null;
                         LibelleCategorieOperation libelleCategorieOperation = new LibelleCategorieOperation();
-                        // Suppression des tags[Intercompte], et du commentaire - xxx
-                        libelleCategorieOperation.setLibelle(BudgetDataUtils.deleteTagFromString(attributes.getString("libelle")).split("-")[0].trim());
-                        String catId = attributes.getString("categorieId");
-                        String ssCatId = attributes.getString("ssCategorieId");
+                        if (attributes != null) {
+                            // Suppression des tags[Intercompte], et du commentaire - xxx
+                            libelleCategorieOperation.setLibelle(BudgetDataUtils.deleteTagFromString(attributes.getString("libelle")).split("-")[0].trim());
+                            String catId = attributes.getString("categorieId");
+                            String ssCatId = attributes.getString("ssCategorieId");
 
-                        if(ssCategoriesParams.stream()
-                                .anyMatch(ssCatParam -> ssCatParam.getId().equals(ssCatId))) {
-                            libelleCategorieOperation.setCategorieId(catId);
-                            libelleCategorieOperation.setSsCategorieId(ssCatId);
-                        }
-                        else{
-                            libelleCategorieOperation.setCategorieId(null);
-                            libelleCategorieOperation.setSsCategorieId(null);
+                            if(ssCategoriesParams.stream()
+                                    .anyMatch(ssCatParam -> ssCatParam.getId().equals(ssCatId))) {
+                                libelleCategorieOperation.setCategorieId(catId);
+                                libelleCategorieOperation.setSsCategorieId(ssCatId);
+                            }
+                            else{
+                                libelleCategorieOperation.setCategorieId(null);
+                                libelleCategorieOperation.setSsCategorieId(null);
+                            }
                         }
                         return libelleCategorieOperation;
                     })
                     .filter(libelleCategorieOperation -> libelleCategorieOperation.getCategorieId() != null && libelleCategorieOperation.getSsCategorieId() != null)
                     .toList();
-                }).onItem().transformToMulti(Multi.createFrom()::iterable)
-                .select().distinct((o1, o2) -> o1.getLibelle().compareToIgnoreCase(o2.getLibelle()));
+
+                        return libellesOperations.stream()
+                            .collect(Collectors.groupingBy(LibelleCategorieOperation::getSsCategorieId))
+                            .values().stream()
+                            .map(libellesBySsCategorie -> {
+                            Map<String, Long> occurrencesByLibelle = libellesBySsCategorie.stream()
+                                .collect(Collectors.groupingBy(LibelleCategorieOperation::getLibelle, Collectors.counting()));
+
+                            return occurrencesByLibelle.entrySet().stream()
+                                .max(Map.Entry.comparingByValue())
+                                .flatMap(maxLibelle -> libellesBySsCategorie.stream()
+                                    .filter(libelleCategorieOperation -> libelleCategorieOperation.getLibelle().equals(maxLibelle.getKey()))
+                                        .findFirst());
+                            })
+                                .flatMap(Optional::stream)
+                            .toList();
+                })
+                .onItem()
+                        .transformToMulti(Multi.createFrom()::iterable);
     }
 
     /**
