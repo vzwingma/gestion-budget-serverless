@@ -203,12 +203,16 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
         return find(ATTRIBUT_COMPTE_ID + "=?1", idCompte, Sort.by("id"))
                 .stream()
                 .onItem().transform(budget -> {
+                    if (budget.getListeOperations() == null) {
+                        LOGGER.warn("Budget {} : liste des opérations null, ignoré", budget.getId());
+                        return budget;
+                    }
                     budget.getListeOperations()
                             .forEach(operation -> {
                                 if(libellesToOverride != null){
                                     libellesToOverride.forEach(libelle -> {
-                                        if (operation.getLibelle().trim().equalsIgnoreCase(libelle.getAvant().trim())) {
-                                            LOGGER.debug("    override du libellé [{}] --> [{}]", libelle.getAvant(), libelle.getApres());
+                                        if (operation.getLibelle() != null && operation.getLibelle().trim().equalsIgnoreCase(libelle.getAvant().trim())) {
+                                            LOGGER.info("    override du libellé [{}] --> [{}] dans budget {}", libelle.getAvant(), libelle.getApres(), budget.getId());
                                             operation.setLibelle(libelle.getApres());
                                         }
                                     });
@@ -216,7 +220,8 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                             });
                     return budget;
                 })
-                .onItem().transformToUniAndConcatenate(this::persistOrUpdate); // on sauvegarde les budgets mis à jour uniquement si des modifications ont été apportées
+                .onItem().transformToUniAndMerge(this::sauvegardeBudgetMensuel);
+        
 
     }
 
