@@ -1,0 +1,45 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Quarkus Dev - parametrages",
+      "type": "shell",
+      "command": "Get-Content '${workspaceFolder}/.env' | ForEach-Object { if ($_ -match '^([^#][^=]*)=(.+)$') { Set-Item \"env:$($Matches[1])\" $Matches[2] } }; mvn quarkus:dev",
+      "options": {
+        "cwd": "${workspaceFolder}/parametrages"
+      },
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+    {
+      "label": "Quarkus Dev - comptes",
+      "type": "shell",
+      "command": "Get-Content '${workspaceFolder}/.env' | ForEach-Object { if ($_ -match '^([^#][^=]*)=(.+)$') { Set-Item \"env:$($Matches[1])\" $Matches[2] } }; mvn quarkus:dev",
+      "options": {
+        "cwd": "${workspaceFolder}/comptes"
+      },
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+    {
+      "label": "Quarkus Dev - operations",
+      "type": "shell",
+      "command": "Get-Content '${workspaceFolder}/.env' | ForEach-Object { if ($_ -match '^([^#][^=]*)=(.+)$') { Set-Item \"env:$($Matches[1])\" $Matches[2] } }; mvn quarkus:dev",
+      "options": {
+        "cwd": "${workspaceFolder}/operations"
+      },
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+    {
+      "label": "Quarkus Dev - utilisateurs",
+      "type": "shell",
+      "command": "Get-Content '${workspaceFolder}/.env' | ForEach-Object { if ($_ -match '^([^#][^=]*)=(.+)$') { Set-Item \"env:$($Matches[1])\" $Matches[2] } }; mvn quarkus:dev",
+      "options": {
+        "cwd": "${workspaceFolder}/utilisateurs"
+      },
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "new" }
+    }
+  ]
+}
