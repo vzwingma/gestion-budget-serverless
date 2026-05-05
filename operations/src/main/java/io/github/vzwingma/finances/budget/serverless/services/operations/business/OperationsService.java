@@ -415,6 +415,12 @@ public class OperationsService implements IOperationsAppProvider {
                     ))
                     .values().stream()
                     .filter(l -> l.getNbOccurrences() > 1)
+                    .collect(Collectors.toMap(
+                            LibelleCategorieOperation::getLibelle,
+                            l -> l,
+                            (a, b) -> a.getNbOccurrences() >= b.getNbOccurrences() ? a : b
+                    ))
+                    .values().stream()
                     .sorted(Comparator.comparing(LibelleCategorieOperation::getLibelle))
                     .toList();
                 }).onItem().transformToMulti(Multi.createFrom()::iterable);
