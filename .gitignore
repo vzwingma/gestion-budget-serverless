@@ -2,3 +2,5 @@
 /parametrages/target/
 /.idea
 .env
+.env.qua
+.env.prod
