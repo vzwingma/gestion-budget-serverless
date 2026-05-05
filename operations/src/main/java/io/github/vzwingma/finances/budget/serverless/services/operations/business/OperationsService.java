@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -368,7 +369,7 @@ public class OperationsService implements IOperationsAppProvider {
      * @param idCompte id du compte
      * @return liste des libellés des opérations
      */
-    @Override
+@Override
     public Multi<LibelleCategorieOperation> getLibellesOperations(String idCompte) {
 
 
@@ -384,7 +385,7 @@ public class OperationsService implements IOperationsAppProvider {
                             .filter(SsCategorieOperations::isActif)
                             .toList();
 
-                    List<LibelleCategorieOperation> libellesOperations = tuple.getItem2().stream().map(doc -> {
+                    return tuple.getItem2().stream().map(doc -> {
                         Object attributesObj = doc.get("operationLibelleAttributes");
                         Document attributes = attributesObj instanceof Document document ? document : null;
                         LibelleCategorieOperation libelleCategorieOperation = new LibelleCategorieOperation();
@@ -407,26 +408,16 @@ public class OperationsService implements IOperationsAppProvider {
                         return libelleCategorieOperation;
                     })
                     .filter(libelleCategorieOperation -> libelleCategorieOperation.getCategorieId() != null && libelleCategorieOperation.getSsCategorieId() != null)
+                    .collect(Collectors.toMap(
+                            l -> l.getLibelle() + "|" + l.getCategorieId() + "|" + l.getSsCategorieId(),
+                            l -> { l.setNbOccurrences(1); return l; },
+                            (existing, replacement) -> { existing.setNbOccurrences(existing.getNbOccurrences() + 1); return existing; }
+                    ))
+                    .values().stream()
+                    .filter(l -> l.getNbOccurrences() > 1)
+                    .sorted(Comparator.comparing(LibelleCategorieOperation::getLibelle))
                     .toList();
-
-                        return libellesOperations.stream()
-                            .collect(Collectors.groupingBy(LibelleCategorieOperation::getSsCategorieId))
-                            .values().stream()
-                            .map(libellesBySsCategorie -> {
-                            Map<String, Long> occurrencesByLibelle = libellesBySsCategorie.stream()
-                                .collect(Collectors.groupingBy(LibelleCategorieOperation::getLibelle, Collectors.counting()));
-
-                            return occurrencesByLibelle.entrySet().stream()
-                                .max(Map.Entry.comparingByValue())
-                                .flatMap(maxLibelle -> libellesBySsCategorie.stream()
-                                    .filter(libelleCategorieOperation -> libelleCategorieOperation.getLibelle().equals(maxLibelle.getKey()))
-                                        .findFirst());
-                            })
-                                .flatMap(Optional::stream)
-                            .toList();
-                })
-                .onItem()
-                        .transformToMulti(Multi.createFrom()::iterable);
+                }).onItem().transformToMulti(Multi.createFrom()::iterable);
     }
 
     /**
