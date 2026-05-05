@@ -29,8 +29,8 @@
 
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-        <quarkus.platform.version>3.34.1</quarkus.platform.version>
-        <lombok.version>1.18.44</lombok.version>
+        <quarkus.platform.version>3.35.1</quarkus.platform.version>
+        <lombok.version>1.18.46</lombok.version>
         <surefire-plugin.version>3.5.5</surefire-plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
         <!-- CVE-2026-33870 / CVE-2026-33871: Netty HTTP request smuggling & HTTP/2 DoS - fixed in 4.1.132.Final -->
