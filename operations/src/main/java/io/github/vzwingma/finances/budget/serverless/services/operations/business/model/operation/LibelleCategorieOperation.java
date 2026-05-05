@@ -13,4 +13,5 @@ public class LibelleCategorieOperation {
     private String libelle;
     private String categorieId;
     private String ssCategorieId;
+    private int nbOccurrences;
 }
