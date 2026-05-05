@@ -211,14 +211,14 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                             .forEach(operation -> {
                                 if(libellesToOverride != null){
                                     libellesToOverride.forEach(libelle -> {
-                                        if (operation.getLibelle() != null && operation.getLibelle().trim().equalsIgnoreCase(libelle.getAvant().trim())) {
-                                            LOGGER.info("    override du libellé [{}] --> [{}] dans budget {}", libelle.getAvant(), libelle.getApres(), budget.getId());
-                                            operation.setLibelle(libelle.getApres());
+                                        if (operation.getLibelle() != null && operation.getLibelle().trim().toLowerCase().contains(libelle.getAvant().trim().toLowerCase())) {
+                                            LOGGER.info("     [{}] : override du libellé  [{}] --> [{}] =  [{}]", operation.getLibelle(), libelle.getAvant(), libelle.getApres(), operation.getLibelle().replace(libelle.getAvant(), libelle.getApres()));
+                                            operation.setLibelle(operation.getLibelle().replace(libelle.getAvant(), libelle.getApres()));
                                         }
                                     });
                                 }
                             });
-                    return budget;
+                            return budget;
                 })
                 .onItem().transformToUniAndMerge(this::sauvegardeBudgetMensuel);
         
