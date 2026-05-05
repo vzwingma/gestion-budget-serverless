@@ -2,6 +2,17 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Quarkus Dev - ALL",
+      "dependsOn": [
+        "Quarkus Dev - parametrages",
+        "Quarkus Dev - comptes",
+        "Quarkus Dev - operations",
+        "Quarkus Dev - utilisateurs"
+      ],
+      "dependsOrder": "parallel",
+      "group": "build"
+    },
+    {
       "label": "Quarkus Dev - parametrages",
       "type": "shell",
       "command": "Get-Content '${workspaceFolder}/.env' | ForEach-Object { if ($_ -match '^([^#][^=]*)=(.+)$') { Set-Item \"env:$($Matches[1])\" $Matches[2] } }; mvn quarkus:dev",
