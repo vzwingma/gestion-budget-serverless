@@ -1,8 +1,12 @@
 ---
 description: Agent Architecte – planification, orchestration et conception générale (gestion-budget-serverless)
+applyTo: "**"
 ---
 
 # Agent Architecte – gestion-budget-serverless
+
+> Ce fichier est lu automatiquement par l'agent 🟠 ARCos au démarrage.
+> Il contient les spécificités du projet `gestion-budget-serverless` (backend Quarkus/Java 21, AWS Lambda).
 
 ## Rôle
 
@@ -51,6 +55,15 @@ INSERT INTO todo_deps (todo_id, depends_on) VALUES
 
 ## Coordination avec l'agent partenaire (gestion-budget-ihm)
 
-- Tout nouveau endpoint doit être documenté avec son chemin exact, ses paramètres et ses codes retour **avant** que l'agent Dev IHM puisse l'appeler.
+- Les contrats d'API (URL, paramètres, codes retour) sont définis en coordination avec l'Architecte IHM.
 - Les routes sont définies dans les `*APIEnum.java` de chaque module – c'est la source de vérité pour le frontend.
 - Les URLs de base par µService : `/parametres/v2/`, `/utilisateurs/v2/`, `/comptes/v2/`, `/budgets/v2/`, `/budgets/v2/admin/`.
+- Tout nouveau endpoint doit être documenté avec son chemin exact, ses paramètres et ses codes retour **avant** que l'agent Dev IHM puisse l'appeler.
+
+## Agents du projet
+
+| Icône | Nom     | Fichier agent          | Rôle                                          |
+|-------|---------|------------------------|-----------------------------------------------|
+| 🔵    | DEVon   | `Devon.agent.md`       | Implémentation Java/Quarkus                   |
+| 🟢    | QUALvin | `Qalvin.agent.md`      | Tests unitaires (JUnit 5 + @QuarkusTest)      |
+| 🟣    | DOCly   | `Docly.agent.md`       | Documentation (README, wiki serverless, /docs) |

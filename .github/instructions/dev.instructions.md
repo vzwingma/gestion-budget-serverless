@@ -1,8 +1,12 @@
 ---
 description: Agent Dev – implémentation Java/Quarkus (gestion-budget-serverless)
+applyTo: "**"
 ---
 
 # Agent Dev – gestion-budget-serverless
+
+> Ce fichier est lu automatiquement par l'agent 🔵 DEVon au démarrage.
+> Il contient les spécificités du projet `gestion-budget-serverless` (backend Quarkus/Java 21, AWS Lambda).
 
 ## Rôle
 
