@@ -1,12 +1,12 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.OperationEtatEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IComptesServiceProvider;
-import io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataOperations;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
@@ -381,6 +381,10 @@ class BudgetServiceTest {
     @Test
     void testGetSoldesBudgetMensuel() {
         ProjectionBudgetSoldes projection = new ProjectionBudgetSoldes();
+        projection.setIdCompteBancaire("C1");
+        projection.setAnnee(2022);
+        projection.setMois(Month.JANUARY);
+        projection.getSoldes().setSoldeAtFinMoisCourant(123.45D);
         Mockito.when(mockOperationDataProvider.chargeSoldesBudgetMensuel(anyString(), any(), any()))
                 .thenReturn(Multi.createFrom().item(projection));
 
@@ -390,6 +394,9 @@ class BudgetServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.size());
+        assertEquals("C1", result.getFirst().getIdCompteBancaire());
+        assertEquals(2022, result.getFirst().getAnnee());
+        assertEquals(Month.JANUARY, result.getFirst().getMois());
     }
 
     @Test

@@ -1,5 +1,4 @@
-package io.github.vzwingma.finances.budget.services.communs.api.codecs;
-
+package io.github.vzwingma.finances.budget.services.communs.spi.codecs;
 
 import com.mongodb.MongoClientSettings;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
@@ -51,13 +50,6 @@ public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
         }
     }
 
-    /**
-     * Décodage de la classe {@link CompteBancaire}
-     *
-     * @param bsonReader     reader du BSON issu de la BDD
-     * @param decoderContext contexte
-     * @return utilisateur lu
-     */
     @Override
     public CompteBancaire decode(BsonReader bsonReader, DecoderContext decoderContext) {
         CompteBancaire compteBancaire = new CompteBancaire();
@@ -68,16 +60,15 @@ public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
 
         compteBancaire.setItemIcon(document.getString("itemIcon"));
         compteBancaire.setOrdre(document.getInteger("ordre"));
-        // feat #67 & compatibilité asc : ajout des multiples propriétaires
 
         Document proprietaireDocument = document.get("proprietaire", Document.class);
-        if(proprietaireDocument != null) {
+        if (proprietaireDocument != null) {
             CompteBancaire.Proprietaire proprietaire = decode(proprietaireDocument);
             compteBancaire.setProprietaires(List.of(proprietaire));
         }
 
         List<Document> proprietairesDocument = document.getList("proprietaires", Document.class);
-        if(proprietairesDocument != null) {
+        if (proprietairesDocument != null) {
             compteBancaire.setProprietaires(new ArrayList<>());
             proprietairesDocument.forEach(prop -> {
                 CompteBancaire.Proprietaire propTemp = decode(prop);
@@ -98,13 +89,6 @@ public class ComptePanacheCodec implements CollectibleCodec<CompteBancaire> {
         return CompteBancaire.class;
     }
 
-
-    /**
-     * Décode un document MongoDB en un objet Proprietaire.
-     *
-     * @param document le document MongoDB à décoder
-     * @return un objet Proprietaire avec les données du document
-     */
     private Proprietaire decode(Document document) {
         Proprietaire proprietaire = new Proprietaire();
         proprietaire.setId(document.getObjectId("_id"));

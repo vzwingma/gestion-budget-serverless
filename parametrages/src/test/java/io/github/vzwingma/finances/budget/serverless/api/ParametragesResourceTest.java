@@ -3,7 +3,6 @@ package io.github.vzwingma.finances.budget.serverless.api;
 import io.github.vzwingma.finances.budget.serverless.data.MockDataCategoriesOperations;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.api.enums.ParametragesAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
-import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
@@ -12,14 +11,12 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAut
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
-import io.quarkus.test.junit.QuarkusMock;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -33,23 +30,15 @@ import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
 @QuarkusTest
 class ParametragesResourceTest {
 
-    @Inject
+    @InjectMock
     ParametragesService parametragesService;
 
-    @Inject
+    @InjectMock
     IJwtSigningKeyReadRepository jwtSigningKeyReadRepository;
-
-    @BeforeAll
-    static void init() {
-        QuarkusMock.installMockForType(Mockito.mock(ParametragesService.class), ParametragesService.class);
-        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), IJwtSigningKeyReadRepository.class);
-
-    }
 
     @BeforeEach
     void setup() {
         Mockito.when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().item(jwksAuthKey()));
-
     }
 
     public static JwksAuthKey jwksAuthKey() {
@@ -73,6 +62,7 @@ class ParametragesResourceTest {
                 .then()
                 .statusCode(200)
                 .body(containsStringIgnoringCase("param"));
+        Mockito.verify(parametragesService, Mockito.times(1)).refreshJwksSigningKeys();
     }
 
     @Test

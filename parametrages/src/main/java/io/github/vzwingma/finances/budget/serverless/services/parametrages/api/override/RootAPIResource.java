@@ -1,7 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.parametrages.api.override;
 
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.api.enums.ParametragesAPIEnum;
-import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
+import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIResource;
 import io.github.vzwingma.finances.budget.services.communs.data.model.Info;
 import io.smallrye.mutiny.Uni;
@@ -18,10 +18,10 @@ import jakarta.ws.rs.core.MediaType;
 @Path(ParametragesAPIEnum.PARAMS_BASE)
 public class RootAPIResource extends AbstractAPIResource {
 
-    private final ParametragesService service;
+    private final IParametrageAppProvider service;
 
     @Inject
-    public RootAPIResource(ParametragesService service) {
+    public RootAPIResource(IParametrageAppProvider service) {
         this.service = service;
     }
 

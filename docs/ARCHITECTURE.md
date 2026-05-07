@@ -49,16 +49,18 @@ Client (IHM React)
 
 Chaque microservice respecte strictement l'architecture hexagonale. **Règle absolue** : chaque couche ne dépend que de la couche suivante via une **interface**.
 
+> Note : quelques points d'assemblage contrôlés existent dans `api/override` pour des préoccupations transverses, sans exposer de contrat SPI au niveau REST.
+
 ```
 api/
   ├── XxxResource.java          ← Contrôleur JAX-RS (@Path, @GET, @RolesAllowed)
   ├── override/
-  │   ├── RootAPIResource.java  ← Endpoint /info
+  │   ├── RootAPIResource.java  ← Endpoint /info + refresh JWKS
   │   ├── JwtSecurityFilter.java← Filtre JWT (surcharge AbstractAPISecurityFilter)
   │   └── APIExceptionsHandler.java ← Mapper d'exceptions HTTP
   ├── enums/
   │   └── XxxAPIEnum.java       ← Constantes de routes et rôles (source de vérité)
-  └── codecs/                   ← Codecs Panache si nécessaire
+  └── spi/codecs/               ← Codecs Panache si nécessaire
 
 business/
   ├── ports/
@@ -106,7 +108,7 @@ gestion-budget-serverless/
 │   │   │   ├── security/
 │   │   │   │   ├── AbstractAPISecurityFilter.java # Validation JWT
 │   │   │   │   └── IJwtSecurityContext.java
-│   │   │   └── codecs/
+│   │   │   └── spi/codecs/
 │   │   │       └── ComptePanacheCodec.java
 │   │   ├── business/ports/
 │   │   │   ├── IJwtSigningKeyService.java
@@ -152,7 +154,9 @@ gestion-budget-serverless/
 │   ├── business/
 │   │   ├── BudgetService.java
 │   │   ├── OperationsService.java
-│   │   └── BudgetAdminService.java
+│   │   ├── BudgetAdminService.java
+│   │   └── model/budget/
+│   │       └── ProjectionBudgetSoldes.java       # Projection métier des soldes de budget
 │   ├── spi/
 │   │   ├── IComptesServiceProvider.java          # Client REST → µService comptes
 │   │   └── IParametragesServiceProvider.java     # Client REST → µService parametrages
@@ -243,9 +247,10 @@ gestion-budget-serverless/
 | Méthode | Chemin | Description | Rôle requis |
 |---|---|---|---|
 | `GET` | `/utilisateurs/v2` | Profil de l'utilisateur connecté | `USER_UTILISATEURS` |
-| `PUT` | `/utilisateurs/v2/lastaccessdate` | Mettre à jour la date de dernier accès | `USER_UTILISATEURS` |
+| `GET` | `/utilisateurs/v2/lastaccessdate` | Date de dernier accès de l'utilisateur | `USER_UTILISATEURS` |
 | `GET` | `/utilisateurs/v2/preferences` | Préférences utilisateur | `USER_UTILISATEURS` |
-| `PUT` | `/utilisateurs/v2/preferences` | Mettre à jour les préférences | `USER_UTILISATEURS` |
+
+> Actuellement, l'API `utilisateurs` n'expose que ces lectures.
 
 > 📌 **Source de vérité** : toujours vérifier les chemins dans les classes `*APIEnum.java` de chaque module.
 
