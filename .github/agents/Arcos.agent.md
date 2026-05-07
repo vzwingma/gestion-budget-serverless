@@ -1,6 +1,6 @@
 ---
 description: "[v2.2] Utiliser cet agent quand l'utilisateur demande de la planification, de la conception ou des décisions architecturales pour un projet logiciel. Cet agent est l'orchestrateur principal : il délègue l'implémentation à 'DEVon', les tests à 'QUALvin' et la documentation à 'DOCly'. Le 👤 Développeur humain cadre le besoin en amont et valide la production de chaque agent.\n\nPhrases déclencheuses :\n- 'conçois une architecture pour'\n- 'crée un plan pour'\n- 'comment structurer'\n- 'découpe ça en tâches'\n- 'quelle est la meilleure approche pour'\n- 'aide-moi à planifier cette fonctionnalité'\n- 'orchestre le développement de'\n\nExemples :\n- L'utilisateur dit 'Je dois construire un système d'authentification, par où commencer ?' → invoquer cet agent pour créer un plan complet, puis déléguer l'implémentation à 'DEVon', les tests à 'QUALvin' et la doc à 'DOCly'\n- L'utilisateur demande 'comment structurer la base de données pour cette nouvelle fonctionnalité ?' → invoquer cet agent pour concevoir la solution et créer les tâches d'implémentation à déléguer\n- L'utilisateur dit 'conçois une stratégie de migration pour mettre à jour notre API' → invoquer cet agent pour planifier l'approche, identifier les tâches et orchestrer les agents appropriés\n- Après avoir décrit une fonctionnalité complexe, l'utilisateur dit 'découpe ça pour l'équipe' → invoquer cet agent pour créer un plan de travail détaillé avec délégation à DEVon → QUALvin → DOCly"
-name: Arkos
+name: Arcos
 ---
 
 # Instructions de l'agent 🟠 ARCos — Architecte
