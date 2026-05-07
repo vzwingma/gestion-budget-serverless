@@ -5,16 +5,15 @@ import io.github.vzwingma.finances.budget.serverless.services.parametrages.api.e
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -37,22 +36,16 @@ class ParametragesResourceTest {
         QuarkusMock.installMockForType(parametragesServiceMock, ParametragesService.class);
     }
 
-    public static JwksAuthKey jwksAuthKey() {
-        JwksAuthKey jwksAuthKey = new JwksAuthKey();
-        jwksAuthKey.setKid("test");
-        jwksAuthKey.setKty("RSA");
-        jwksAuthKey.setAlg("RS256");
-        jwksAuthKey.setUse("sig");
-        jwksAuthKey.setN("test");
-        jwksAuthKey.setE("test");
-        return jwksAuthKey;
+    @BeforeEach
+    void setup() {
+        Mockito.reset(parametragesServiceMock);
     }
 
     @Test
     void testInfoEndpoint() {
 
-        Mockito.when(parametragesServiceMock.refreshJwksSigningKeys()).thenReturn(Uni.createFrom().voidItem());
-        Mockito.when(parametragesServiceMock.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
+        Mockito.doReturn(Uni.createFrom().voidItem()).when(parametragesServiceMock).refreshJwksSigningKeys();
+        Mockito.doReturn(Uni.createFrom().item(new HashMap<>())).when(parametragesServiceMock).loadJwksSigningKeys();
         given()
                 .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
                 .then()
@@ -104,8 +97,8 @@ class ParametragesResourceTest {
 
     @Test
     void testRefreshJwksSigningKeys() {
-        Mockito.when(parametragesServiceMock.refreshJwksSigningKeys()).thenReturn(Uni.createFrom().voidItem());
-        Mockito.when(parametragesServiceMock.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
+        Mockito.doReturn(Uni.createFrom().voidItem()).when(parametragesServiceMock).refreshJwksSigningKeys();
+        Mockito.doReturn(Uni.createFrom().item(new HashMap<>())).when(parametragesServiceMock).loadJwksSigningKeys();
         given()
                 .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
                 .then()

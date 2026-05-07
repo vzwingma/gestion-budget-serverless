@@ -2,7 +2,7 @@
 
 **Document :** `.github/plans/002_remediation_hexagonale.plan.md`  
 **Date de création :** 2026-05-07  
-**Statut :** 🔄 En cours  
+**Statut :** ✅ Complété  
 **Objectif Prioritaire :** HIGH
 
 ---

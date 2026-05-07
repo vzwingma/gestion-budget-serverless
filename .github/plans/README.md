@@ -8,13 +8,14 @@ Chaque plan orchestre une initiative multi-phases coordonnée entre plusieurs ag
 
 ## 📂 Plans Actifs / En Cours
 
-- `002_remediation_hexagonale.plan.md` — 🔄 En cours
+_(Aucun plan en cours pour l'instant)_
 
 ---
 
 ## 📋 Plans Archivés / Complétés
 
 - `001_revue_conformite_architecture_hexagonale.plan.md` — ✅ Complété
+- `002_remediation_hexagonale.plan.md` — ✅ Complété
 
 ---
 

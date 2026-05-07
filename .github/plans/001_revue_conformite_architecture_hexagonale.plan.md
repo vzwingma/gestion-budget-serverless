@@ -2,7 +2,7 @@
 
 **Document :** `.github/plans/001_revue_conformite_architecture_hexagonale.plan.md`  
 **Date de création :** 2026-05-07  
-**Statut :** 🔄 En cours (audit terminé, remédiation en attente de validation)  
+**Statut :** ✅ Complété  
 **Objectif Prioritaire :** HIGH
 
 ---
