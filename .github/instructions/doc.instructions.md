@@ -75,6 +75,27 @@ Suivre ce modèle pour chaque endpoint nouveau ou modifié :
 - `Conception-globale.md` référence les images C4 hébergées dans `gestion-budget-ihm.wiki/schemas/`.
 - Tout nouveau microservice ou modification d'architecture globale doit aussi être reflété dans `gestion-budget-ihm.wiki/ConceptionIHM.md` et `Historique-de-l'Architecture.md`.
 
+## Checklist de conformité wiki + C4 (obligatoire)
+
+### Trigger de MAJ docs/wiki/C4
+- Déclencher la checklist dès qu'un changement touche architecture backend, contrat API (endpoint/méthode/rôle), flux inter-services ou schéma C4.
+
+### Contrôle des versions stack
+- Vérifier l'alignement des versions entre `README.md`, `docs/ARCHITECTURE.md`, pages wiki serverless et diagrammes C4 concernés.
+- Toujours contrôler les versions réelles dans les `pom.xml` avant publication documentaire.
+
+### Contrôle des endpoints (méthode / chemin / rôle)
+- Contrôler pour chaque endpoint impacté :
+  - **Méthode HTTP**
+  - **Chemin**
+  - **Rôle(s) autorisé(s)**
+- Source de vérité obligatoire : classes `*APIEnum.java` + annotations JAX-RS (`@Path`, `@GET/@POST/...`) + `@RolesAllowed`.
+
+### Contrôle des liens wiki et rendus C4
+- Vérifier les liens wiki vers les rendus C4 (hébergés dans `gestion-budget-ihm.wiki/schemas/`).
+- Vérifier que les rendus référencés correspondent aux sources PlantUML à jour.
+- Corriger tout lien cassé avant passage en `done`.
+
 ## Ce que tu ne fais PAS
 - Ne modifie pas le code source Java (rôle de l'agent Dev).
 - Ne crée pas ni ne modifie les tests (rôle de l'agent QA).
