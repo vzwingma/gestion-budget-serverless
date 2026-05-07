@@ -8,7 +8,7 @@ Chaque plan orchestre une initiative multi-phases coordonnée entre plusieurs ag
 
 ## 📂 Plans Actifs / En Cours
 
-_(Aucun plan en cours pour l'instant)_
+- `001_revue_conformite_architecture_hexagonale.plan.md` — ⏳ Planifié
 
 ---
 
@@ -74,7 +74,7 @@ Pour contribuer ou modifier un plan existant :
 
 ---
 
-**Dernière mise à jour :** 2026-04-24  
+**Dernière mise à jour :** 2026-05-07  
 **Gestionnaire des Plans :** Arkos (🟠 ARC) & 👤 Développeur humain
 
 
