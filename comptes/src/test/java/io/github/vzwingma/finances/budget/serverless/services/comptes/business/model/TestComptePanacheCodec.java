@@ -1,14 +1,17 @@
 package io.github.vzwingma.finances.budget.serverless.services.comptes.business.model;
 
-import io.github.vzwingma.finances.budget.services.communs.api.codecs.ComptePanacheCodec;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
+import io.github.vzwingma.finances.budget.services.communs.spi.codecs.ComptePanacheCodec;
 import org.bson.BsonReader;
+import org.bson.BsonWriter;
 import org.bson.json.JsonReader;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 
 /**
@@ -113,6 +116,11 @@ class TestComptePanacheCodec {
         CompteBancaire compte2 = new CompteBancaire();
         compte2.setId("54aa7db30bc460e1aeb95596");
         assertEquals("54aa7db30bc460e1aeb95596", (new ComptePanacheCodec().getDocumentId(compte2)).asString().getValue());
+    }
+
+    @Test
+    void testEncodeDoesNotThrow() {
+        assertDoesNotThrow(() -> new ComptePanacheCodec().encode(Mockito.mock(BsonWriter.class), new CompteBancaire(), null));
     }
 
 }

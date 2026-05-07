@@ -3,24 +3,19 @@ package io.github.vzwingma.finances.budget.serverless.api;
 import io.github.vzwingma.finances.budget.serverless.data.MockDataCategoriesOperations;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.api.enums.ParametragesAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
-import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.JwsSigningKeysDatabaseAdaptor;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.core.HttpHeaders;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import jakarta.ws.rs.core.HttpHeaders;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -33,53 +28,37 @@ import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
 @QuarkusTest
 class ParametragesResourceTest {
 
-    @Inject
-    ParametragesService parametragesService;
-
-    @Inject
-    IJwtSigningKeyReadRepository jwtSigningKeyReadRepository;
+    private static ParametragesService parametragesServiceMock;
 
     @BeforeAll
     static void init() {
-        QuarkusMock.installMockForType(Mockito.mock(ParametragesService.class), ParametragesService.class);
-        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), IJwtSigningKeyReadRepository.class);
-
+        parametragesServiceMock = Mockito.mock(ParametragesService.class);
+        QuarkusMock.installMockForType(parametragesServiceMock, ParametragesService.class);
     }
 
     @BeforeEach
     void setup() {
-        Mockito.when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().item(jwksAuthKey()));
-
-    }
-
-    public static JwksAuthKey jwksAuthKey() {
-        JwksAuthKey jwksAuthKey = new JwksAuthKey();
-        jwksAuthKey.setKid("test");
-        jwksAuthKey.setKty("RSA");
-        jwksAuthKey.setAlg("RS256");
-        jwksAuthKey.setUse("sig");
-        jwksAuthKey.setN("test");
-        jwksAuthKey.setE("test");
-        return jwksAuthKey;
+        Mockito.reset(parametragesServiceMock);
     }
 
     @Test
     void testInfoEndpoint() {
 
-        Mockito.when(parametragesService.refreshJwksSigningKeys()).thenReturn(Uni.createFrom().voidItem());
-        Mockito.when(parametragesService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
+        Mockito.doReturn(Uni.createFrom().voidItem()).when(parametragesServiceMock).refreshJwksSigningKeys();
+        Mockito.doReturn(Uni.createFrom().item(new HashMap<>())).when(parametragesServiceMock).loadJwksSigningKeys();
         given()
                 .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
                 .then()
                 .statusCode(200)
                 .body(containsStringIgnoringCase("param"));
+        Mockito.verify(parametragesServiceMock, Mockito.times(1)).refreshJwksSigningKeys();
     }
 
     @Test
     void testGetCategories() {
 
         // Init des données
-        Mockito.when(parametragesService.getCategories()).thenReturn(Uni.createFrom().item(MockDataCategoriesOperations.getListeTestCategories()));
+        Mockito.when(parametragesServiceMock.getCategories()).thenReturn(Uni.createFrom().item(MockDataCategoriesOperations.getListeTestCategories()));
         // Test
         given()
                 .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
@@ -92,7 +71,7 @@ class ParametragesResourceTest {
     @Test
     void testGetCategorieById() {
         // Init des données
-        Mockito.when(parametragesService.getCategorieById("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a"))
+        Mockito.when(parametragesServiceMock.getCategorieById("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a"))
                 .thenReturn(Uni.createFrom().item(MockDataCategoriesOperations.getListeTestCategories().getFirst()));
         // Test
         given()
@@ -106,7 +85,7 @@ class ParametragesResourceTest {
     @Test
     void testGetCategorieByIdIntrouvable() {
         // Init des données
-        Mockito.when(parametragesService.getCategorieById("unknown"))
+        Mockito.when(parametragesServiceMock.getCategorieById("unknown"))
                 .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Catégorie non trouvée")));
         // Test
         given()
@@ -118,8 +97,8 @@ class ParametragesResourceTest {
 
     @Test
     void testRefreshJwksSigningKeys() {
-        Mockito.when(parametragesService.refreshJwksSigningKeys()).thenReturn(Uni.createFrom().voidItem());
-        Mockito.when(parametragesService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
+        Mockito.doReturn(Uni.createFrom().voidItem()).when(parametragesServiceMock).refreshJwksSigningKeys();
+        Mockito.doReturn(Uni.createFrom().item(new HashMap<>())).when(parametragesServiceMock).loadJwksSigningKeys();
         given()
                 .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
                 .then()

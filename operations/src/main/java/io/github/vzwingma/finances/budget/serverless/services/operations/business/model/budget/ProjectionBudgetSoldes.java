@@ -1,21 +1,18 @@
-package io.github.vzwingma.finances.budget.serverless.services.operations.spi.projections;
+package io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget;
 
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
-import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.TotauxCategorie;
 import io.quarkus.mongodb.panache.common.ProjectionFor;
 import lombok.Getter;
 import lombok.Setter;
+
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.HashMap;
 import java.util.Map;
 
-
 @ProjectionFor(BudgetMensuel.class)
-@Getter @Setter
+@Getter
+@Setter
 public class ProjectionBudgetSoldes {
-
-
 
     /**
      * Mois du budget (au sens CALENDAR)
@@ -46,5 +43,4 @@ public class ProjectionBudgetSoldes {
      * Totaux par catégories
      */
     private Map<String, TotauxCategorie> totauxParCategories = new HashMap<>();
-
 }

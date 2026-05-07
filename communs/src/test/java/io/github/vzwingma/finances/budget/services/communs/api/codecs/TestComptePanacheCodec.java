@@ -1,6 +1,7 @@
 package io.github.vzwingma.finances.budget.services.communs.api.codecs;
 
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
+import io.github.vzwingma.finances.budget.services.communs.spi.codecs.ComptePanacheCodec;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.junit.jupiter.api.BeforeEach;

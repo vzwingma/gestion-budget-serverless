@@ -1,8 +1,12 @@
 ---
 description: Agent QA – tests unitaires et exécution (gestion-budget-serverless)
+applyTo: "**"
 ---
 
 # Agent QA – gestion-budget-serverless
+
+> Ce fichier est lu automatiquement par l'agent 🟢 QUALvin au démarrage.
+> Il contient les spécificités du projet `gestion-budget-serverless` (backend Quarkus/Java 21, AWS Lambda).
 
 ## Rôle
 

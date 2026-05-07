@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.api;
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.BudgetService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.OperationsService;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
@@ -167,6 +168,28 @@ class BudgetsResourceTest {
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("TEST1"));
+    }
+
+    @Test
+    void testGetBudgetSoldes() {
+        ProjectionBudgetSoldes projection = new ProjectionBudgetSoldes();
+        projection.setIdCompteBancaire("C1");
+        projection.setAnnee(2022);
+        projection.setMois(Month.JANUARY);
+        projection.getSoldes().setSoldeAtFinMoisCourant(123.45D);
+
+        Mockito.when(budgetService.getSoldesBudgetMensuel(anyString(), any(Month.class), anyInt()))
+                .thenReturn(Multi.createFrom().item(projection));
+
+        String url = OperationsAPIEnum.BUDGET_BASE
+                + OperationsAPIEnum.BUDGET_SOLDES + "?idCompte=1&mois=1&annee=2022";
+
+        given()
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
+                .when().get(url)
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("C1"));
     }
 
 

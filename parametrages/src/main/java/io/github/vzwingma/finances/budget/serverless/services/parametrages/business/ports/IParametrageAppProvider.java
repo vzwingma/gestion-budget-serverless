@@ -22,4 +22,11 @@ public interface IParametrageAppProvider {
      * @return catégorie par son id depuis le service (hexagone business)
      */
     Uni<AbstractCategorieOperations> getCategorieById(String idCategorie);
+
+    /**
+     * Recharge les clés de signature JWT.
+     *
+     * @return opération asynchrone de rechargement
+     */
+    Uni<Void> refreshJwksSigningKeys();
 }
