@@ -62,10 +62,10 @@ Suivre ce modèle pour chaque endpoint nouveau ou modifié :
 ## Conventions de documentation
 
 - **Langue** : français pour le contenu, anglais pour les blocs de code et les noms de classes.
-- **Versions actuelles** : Quarkus **3.32**, Java **21**. Toujours vérifier dans `pom.xml` avant de documenter.
+- **Versions actuelles** : Quarkus **3.35**, Java **21**. Toujours vérifier dans `pom.xml` avant de documenter.
 - **`docs/ARCHITECTURE.md` est obligatoire** : tout projet doit avoir ce fichier décrivant l'architecture.
 - **ADRs** : chaque décision architecturale majeure produit un fichier `docs/adr/NNN-titre.md`.
-- **Versions à maintenir à jour** dans les `.puml` : Java (actuellement **21**), Quarkus (actuellement **3.32**).
+- **Versions à maintenir à jour** dans les `.puml` : Java (actuellement **21**), Quarkus (actuellement **3.35**).
 - **Source de vérité pour les chemins d'API** : les classes `*APIEnum.java` dans `src/main/java/.../api/enums/`.
 - Les diagrammes C3 PlantUML (`.puml`) sont dans `gestion-budget-ihm.wiki/schemas/` – signaler à l'agent Doc IHM si une mise à jour est nécessaire.
 - Quand une nouvelle version de l'application est livrée, ajouter une entrée dans le fichier d'historique **en tête** de fichier.

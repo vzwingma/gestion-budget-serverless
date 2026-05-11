@@ -118,7 +118,7 @@ Partagé entre tous les microservices :
 
 Quatre agents spécialisés travaillent ensemble, orchestrés par un **👤 Développeur humain** :
 
-#### **🟠 ARCos** [v2.0]
+#### **🟠 ARCos** [v2.7]
 - **Rôle :** Planificateur et orchestrateur technique
 - **Responsabilités :**
   - Concevoir des solutions architecturales complètes
@@ -126,10 +126,11 @@ Quatre agents spécialisés travaillent ensemble, orchestrés par un **👤 Dév
   - Décomposer les initiatives en tâches logiques
   - Orchestrer le travail entre Devon, Qalvin et Docly
   - Lire `.github/instructions/architect.instructions.md` au démarrage pour les spécificités du projet
+  - Lire `docs/ARCHITECTURE.md` au démarrage pour comprendre le contexte architectural du projet
 - **Quand l'utiliser :** "Conçois une architecture pour...", "Crée un plan pour...", "Découpe ça en tâches"
 - **Livrable :** Plans d'Action détaillés avec phases, tâches et dépendances
 
-#### **🔵 DEVon** [v2.0]
+#### **🔵 DEVon** [v2.3]
 - **Rôle :** Implémentateur de code de production
 - **Responsabilités :**
   - Traduire les exigences en code fonctionnel et testé
@@ -140,7 +141,7 @@ Quatre agents spécialisés travaillent ensemble, orchestrés par un **👤 Dév
 - **Quand l'utiliser :** "Implémente cette fonctionnalité", "Développe selon l'architecture", "Code cette fonction"
 - **Livrable :** Code propre, compilant et compilant sans erreurs
 
-#### **🟢 QUALvin** [v2.0]
+#### **🟢 QUALvin** [v2.5]
 - **Rôle :** Expert en assurance qualité et tests
 - **Responsabilités :**
   - Écrire des tests unitaires complets (composants, services, modèles)
@@ -151,7 +152,7 @@ Quatre agents spécialisés travaillent ensemble, orchestrés par un **👤 Dév
 - **Quand l'utiliser :** "Écris des tests pour ce composant", "Génère des tests unitaires", "Valide avec des tests"
 - **Livrable :** Tests passants avec rapports de couverture
 
-#### **🟣 DOCly** [v2.0]
+#### **🟣 DOCly** [v2.4]
 - **Rôle :** Gardien de la documentation
 - **Responsabilités :**
   - Mettre à jour README, `docs/` et guides

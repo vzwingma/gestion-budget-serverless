@@ -31,7 +31,7 @@ AND NOT EXISTS (
 
 ## Stack technique
 
-- **Java 21**, **Quarkus 3.32**, **Mutiny** (réactif), **MongoDB Panache** (repository pattern)
+- **Java 21**, **Quarkus 3.35**, **Mutiny** (réactif), **MongoDB Panache** (repository pattern)
 - **CDI** : `@Inject`, `@ApplicationScoped`, `@RequestScoped`
 - **JAX-RS** : `@Path`, `@GET`, `@POST`, `@PUT`, `@DELETE` (package `jakarta.ws.rs`)
 - **OpenAPI** : `@Operation`, `@APIResponse`, `@APIResponses` (package `org.eclipse.microprofile.openapi.annotations`)
