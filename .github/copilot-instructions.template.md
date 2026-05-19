@@ -1,120 +1,12 @@
-# Copilot Instructions – gestion-budget-serverless
+# Instructions Copilot — Template Générique
 
-Il s'agit du **backend Quarkus/Java 21** de l'application de gestion de budget, déployé sous forme de fonctions AWS Lambda natives. Le frontend se trouve dans le dépôt compagnon [`gestion-budget-ihm`](../gestion-budget-ihm) (React/TypeScript).
+> **Utilisation** : Ce fichier est un template pour initialiser les instructions Copilot dans un nouveau projet. Remplacer les placeholders `[...]` par les valeurs spécifiques à votre projet.
 
-## Build, Test et Lint
+## 👋 Bienvenue ! Agents Copilot et Relations
 
-```bash
-# Construire tous les modules (mode JVM)
-mvn clean package
+Le projet **[NOM_DU_PROJET]** utilise une **architecture multi-agents** orchestrée pour coordonner le développement, les tests et la documentation via des **Plans d'Action (AP)** structurés.
 
-# Construire un seul module
-mvn clean package -f comptes/pom.xml
-
-# Exécuter tous les tests
-mvn test
-
-# Exécuter une classe de test spécifique
-mvn test -Dtest=ComptesServiceTest
-
-# Exécuter une méthode de test spécifique
-mvn test -Dtest=ComptesServiceTest#testGetComptes
-
-# Exécuter les tests d'un seul module
-mvn test -f operations/pom.xml
-
-# Construire l'exécutable Linux natif pour Lambda (nécessite GraalVM/Mandrel)
-mvn clean package -Pnative -Dquarkus.native.container-build=true
-
-# Exécuter l'analyse SonarCloud (nécessite sonar.token)
-mvn verify -Psonar
-```
-
-## Architecture
-
-### Projet Maven multi-modules
-```
-gestion-budget-serverless/
-├── communs/          # Bibliothèque partagée : classes de base, modèles, sécurité, exceptions
-├── parametrages/     # Microservice : paramètres système  → /parametres/v2/
-├── utilisateurs/     # Microservice : auth/profils utilisateur → /utilisateurs/v2/
-├── comptes/          # Microservice : comptes bancaires   → /comptes/v2/
-└── operations/       # Microservice : budgets et opérations → /budgets/v2/
-```
-
-Tous les microservices (`comptes`, `operations`, `parametrages`, `utilisateurs`) dépendent de `communs` et suivent la même structure interne en couches.
-
-### Couches de l'architecture hexagonale (par microservice)
-```
-api/          – Contrôleurs REST JAX-RS, enums des chemins d'API, surcharges exception/sécurité
-business/     – Logique métier (services @ApplicationScoped), interfaces de ports, modèles métier
-spi/          – Adaptateurs base de données (MongoDB Panache), providers REST inter-services
-config/       – Classes de configuration Quarkus (OpenAPI, hints de réflexion GraalVM)
-utils/        – Classes utilitaires métier
-```
-
-### Patterns clés du framework
-
-Les **ressources REST** étendent `AbstractAPIInterceptors` (de `communs`) et utilisent les annotations JAX-RS standard :
-```java
-@Path(ComptesAPIEnum.COMPTES_BASE)
-public class ComptesResource extends AbstractAPIInterceptors {
-    @Inject IComptesAppProvider services;
-
-    @GET
-    @RolesAllowed({ComptesAPIEnum.COMPTES_ROLE})
-    @Operation(description = "...")
-    public Uni<List<CompteBancaire>> getComptes() { ... }
-}
-```
-
-**Programmation réactive** : toutes les méthodes de service et les appels base de données retournent `Uni<T>` (valeur unique) ou `Multi<T>` (flux) de Mutiny. Ne jamais bloquer avec `.await().indefinitely()` en dehors des tests.
-
-**Injection de dépendances** : CDI uniquement (`@Inject`, `@ApplicationScoped`). Aucune annotation Spring.
-
-**Interfaces de ports** : la logique métier est toujours masquée derrière une interface dans `business/ports/` (ex. `IBudgetAppProvider`, `IComptesRepository`). Les ressources REST injectent l'interface, pas l'implémentation.
-
-**Sécurité** : chaque microservice surcharge `AbstractAPISecurityFilter` et `IJwtSecurityContext` de `communs`. Les endpoints déclarent `@RolesAllowed` avec les constantes de rôle de leur propre `*APIEnum`.
-
-**Appels inter-services** : les services qui ont besoin de données d'autres microservices injectent une interface provider dans `spi/` (ex. `IComptesServiceProvider`, `IParametragesServiceProvider`) appuyée par un client REST Quarkus.
-
-### Base de données
-- **MongoDB** via Quarkus MongoDB Panache (pattern repository, pas Active Record).
-- Chaîne de connexion : variable d'environnement `QUARKUS_MONGODB_CONNECTION_STRING` (par défaut `localhost:27017` en dev).
-- Base dev : `v12-app-dev`. Base prod : variable d'environnement `QUARKUS_MONGODB_DATABASE`.
-- La configuration se trouve dans `src/main/resources/dev/application.properties` et `src/main/resources/prod/application.properties` pour chaque module.
-
-### `communs` module
-Partagé entre tous les microservices :
-- `api/AbstractAPIResource` – endpoint de base `/info`
-- `api/AbstractAPIInterceptors` – intercepteurs de logs requête/réponse
-- `api/security/AbstractAPISecurityFilter` – validation JWT
-- `utils/security/JWTUtils`, `SecurityUtils` – parsing JWT, sanitation des entrées
-- `utils/exceptions/` – exceptions typées (`DataNotFoundException`, `UserNotAuthorizedException`, etc.)
-- `data/trace/BusinessTraceContext` – contexte de traçage style MDC réinitialisé après chaque réponse
-- `aws-deploy/` – templates AWS SAM et configuration API Gateway
-
-### Conventions de test
-- Utiliser `@QuarkusTest` sur les classes de test.
-- Mocker les dépendances avec `Mockito.mock()` / `Mockito.spy()` dans `@BeforeEach`.
-- Résoudre les résultats réactifs dans les tests avec `.await().indefinitely()`.
-- `communs` est publié sur GitHub Packages ; les POM des microservices le référencent en dépendance.
-
-## Utilitaires métier clés
-
-### `BudgetDataUtils` (`operations/.../utils/`)
-- `cloneOperationToMoisSuivant(LigneOperation)` – clone une opération pour le mois suivant : tous les champs de `SsCategorie` doivent être copiés explicitement (id, libelle, **type**).
-- `cloneOperationPeriodiqueToMoisSuivant(...)` – appelle `cloneOperationToMoisSuivant()` en interne, puis gère la périodicité. Un fix sur `cloneOperationToMoisSuivant` se propage automatiquement aux deux cas.
-
-> ⚠️ Lors de tout ajout de champ dans `LigneOperation.SsCategorie` ou `LigneOperation.Categorie`, penser à l'ajouter aussi dans `cloneOperationToMoisSuivant()`.
-
-## Déploiement
-- La CI build d'abord `communs`, le publie sur GitHub Packages, puis build chaque microservice en parallèle en image native.
-- Les images natives sont déployées sur AWS Lambda via SAM. Les routes d'API sont définies dans `communs/src/aws-deploy/`.
-- SonarCloud s'exécute sur `master` une fois tous les builds terminés.
-
-
-## 🤖 Les Agents et leurs Rôles
+### 🤖 Les Agents et leurs Rôles
 
 Quatre agents spécialisés travaillent ensemble, orchestrés par un **👤 Développeur humain** :
 
@@ -165,7 +57,6 @@ Quatre agents spécialisés travaillent ensemble, orchestrés par un **👤 Dév
 - **Quand l'utiliser :** "Mets à jour la documentation", "Garde les docs en sync avec ce code", "Ajoute ça au README"
 - **Livrable :** Documentation à jour, claire et complète
 
-
 ---
 
 ### 🔄 Workflow Typique
@@ -212,6 +103,125 @@ Les agents génériques (`.github/agents/`) restent inchangés entre projets.
 
 > Pour initialiser ces fichiers : utiliser le prompt `init-copilot-instructions`.  
 > Pour les mettre à jour : utiliser le prompt `update-copilot-instructions`.
+
+## 🛠️ Skills Partagés (`.github/skills/`)
+
+Les skills sont des procédures réutilisables incluses automatiquement dans le contexte de tous les agents (`applyTo: **`) :
+
+| Skill | Emplacement | Contenu |
+|---|---|---|
+| `plan-phase-execution` | `.github/skills/plan-phase-execution/SKILL.md` | Procédure standard d'exécution de phase AP (avant/pendant/après, formats de rapport) |
+| `plan-creation` | `.github/skills/plan-creation/SKILL.md` | Procédure de création et d'orchestration d'un Plan d'Action (ARCos + agents orchestrateurs) |
+| `fleet-guide` | `.github/skills/fleet-guide/SKILL.md` | Guide de parallélisation `/fleet` (quand utiliser, règle de décision) |
+| `adr-writing` | `.github/skills/adr-writing/SKILL.md` | Rédaction d'un ADR après accord ARCos + humain : ARCos prépare le contenu, DOCly rédige le fichier |
+
+Ces skills centralisent les procédures communes pour éviter la duplication entre agents.
+
+---
+
+## [📌 SECTION À COMPLÉTER : Présentation du Projet]
+
+Remplacer cette section par une brève description de votre projet (1-2 paragraphes) :
+- Domaine métier (ex: e-commerce, domotique, santé, etc.)
+- Stack technologique principal (ex: React, Node.js, Python, etc.)
+- Plateformes cibles (web, mobile, desktop, etc.)
+- Langue de l'interface (si applicable)
+
+### Exemple pour un projet React Native/Expo :
+```
+Application mobile React Native / Expo pour [DOMAINE MÉTIER].
+Cible principalement [PLATEFORME] et le web.
+L'interface utilisateur est en [LANGUE].
+```
+
+---
+
+## [📌 SECTION À COMPLÉTER : Commandes]
+
+Lister les commandes principales du projet (démarrage, tests, build, lint, etc.)
+
+### Exemple pour un projet Node.js/npm :
+```bash
+npm start               # Démarrer le serveur de développement
+npm test                # Lancer les tests
+npm run lint            # ESLint
+npm run build           # Build de production
+```
+
+---
+
+## [📌 SECTION À COMPLÉTER : Architecture]
+
+Décrire la structure du projet et les patterns architecturaux utilisés.
+
+Éléments à couvrir :
+- Structure des dossiers principaux (src/, app/, lib/, etc.)
+- Couches principales (composants, services, modèles, contrôleurs, etc.)
+- Patterns de gestion d'état (Context API, Redux, Zustand, etc.)
+- Flux de données principal
+- Paradigmes clés (réactif, impératif, etc.)
+
+### Exemple pour un projet React :
+```
+src/
+  components/         # Composants réutilisables
+  pages/              # Pages/écrans
+  services/           # Logique métier et API calls
+  hooks/              # Custom hooks
+  utils/              # Fonctions utilitaires
+  styles/             # Styles partagés
+  models/             # Modèles de données
+```
+
+---
+
+## [📌 SECTION À COMPLÉTER : Conventions Clés]
+
+Décrire les conventions de code et les patterns du projet. Couvrir :
+
+### Nommage des fichiers
+- Composants : `*.component.tsx` (ou autre convention)
+- Services : `*.service.ts`
+- Tests : `*.test.ts` (ou autre convention)
+- Utilitaires : `*.utils.ts`
+
+### TypeScript/JavaScript
+- Mode strict activé ? (Oui/Non)
+- Interfaces vs types ?
+- Naming conventions (camelCase, PascalCase, CONSTANT_CASE)
+- Classes vs fonctions ?
+
+### Composants/Vues
+- Hooks ou composants classe ?
+- Gestion d'état (props, Context, Redux, etc.)
+- Naming conventions pour les props et états
+- Styles (CSS modules, styled-components, Tailwind, etc.)
+
+### Services et Logique Métier
+- Pattern d'appels API (fetch, axios, etc.)
+- Gestion des erreurs HTTP
+- Configuration et variables d'environnement
+
+### Tests
+- Framework (Jest, Vitest, Mocha, etc.)
+- Pattern de setup et mocks
+- Couverture minimale attendue (ex: ≥80%)
+
+### Autres conventions
+- Committing (conventional commits, etc.)
+- Branching strategy (Git flow, trunk-based, etc.)
+- Code review expectations
+
+---
+
+## [📌 SECTION À COMPLÉTER : État du Projet et Bonnes Pratiques]
+
+Ajouter toute section pertinente pour les conventions spécifiques au projet :
+- État de maintenance (stable, legacy, en evolution)
+- Patterns d'erreur courants à éviter
+- Dépendances clés et leurs usages
+- Performance/optimisations importantes
+- Sécurité (authentification, validation, etc.)
 
 ---
 
@@ -260,3 +270,8 @@ graph TD
 ```
 
 ---
+
+**🎯 Pour customiser ces instructions :** Remplacer tous les placeholders `[...]` par vos valeurs, puis utiliser le prompt `.github/prompts/update-copilot-instructions.prompt.md` pour auditer et enrichir ce fichier depuis le code source.
+
+
+
