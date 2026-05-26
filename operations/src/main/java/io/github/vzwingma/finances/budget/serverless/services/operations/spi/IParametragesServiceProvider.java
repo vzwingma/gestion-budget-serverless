@@ -2,6 +2,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.ParametragesApiUrlEnum;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -21,14 +22,14 @@ import java.util.List;
 public interface IParametragesServiceProvider {
 
     /**
-     * Recherche d'une catégorie
+     * Recherche d'une catégorie ou d'une sous catégorie d'opérations à partir de son id
      *
-     * @param idCategorie de la catégorie
+     * @param idCategorie de la catégorie ou de la sous catégorie
      * @return catégorie correspondante. Null sinon
      */
     @GET
     @Path(ParametragesApiUrlEnum.PARAMS_CATEGORIES + ParametragesApiUrlEnum.PARAMS_CATEGORIE_ID)
-    Uni<CategorieOperations> getCategorieParId(String idCategorie);
+    Uni<SsCategorieOperations> getSsCategorieParId(String idCategorie);
 
     /**
      * Liste des catégories

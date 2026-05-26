@@ -467,12 +467,12 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                         budgetSurCompteActif,
                         Uni.createFrom().item(ligneOperation),
                         // On ne va charger la catégorie Remboursement - que pour un frais remboursable
-                        BudgetDataUtils.isSsCategorieRemboursable(ligneOperation.getSsCategorie()) ? this.parametragesService.getCategorieParId(IdsCategoriesEnum.SS_CAT_REMBOURSEMENT.getId()) : Uni.createFrom().voidItem())
+                        BudgetDataUtils.isSsCategorieRemboursable(ligneOperation.getSsCategorie()) ? this.parametragesService.getSsCategorieParId(IdsCategoriesEnum.SS_CAT_REMBOURSEMENT.getId()) : Uni.createFrom().item((SsCategorieOperations) null))
                 .asTuple()
                 // Ajout des opérations standard et remboursement (si non nulle)
                 .invoke(tuple -> {
                     try {
-                        this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, (SsCategorieOperations) tuple.getItem3());
+                        this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, tuple.getItem3());
                     } catch (DataNotFoundException e) {
                         tuple.mapItem1(u -> Uni.createFrom().failure(e));
                     }
