@@ -7,10 +7,12 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IComptesServiceProvider;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataOperations;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
+import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.quarkus.test.junit.QuarkusTest;
@@ -37,11 +39,13 @@ class BudgetServiceTest {
     private BudgetService budgetAppProvider;
     private IOperationsRepository mockOperationDataProvider;
     private IComptesServiceProvider mockCompteServiceProvider;
+    private IParametragesServiceProvider mockParametragesServiceProvider;
 
     @BeforeEach
     void setup() {
         mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
         mockCompteServiceProvider = Mockito.mock(IComptesServiceProvider.class);
+        mockParametragesServiceProvider = Mockito.mock(IParametragesServiceProvider.class);
 
         OperationsService operationsService = Mockito.spy(new OperationsService());
         operationsService.setDataOperationsProvider(mockOperationDataProvider);
@@ -51,6 +55,7 @@ class BudgetServiceTest {
         budgetAppProvider.setDataOperationsProvider(mockOperationDataProvider);
         budgetAppProvider.setComptesService(mockCompteServiceProvider);
         budgetAppProvider.setOperationsAppProvider(operationsAppProvider);
+        budgetAppProvider.setParametragesService(mockParametragesServiceProvider);
 
     }
 
@@ -330,6 +335,55 @@ class BudgetServiceTest {
         Mockito.verify(budgetAppProvider, Mockito.times(1)).recalculSoldes(any(BudgetMensuel.class));
         Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
 
+    }
+
+    @Test
+    void testUpdateBudgetRemboursable() {
+        // Préparation : budget actif avec 1 opération existante
+        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
+        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class)))
+                .thenReturn(Uni.createFrom().item(new BudgetMensuel()));
+
+        // Mock de la sous-catégorie remboursement retournée par le service de parametrages
+        SsCategorieOperations ssCatRemboursement = new SsCategorieOperations("remboursement-id");
+        ssCatRemboursement.setLibelle("Remboursement");
+        Mockito.when(mockParametragesServiceProvider.getSsCategorieParId(anyString()))
+                .thenReturn(Uni.createFrom().item(ssCatRemboursement));
+
+        // Test : ajout d'une nouvelle opération remboursable
+        LigneOperation ligneRemboursable = MockDataOperations.getOperationRemboursement();
+        BudgetMensuel budgetMensuelAJour = budgetAppProvider.addOrUpdateOperationInBudget("C1_2022_01", ligneRemboursable, "userTest").await().indefinitely();
+
+        // L'opération remboursable + son remboursement automatique = 2 nouvelles opérations (+ 1 existante = 3)
+        assertEquals(3, budgetMensuelAJour.getListeOperations().size());
+        Mockito.verify(mockParametragesServiceProvider, Mockito.times(1)).getSsCategorieParId(anyString());
+        Mockito.verify(budgetAppProvider, Mockito.times(1)).recalculSoldes(any(BudgetMensuel.class));
+        Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
+
+    @Test
+    void testUpdateBudgetRemboursableSansSsCategorie() {
+        // Préparation : budget actif avec 1 opération existante
+        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
+        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+
+        // Le service de parametrages est indisponible pour la catégorie de remboursement
+        Mockito.when(mockParametragesServiceProvider.getSsCategorieParId(anyString()))
+                .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Catégorie introuvable")));
+
+        // Test : l'ajout d'une opération remboursable doit échouer avec DataNotFoundException
+        LigneOperation ligneRemboursable = MockDataOperations.getOperationRemboursement();
+        CompletionException exception = Assertions.assertThrows(CompletionException.class,
+                () -> budgetAppProvider.addOrUpdateOperationInBudget("C1_2022_01", ligneRemboursable, "userTest").await().indefinitely());
+        assertEquals(DataNotFoundException.class, exception.getCause().getClass());
+
+        Mockito.verify(mockParametragesServiceProvider, Mockito.times(1)).getSsCategorieParId(anyString());
+        Mockito.verify(mockOperationDataProvider, Mockito.never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
     @Test
