@@ -34,7 +34,7 @@
         <surefire-plugin.version>3.5.5</surefire-plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
         <!-- CVE-2026-33870 / CVE-2026-33871: Netty HTTP request smuggling & HTTP/2 DoS - fixed in 4.1.132.Final -->
-        <netty.version>4.2.14.Final</netty.version>
+        <netty.version>4.1.132.Final</netty.version>
         <sonar.core.codeCoveragePlugin>jacoco</sonar.core.codeCoveragePlugin>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.coverage.jacoco.xmlReportPaths>
