@@ -12,16 +12,16 @@ mvn clean package
 mvn clean package -f comptes/pom.xml
 
 # Exécuter tous les tests
-mvn test
+mvn clean test
 
 # Exécuter une classe de test spécifique
-mvn test -Dtest=ComptesServiceTest
+mvn clean test -Dtest=ComptesServiceTest
 
 # Exécuter une méthode de test spécifique
-mvn test -Dtest=ComptesServiceTest#testGetComptes
+mvn clean test -Dtest=ComptesServiceTest#testGetComptes
 
 # Exécuter les tests d'un seul module
-mvn test -f operations/pom.xml
+mvn clean test -f operations/pom.xml
 
 # Construire l'exécutable Linux natif pour Lambda (nécessite GraalVM/Mandrel)
 mvn clean package -Pnative -Dquarkus.native.container-build=true

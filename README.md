@@ -1,6 +1,7 @@
 # Micro-services Budget
 
-Ce projet utilise Quarkus, le Supersonic Subatomic Java Framework et les microservices sont déployés sous forme de Lambdas Serverless
+Backend serverless de gestion du budget. Les microservices Quarkus exposent une API REST JSON et sont déployes sous
+forme de fonctions AWS Lambda natives.
 
 | Module                                                            | Version                                                                                                                                               |
 |-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -23,7 +24,7 @@ Ce projet utilise Quarkus, le Supersonic Subatomic Java Framework et les microse
 
 ### Frameworks utilisés
 
-- Quarkus **3.35.1** / Java **21**
+- Quarkus **3.36.0** / Java **21**
 - Mutiny ([guide](https://quarkus.io/guides/mutiny)): A reactive programming framework for Java.
 - MongoDB with Panache ([guide](https://quarkus.io/guides/mongodb-panache)): Simplify your persistence code for MongoDB
   via the active record or the repository pattern
@@ -68,7 +69,7 @@ mvn quarkus:dev -f parametrages/pom.xml
 cd parametrages && mvn quarkus:dev
 ```
 
-La Dev UI est disponible sur [http://localhost:808x/q/dev](http://localhost:8091/q/dev).
+La Dev UI est disponible sur [http://localhost:8091/q/dev](http://localhost:8091/q/dev).
 
 ### Via VS Code (tâches préconfigurées)
 
@@ -135,16 +136,16 @@ mvn clean package -Pnative -Dquarkus.native.container-build=true
 
 ```bash
 # Tous les tests
-mvn test
+mvn clean test
 
 # Tests d'un seul module
-mvn test -f operations/pom.xml
+mvn clean test -f operations/pom.xml
 
 # Une classe de test spécifique
-mvn test -Dtest=ComptesServiceTest
+mvn clean test -Dtest=ComptesServiceTest
 
 # Une méthode de test spécifique
-mvn test -Dtest=ComptesServiceTest#testGetComptes
+mvn clean test -Dtest=ComptesServiceTest#testGetComptes
 ```
 
 ## Analyse qualité (SonarCloud)
@@ -176,4 +177,3 @@ Voir le [Wiki – Opérations sur AWS](https://github.com/vzwingma/gestion-budge
 - [API Opérations](https://github.com/vzwingma/gestion-budget-serverless/wiki/Conception-µS-Operations)
 - [API Paramétrages](https://github.com/vzwingma/gestion-budget-serverless/wiki/Conception-µS-Parametrages)
 - [API Utilisateurs](https://github.com/vzwingma/gestion-budget-serverless/wiki/Conception-µS-Utilisateurs)
-

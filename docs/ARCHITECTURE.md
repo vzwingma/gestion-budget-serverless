@@ -4,12 +4,14 @@
 
 ## 🎯 Vue d'ensemble
 
-**gestion-budget-serverless** est le backend de l'application de gestion de budget personnelle. Il expose une API REST JSON consommée par le frontend React [`gestion-budget-ihm`](https://github.com/vzwingma/gestion-budget-ihm). Les microservices sont compilés en binaires natifs GraalVM et déployés sous forme de fonctions **AWS Lambda** via SAM.
+**gestion-budget-serverless** est le backend de l'application de gestion de budget personnelle. Il expose une API REST
+JSON consommée par le frontend React [`gestion-budget-ihm`](https://github.com/vzwingma/gestion-budget-ihm). Les
+microservices sont compiles en binaires natifs GraalVM et deployes sous forme de fonctions **AWS Lambda** via SAM.
 
 | Propriété | Valeur |
 |---|---|
 | **Type** | Backend – API REST serverless |
-| **Stack principale** | Java 21 + Quarkus 3.35.1 + Mutiny + MongoDB Panache |
+| **Stack principale** | Java 21 + Quarkus 3.36.0 + Mutiny + MongoDB Panache |
 | **Plateforme cible** | AWS Lambda (natif GraalVM/Mandrel) |
 | **Version applicative** | 24.0.0-SNAPSHOT |
 | **Statut** | En développement actif |
@@ -176,7 +178,7 @@ gestion-budget-serverless/
 
 | Catégorie | Librairie | Version | Rôle |
 |---|---|---|---|
-| Framework | Quarkus | **3.35.1** | Runtime Lambda natif |
+| Framework | Quarkus | **3.36.0** | Runtime Lambda natif |
 | Langage | Java | **21** | LTS, Records, Pattern Matching |
 | Réactif | SmallRye Mutiny | (via Quarkus BOM) | `Uni<T>` / `Multi<T>` |
 | Persistence | MongoDB Panache | (via Quarkus BOM) | Repository pattern |
