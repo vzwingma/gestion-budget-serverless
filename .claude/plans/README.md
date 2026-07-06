@@ -10,7 +10,7 @@ Cet index est **synthétique** : liste des plans + statut global uniquement (pas
 
 ## 📂 Plans Actifs / En Cours
 
-_(Aucun plan `.claude/` en cours pour l'instant — structure `.claude/` initialisée via Plan d'Action 005, porté au niveau du dépôt racine workspace)_
+- [`001_modernisation_stack.plan.md`](./001_modernisation_stack.plan.md) — 🚀 Gate #1 validé, Phase 1 (ADR bootstrap) en cours. Modernisation backend : gouvernance ADR, upgrade Quarkus 3.x puis 4.x/Java 25, tuning infra Lambda, migrations MongoDB maison. Observabilité/OTel exclue (reportée).
 
 ---
 

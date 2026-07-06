@@ -432,7 +432,7 @@ mvn clean package -Pnative -Dquarkus.native.container-build=true
 
 | # | Décision | Statut |
 |---|---|---|
-| – | *Aucun ADR créé pour l'instant* | – |
+| [001](./adr/001-strategie-modernisation-stack.md) | Stratégie de modernisation du stack backend (paliers Quarkus 3.x→4.x, tuning infra Lambda, migrations Mongo maison) | Acceptée |
 
 > 💡 Toute nouvelle décision architecturale majeure (nouveau framework, changement de pattern, décision de sécurité) doit faire l'objet d'un ADR délégué à l'agent 🟣 DOCly.
 
