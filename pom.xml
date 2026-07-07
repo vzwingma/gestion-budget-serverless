@@ -29,12 +29,10 @@
 
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-        <quarkus.platform.version>3.36.2</quarkus.platform.version>
+        <quarkus.platform.version>3.37.1</quarkus.platform.version>
         <lombok.version>1.18.46</lombok.version>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
-        <!-- CVE-2026-33870 / CVE-2026-33871: Netty HTTP request smuggling & HTTP/2 DoS - fixed in 4.1.132.Final -->
-        <netty.version>4.2.16.Final</netty.version>
         <sonar.core.codeCoveragePlugin>jacoco</sonar.core.codeCoveragePlugin>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.coverage.jacoco.xmlReportPaths>
@@ -299,21 +297,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- CVE-2026-33870 / CVE-2026-33871: Override Netty to fixed version -->
-            <dependency><groupId>io.netty</groupId><artifactId>netty-buffer</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-codec</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-codec-dns</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-codec-haproxy</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-codec-http</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-codec-http2</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-codec-socks</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-common</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-handler</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-handler-proxy</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-resolver</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-resolver-dns</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-transport</artifactId><version>${netty.version}</version></dependency>
-            <dependency><groupId>io.netty</groupId><artifactId>netty-transport-native-unix-common</artifactId><version>${netty.version}</version></dependency>
         </dependencies>
     </dependencyManagement>
 

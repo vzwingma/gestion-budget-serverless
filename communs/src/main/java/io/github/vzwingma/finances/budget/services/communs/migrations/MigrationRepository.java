@@ -1,0 +1,54 @@
+package io.github.vzwingma.finances.budget.services.communs.migrations;
+
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
+import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Accès Panache à la collection {@code _migrations} de suivi des migrations MongoDB déjà appliquées.
+ *
+ * @author vzwingma
+ */
+@ApplicationScoped
+public class MigrationRepository implements ReactivePanacheMongoRepository<MigrationRecord> {
+
+    /**
+     * Liste les versions déjà exécutées avec succès (utilisée pour filtrer les migrations à jouer).
+     *
+     * @return liste des versions déjà appliquées avec succès
+     */
+    public Uni<List<String>> listerVersionsAppliquees() {
+        return find("statut", MigrationRecord.MigrationStatutEnum.SUCCES)
+                .project(MigrationRecord.class)
+                .list()
+                .map(records -> records.stream().map(MigrationRecord::getVersion).toList());
+    }
+
+    /**
+     * Enregistre l'exécution réussie d'une migration.
+     *
+     * @param version     version de la migration exécutée (ex. {@code V001})
+     * @param description description de la migration
+     * @return {@link Uni} terminé une fois l'enregistrement persisté
+     */
+    public Uni<Void> enregistrerSucces(String version, String description) {
+        return persist(new MigrationRecord(version, description, LocalDateTime.now(), MigrationRecord.MigrationStatutEnum.SUCCES))
+                .replaceWithVoid();
+    }
+
+    /**
+     * Enregistre l'échec d'exécution d'une migration (traçabilité — n'empêche pas une nouvelle tentative
+     * au prochain démarrage puisque seules les versions en {@code SUCCES} sont considérées comme appliquées).
+     *
+     * @param version     version de la migration en échec (ex. {@code V001})
+     * @param description description de la migration
+     * @return {@link Uni} terminé une fois l'enregistrement persisté
+     */
+    public Uni<Void> enregistrerEchec(String version, String description) {
+        return persist(new MigrationRecord(version, description, LocalDateTime.now(), MigrationRecord.MigrationStatutEnum.ECHEC))
+                .replaceWithVoid();
+    }
+}

@@ -4,12 +4,14 @@
 
 ## 🎯 Vue d'ensemble
 
-**gestion-budget-serverless** est le backend de l'application de gestion de budget personnelle. Il expose une API REST JSON consommée par le frontend React [`gestion-budget-ihm`](https://github.com/vzwingma/gestion-budget-ihm). Les microservices sont compilés en binaires natifs GraalVM et déployés sous forme de fonctions **AWS Lambda** via SAM.
+**gestion-budget-serverless** est le backend de l'application de gestion de budget personnelle. Il expose une API REST
+JSON consommée par le frontend React [`gestion-budget-ihm`](https://github.com/vzwingma/gestion-budget-ihm). Les
+microservices sont compiles en binaires natifs GraalVM et deployes sous forme de fonctions **AWS Lambda** via SAM.
 
 | Propriété | Valeur |
 |---|---|
 | **Type** | Backend – API REST serverless |
-| **Stack principale** | Java 21 + Quarkus 3.35.1 + Mutiny + MongoDB Panache |
+| **Stack principale** | Java 21 + Quarkus 3.37.1 + Mutiny + MongoDB Panache |
 | **Plateforme cible** | AWS Lambda (natif GraalVM/Mandrel) |
 | **Version applicative** | 24.0.0-SNAPSHOT |
 | **Statut** | En développement actif |
@@ -176,7 +178,7 @@ gestion-budget-serverless/
 
 | Catégorie | Librairie | Version | Rôle |
 |---|---|---|---|
-| Framework | Quarkus | **3.35.1** | Runtime Lambda natif |
+| Framework | Quarkus | **3.37.1** | Runtime Lambda natif |
 | Langage | Java | **21** | LTS, Records, Pattern Matching |
 | Réactif | SmallRye Mutiny | (via Quarkus BOM) | `Uni<T>` / `Multi<T>` |
 | Persistence | MongoDB Panache | (via Quarkus BOM) | Repository pattern |
@@ -188,9 +190,11 @@ gestion-budget-serverless/
 | Tests | Mockito | **5.x** | Mocking |
 | Tests | REST Assured | (via Quarkus BOM) | Tests API |
 | Couverture | JaCoCo | **0.8.14** | Rapport couverture (SonarCloud) |
-| Réseau | Netty | **4.1.132.Final** | Fix CVE-2026-33870/33871 |
+| Réseau | Netty | **4.1.135.Final** (via Quarkus BOM) | Fix CVE-2026-33870/33871 |
 
 > ⚠️ Maintenir ce tableau à jour à chaque montée de version majeure (vérifier dans `pom.xml`).
+>
+> ℹ️ Depuis Quarkus 3.37.1, l'override Netty explicite dans les POM a été retiré : le BOM Quarkus embarque nativement Netty 4.1.135.Final, qui couvre déjà les CVE-2026-33870/33871.
 
 ### Variables d'environnement
 
@@ -302,6 +306,19 @@ gestion-budget-serverless/
 | `categories` | `parametrages` | Catégories et sous-catégories d'opérations |
 | `utilisateurs` | `utilisateurs` | Profils et préférences utilisateurs |
 | `jwkskeys` | `communs` (tous) | Clés JWKS Google (cache) |
+| `_migrations` | `communs` (tous) | Suivi d'exécution des migrations MongoDB (voir section [Migrations MongoDB](#-migrations-mongodb)) |
+
+---
+
+## 🔀 Migrations MongoDB
+
+Mécanisme maison (module `communs`, package `migrations/`) — voir [ADR-002](./adr/002-migrations-mongodb-maison.md) pour le détail du choix (Mongock écarté : risque incompatibilité GraalVM native-image).
+
+- **Déclenchement** : automatique au démarrage de chaque microservice, via `MongoMigrationRunner` (`@ApplicationScoped`, `@Observes StartupEvent`). Migrations découvertes par injection CDI standard (`Instance<IMongoMigration>`), triées par version croissante, exécutées séquentiellement.
+- **Convention de nommage** : `V<numéro sur 3 chiffres>_<description courte>` (ex. `V001_InitMigrationsCollection`, `V002_AjoutIndexComptes`). Numéro unique, strictement croissant, jamais réutilisé ni modifié une fois publié.
+- **Où ajouter une migration** : nouvelle classe `@ApplicationScoped` implémentant `IMongoMigration` dans `communs/src/main/java/.../communs/migrations/scripts/`. `V001_InitMigrationsCollection.java` sert de gabarit.
+- **Idempotence** : obligatoire. Le runner garantit la non ré-exécution d'une migration déjà en statut `SUCCES` (suivi dans la collection `_migrations`), mais le code de chaque migration doit rester défensif (ex. vérifier l'existence d'un index avant de le créer).
+- **Traçabilité** : chaque exécution (succès ou échec) est enregistrée dans `_migrations` (`MigrationRecord` : version, description, date, statut). Une migration en échec est journalisée en erreur mais ne bloque ni le démarrage de l'application ni l'exécution des migrations suivantes.
 
 ---
 
@@ -430,7 +447,8 @@ mvn clean package -Pnative -Dquarkus.native.container-build=true
 
 | # | Décision | Statut |
 |---|---|---|
-| – | *Aucun ADR créé pour l'instant* | – |
+| [001](./adr/001-strategie-modernisation-stack.md) | Stratégie de modernisation du stack backend (paliers Quarkus 3.x→4.x, tuning infra Lambda, migrations Mongo maison) | Acceptée |
+| [002](./adr/002-migrations-mongodb-maison.md) | Mécanisme de migrations MongoDB maison (CDI, rejet de Mongock) | Acceptée |
 
 > 💡 Toute nouvelle décision architecturale majeure (nouveau framework, changement de pattern, décision de sécurité) doit faire l'objet d'un ADR délégué à l'agent 🟣 DOCly.
 
