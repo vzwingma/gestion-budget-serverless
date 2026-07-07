@@ -30,10 +30,6 @@ import static org.junit.jupiter.api.Assertions.fail;
  * d'interférence avec l'hypothèse "base fraîche" du test de fumée, indépendamment de l'ordre réel
  * d'exécution des méthodes ou des classes.
  * <p>
- * <b>Lecture des enregistrements persistés</b> : volontairement <u>pas</u> via {@code findById}. Voir
- * {@link #recupererRecordParVersion(String)} pour l'explication (incompatibilité de type generic Id
- * sur {@link MigrationRepository}, non contournable sans modifier la classe de production).
- * <p>
  * <b>Nettoyage</b> : {@link #nettoyerCollection()} vide entièrement la collection {@code _migrations}
  * après chaque test via {@link MigrationRepository#deleteAll()} (option explicitement suggérée pour
  * cette tâche). Sûr ici car la base {@code communs-test} / collection {@code _migrations} est dédiée
@@ -69,33 +65,10 @@ class TestMigrationRepositoryPersistence {
     }
 
     /**
-     * Relit un {@link MigrationRecord} par sa version via {@link MigrationRepository#listAll()} suivi
-     * d'un filtrage côté client, plutôt que via {@code findById(version)}.
-     * <p>
-     * Raison : {@link MigrationRepository} implémente
-     * {@code ReactivePanacheMongoRepository<MigrationRecord>}, dont le type d'identifiant générique est
-     * <b>figé à {@code org.bson.types.ObjectId}</b> par l'interface Quarkus (voir
-     * {@code io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository<Entity>}), alors que le
-     * champ {@code @BsonId} réel de {@link MigrationRecord} (le champ {@code version}) est un
-     * {@code String}. Conséquence concrète, vérifiée par compilation directe pendant l'écriture de ces
-     * tests : {@code migrationRepository.findById("V001")} et {@code deleteById("V001")} ne compilent
-     * pas ({@code incompatible types: String cannot be converted to ObjectId}). Ce n'est pas gênant pour
-     * le code de production actuel (qui n'appelle jamais ces méthodes typées par Id — seulement
-     * {@code persist(...)} et {@code find("statut", ...)}), mais cela rend ces méthodes héritées
-     * inutilisables telles quelles depuis l'extérieur. Signalé dans le rapport de tâche plutôt que corrigé
-     * silencieusement ici (hors périmètre QA : nécessiterait de faire hériter {@code MigrationRepository}
-     * de {@code ReactivePanacheMongoRepositoryBase<MigrationRecord, String>} à la place, une modification
-     * du code de production).
-     * <p>
-     * {@code listAll()} est sans ambiguïté ici : c'est l'opération Panache la plus basique, elle désérialise
-     * les documents complets via le codec BSON de l'entité (donc le mapping {@code @BsonId} est
-     * correctement pris en compte), sans dépendre d'un nom de champ passé en chaîne de caractères.
+     * Relit un {@link MigrationRecord} par sa version via {@link MigrationRepository#findById(Object)}.
      */
     private Optional<MigrationRecord> recupererRecordParVersion(String version) {
-        List<MigrationRecord> tousLesRecords = migrationRepository.listAll().await().indefinitely();
-        return tousLesRecords.stream()
-                .filter(record -> version.equals(record.getVersion()))
-                .findFirst();
+        return Optional.ofNullable(migrationRepository.findById(version).await().indefinitely());
     }
 
     @Test
@@ -105,7 +78,7 @@ class TestMigrationRepositoryPersistence {
         migrationRepository.enregistrerSucces(VERSION_SUCCES, description).await().indefinitely();
 
         MigrationRecord recordPersiste = recupererRecordParVersion(VERSION_SUCCES)
-                .orElseGet(() -> fail("Le MigrationRecord doit être persisté et retrouvable via listAll()"));
+                .orElseGet(() -> fail("Le MigrationRecord doit être persisté et retrouvable via findById()"));
 
         assertEquals(VERSION_SUCCES, recordPersiste.getVersion());
         assertEquals(description, recordPersiste.getDescription());
