@@ -56,8 +56,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload SAM configurations
       # stack_name/s3_prefix ne peuvent pas être des Parameters SAM template (contrainte SAM CLI) : substitution sed conservée pour __ENV__ uniquement.
+      # sed ciblé aux seules lignes stack_name/s3_prefix pour ne pas altérer les commentaires du template (ex: le commentaire explicatif contient littéralement "__ENV__").
       - name: Find and Replace in Serverless Application Manager Config
-        run: sed "s/__ENV__/PROD/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.template.toml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
+        run: sed -e "/^stack_name/s/__ENV__/PROD/" -e "/^s3_prefix/s/__ENV__/PROD/" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.template.toml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
       # Le template SAM natif n'utilise plus de placeholders texte : les valeurs sont injectées via --parameter-overrides au déploiement (voir job deploy-lambdas-apps).
       - name: Copy SAM native template
         run: cp /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml

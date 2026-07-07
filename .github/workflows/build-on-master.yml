@@ -25,6 +25,26 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout sources
         uses: actions/checkout@v7
+      # Détecte une désync entre quarkus.platform.version (pom.xml) et les versions Quarkus mentionnées en dur dans la doc/instructions.
+      - name: Check Quarkus version sync (pom.xml vs docs)
+        run: |
+          POM_VERSION=$(grep -m1 'quarkus.platform.version' pom.xml | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          echo "Version Quarkus déclarée dans pom.xml : $POM_VERSION"
+          MISMATCH=0
+          for f in README.md docs/ARCHITECTURE.md .claude/instructions/dev.instructions.md .claude/instructions/orchestrator.instructions.md; do
+            VERSIONS=$(grep -oE 'Quarkus[^0-9]{0,15}[0-9]+\.[0-9]+(\.[0-9]+)?' "$f" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?$' | sort -u)
+            for v in $VERSIONS; do
+              if [ "$v" != "$POM_VERSION" ]; then
+                echo "::error file=$f::Désync version Quarkus : $f mentionne $v alors que pom.xml déclare $POM_VERSION"
+                MISMATCH=1
+              fi
+            done
+          done
+          if [ "$MISMATCH" -eq 1 ]; then
+            echo "Désynchronisation détectée entre la version Quarkus du pom.xml et la documentation. Merci de mettre à jour les fichiers listés ci-dessus."
+            exit 1
+          fi
+          echo "OK : versions Quarkus synchronisées ($POM_VERSION) entre pom.xml et la documentation."
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -46,8 +66,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # stack_name/s3_prefix ne peuvent pas être des Parameters SAM template (contrainte SAM CLI) : substitution sed conservée pour __ENV__ uniquement.
+      # sed ciblé aux seules lignes stack_name/s3_prefix pour ne pas altérer les commentaires du template (ex: le commentaire explicatif contient littéralement "__ENV__").
       - name: Find and Replace in Serverless Application Manager Config
-        run: sed "s/__ENV__/QUA/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.template.toml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
+        run: sed -e "/^stack_name/s/__ENV__/QUA/" -e "/^s3_prefix/s/__ENV__/QUA/" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.template.toml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
       # Le template SAM natif n'utilise plus de placeholders texte : les valeurs sont injectées via --parameter-overrides au déploiement (voir job deploy-lambdas-apps).
       - name: Copy SAM native template
         run: cp /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
