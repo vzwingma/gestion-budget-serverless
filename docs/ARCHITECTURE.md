@@ -11,7 +11,7 @@ microservices sont compiles en binaires natifs GraalVM et deployes sous forme de
 | Propriété | Valeur |
 |---|---|
 | **Type** | Backend – API REST serverless |
-| **Stack principale** | Java 21 + Quarkus 3.36.0 + Mutiny + MongoDB Panache |
+| **Stack principale** | Java 21 + Quarkus 3.37.1 + Mutiny + MongoDB Panache |
 | **Plateforme cible** | AWS Lambda (natif GraalVM/Mandrel) |
 | **Version applicative** | 24.0.0-SNAPSHOT |
 | **Statut** | En développement actif |
@@ -178,7 +178,7 @@ gestion-budget-serverless/
 
 | Catégorie | Librairie | Version | Rôle |
 |---|---|---|---|
-| Framework | Quarkus | **3.36.0** | Runtime Lambda natif |
+| Framework | Quarkus | **3.37.1** | Runtime Lambda natif |
 | Langage | Java | **21** | LTS, Records, Pattern Matching |
 | Réactif | SmallRye Mutiny | (via Quarkus BOM) | `Uni<T>` / `Multi<T>` |
 | Persistence | MongoDB Panache | (via Quarkus BOM) | Repository pattern |
@@ -190,9 +190,11 @@ gestion-budget-serverless/
 | Tests | Mockito | **5.x** | Mocking |
 | Tests | REST Assured | (via Quarkus BOM) | Tests API |
 | Couverture | JaCoCo | **0.8.14** | Rapport couverture (SonarCloud) |
-| Réseau | Netty | **4.1.132.Final** | Fix CVE-2026-33870/33871 |
+| Réseau | Netty | **4.1.135.Final** (via Quarkus BOM) | Fix CVE-2026-33870/33871 |
 
 > ⚠️ Maintenir ce tableau à jour à chaque montée de version majeure (vérifier dans `pom.xml`).
+>
+> ℹ️ Depuis Quarkus 3.37.1, l'override Netty explicite dans les POM a été retiré : le BOM Quarkus embarque nativement Netty 4.1.135.Final, qui couvre déjà les CVE-2026-33870/33871.
 
 ### Variables d'environnement
 

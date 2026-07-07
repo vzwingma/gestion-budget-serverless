@@ -1,7 +1,7 @@
 # Plan d'Action 001 — Modernisation stack backend
 
 **Date création :** 2026-07-06
-**Statut :** 🚀 Phase 1 ✅ · Phase 4 ✅ · Phase 2 tests validés (344 tests verts, 0 régression ; build natif bloqué localement — Docker absent, validation reportée CI) — doc Phase 2 (T2.6) en cours, Phase 3 à lancer ensuite.
+**Statut :** 🚀 Phase 1 ✅ · Phase 2 ✅ (344 tests verts, override Netty retiré, doc/versions à jour ; build natif Lambda à valider en CI — pas de Docker local) · Phase 4 ✅ — Phase 3 (tuning infra Lambda, touche CI/CD) en attente lancement.
 **Porteur :** ⚫ MAINa
 **Analyse préalable :** Consultation ARCos (Gate #0) — recommandations retenues par axe :
 - Upgrade versions : palier incrémental (Quarkus 3.x dernière stable d'abord, Quarkus 4.x/Java 25 en dernier, isolé par spike) — **Option A ARCos retenue**
