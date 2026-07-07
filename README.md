@@ -158,11 +158,14 @@ mvn verify -Psonar
 
 ## Déploiement AWS
 
-Les microservices sont déployés sur **AWS Lambda** via **SAM**. Les templates sont dans `communs/src/aws-deploy/`.
+Les microservices sont déployés sur **AWS Lambda** (256 Mo, natif GraalVM) via **SAM**. Les templates sont dans `communs/src/aws-deploy/`. Le paramétrage (URL base, secrets OIDC, niveaux de log...) passe par des `Parameters` SAM injectés au déploiement via `--parameter-overrides` (voir [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#-déploiement)), plus de placeholders texte remplacés par `sed`.
 
 ```bash
 # Déploiement (depuis communs/src/aws-deploy/)
-sam deploy --config-file samconfig.template.toml
+sam deploy --config-file samconfig.template.toml --parameter-overrides \
+  Env=QUA Version=<version> DatabaseUrl=<url> DatabaseName=<db> \
+  AppConfigUrlIhm=<url> AppConfigUrlBackends=<url> \
+  OidcJwtIdAppUserContent=<id> QuarkusLogLevel=INFO MongodbLogLevel=INFO
 ```
 
 Voir le [Wiki – Opérations sur AWS](https://github.com/vzwingma/gestion-budget-serverless/wiki/Opérations-sur-AWS) pour le détail complet.
