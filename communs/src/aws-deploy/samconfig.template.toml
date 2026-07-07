@@ -1,5 +1,7 @@
 version = 0.1
 [default.deploy.parameters]
+# stack_name/s3_prefix : contrainte SAM CLI, ne peuvent pas être des Parameters du template.
+# Substitués via sed sur __ENV__ dans les workflows CI (build-on-master.yml / build-on-tags.yml).
 stack_name = "budget-app-__ENV__"
 resolve_s3 = true
 s3_prefix = "budget-app-__ENV__"
@@ -7,3 +9,6 @@ region = "eu-west-3"
 confirm_changeset = false
 capabilities = "CAPABILITY_IAM"
 image_repositories = []
+# Les autres paramètres (Env, Version, DatabaseUrl, DatabaseName, AppConfigUrlIhm,
+# AppConfigUrlBackends, OidcJwtIdAppUserContent, QuarkusLogLevel, MongodbLogLevel)
+# sont fournis par la CI via --parameter-overrides (cf. workflows), pas ici.

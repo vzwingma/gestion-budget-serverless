@@ -1,6 +1,40 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Application Budget - __VERSION__ - __ENV__ - AWS Serverless Quarkus backends
+Description: Application Budget - AWS Serverless Quarkus backends
+
+Parameters:
+  Env:
+    Type: String
+    Description: Environnement de déploiement (ex. QUA, PROD)
+  Version:
+    Type: String
+    Description: Version applicative déployée (ex. SNAPSHOT ou tag de release)
+  DatabaseUrl:
+    Type: String
+    Description: URL de connexion MongoDB (sans les paramètres de suffixe)
+    NoEcho: true
+  DatabaseName:
+    Type: String
+    Description: Nom de la base MongoDB
+  AppConfigUrlIhm:
+    Type: String
+    Description: URL de configuration exposée à l'IHM
+  AppConfigUrlBackends:
+    Type: String
+    Description: URL de configuration utilisée entre backends
+  OidcJwtIdAppUserContent:
+    Type: String
+    Description: Identifiant JWT OIDC pour AppUserContent
+    NoEcho: true
+  QuarkusLogLevel:
+    Type: String
+    Description: Niveau de log Quarkus
+    Default: INFO
+  MongodbLogLevel:
+    Type: String
+    Description: Niveau de log MongoDB
+    Default: INFO
+
 Globals:
   Api:
     EndpointConfiguration: REGIONAL
@@ -11,22 +45,22 @@ Globals:
     Environment:
       Variables:
         DISABLE_SIGNAL_HANDLERS: true
-        QUARKUS_MONGODB_CONNECTION_STRING: __DATABASE_URL__&ssl=true&authSource=admin&retryWrites=true&w=majority
-        QUARKUS_MONGODB_DATABASE: __DATABASE_NAME__
-        APP_CONFIG_URL_IHM: __APP_CONFIG_URL_IHM__
-        OIDC_JWT_ID_APPUSERCONTENT: __OIDC_JWT_ID_APPUSERCONTENT__
-        QUARKUS_LOG_LEVEL: __QUARKUS_LOG_LEVEL__
-        MONGODB_LOG_LEVEL: __MONGODB_LOG_LEVEL__
+        QUARKUS_MONGODB_CONNECTION_STRING: !Sub "${DatabaseUrl}&ssl=true&authSource=admin&retryWrites=true&w=majority"
+        QUARKUS_MONGODB_DATABASE: !Ref DatabaseName
+        APP_CONFIG_URL_IHM: !Ref AppConfigUrlIhm
+        OIDC_JWT_ID_APPUSERCONTENT: !Ref OidcJwtIdAppUserContent
+        QUARKUS_LOG_LEVEL: !Ref QuarkusLogLevel
+        MONGODB_LOG_LEVEL: !Ref MongodbLogLevel
 
 Resources:
-  ParametragesNative__ENV__:
+  ParametragesNative:
     Type: AWS::Serverless::Function
     Properties:
       Handler: not.used.in.provided.runtime
       Runtime: provided.al2023
       CodeUri: parametrages/function.zip
-      Description: µService Paramétrages __ENV__
-      MemorySize: 128
+      Description: !Sub "µService Paramétrages ${Env} - ${Version}"
+      MemorySize: 256
       Policies: AWSLambdaBasicExecutionRole
       Events:
         GetResource:
@@ -35,14 +69,14 @@ Resources:
             Path: /parametres/v2/{uri+}
             Method: any
 
-  UtilisateursNative__ENV__:
+  UtilisateursNative:
     Type: AWS::Serverless::Function
     Properties:
       Handler: not.used.in.provided.runtime
       Runtime: provided.al2023
       CodeUri: utilisateurs/function.zip
-      Description: µService Utilisateurs __ENV__
-      MemorySize: 128
+      Description: !Sub "µService Utilisateurs ${Env} - ${Version}"
+      MemorySize: 256
       Policies: AWSLambdaBasicExecutionRole
       Events:
         GetResource:
@@ -52,14 +86,14 @@ Resources:
             Method: any
 
 
-  ComptesNative__ENV__:
+  ComptesNative:
     Type: AWS::Serverless::Function
     Properties:
       Handler: not.used.in.provided.runtime
       Runtime: provided.al2023
       CodeUri: comptes/function.zip
-      Description: µService Comptes __ENV__
-      MemorySize: 128
+      Description: !Sub "µService Comptes ${Env} - ${Version}"
+      MemorySize: 256
       Policies: AWSLambdaBasicExecutionRole
       Events:
         GetResource:
@@ -69,18 +103,18 @@ Resources:
             Method: any
 
 
-  OperationsNative__ENV__:
+  OperationsNative:
     Type: AWS::Serverless::Function
     Properties:
       Handler: not.used.in.provided.runtime
       Runtime: provided.al2023
       CodeUri: operations/function.zip
-      Description: µService Opérations __ENV__
-      MemorySize: 128
+      Description: !Sub "µService Opérations ${Env} - ${Version}"
+      MemorySize: 256
       Policies: AWSLambdaBasicExecutionRole
       Environment:
         Variables:
-          APP_CONFIG_URL_BACKENDS: __APP_CONFIG_URL_BACKENDS__
+          APP_CONFIG_URL_BACKENDS: !Ref AppConfigUrlBackends
       Events:
         GetResource:
           Type: Api
@@ -89,23 +123,23 @@ Resources:
             Method: any
 
 Outputs:
-  ParametragesNativeApi__ENV__:
-    Description: URL __ENV__ for Parametrages API
-    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__/parametres'
+  ParametragesNativeApi:
+    Description: URL for Parametrages API
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}/parametres'
     Export:
-      Name: ParametragesNative__ENV__
-  UtilisateursNativeApi__ENV__:
-    Description: URL __ENV__ for Utilisateurs API
-    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__/utilisateurs'
+      Name: !Sub 'ParametragesNative${Env}'
+  UtilisateursNativeApi:
+    Description: URL for Utilisateurs API
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}/utilisateurs'
     Export:
-      Name: UtilisateursNative__ENV__
-  ComptesNativeApi__ENV__:
-    Description: URL __ENV__ for Parametrages API
-    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__/comptes'
+      Name: !Sub 'UtilisateursNative${Env}'
+  ComptesNativeApi:
+    Description: URL for Comptes API
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}/comptes'
     Export:
-      Name: ComptesNative__ENV__
-  OperationsNativeApi__ENV__:
-    Description: URL __ENV__ for Budgets & Opérations API
-    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/__ENV__/budgets'
+      Name: !Sub 'ComptesNative${Env}'
+  OperationsNativeApi:
+    Description: URL for Budgets & Opérations API
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}/budgets'
     Export:
-      Name: OperationsNative__ENV__
+      Name: !Sub 'OperationsNative${Env}'

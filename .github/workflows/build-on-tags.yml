@@ -20,6 +20,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout sources
@@ -53,18 +55,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload SAM configurations
+      # stack_name/s3_prefix ne peuvent pas être des Parameters SAM template (contrainte SAM CLI) : substitution sed conservée pour __ENV__ uniquement.
       - name: Find and Replace in Serverless Application Manager Config
         run: sed "s/__ENV__/PROD/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.template.toml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/samconfig.toml
-      - name: Find and Replace in Serverless Application Manager
-        run: sed -e "s/__ENV__/PROD/g" -e "s/__VERSION__/${{ steps.get_version.outputs.VERSION }}/g" -e "s/__DATABASE_URL__/${{ secrets.DATABASE_URL }}/g" -e "s/__DATABASE_NAME__/${{ secrets.DATABASE_NAME }}/g" -e "s/__APP_CONFIG_URL_IHM__/${{ vars.APP_CONFIG_URL_IHM }}/g" -e "s/__APP_CONFIG_URL_BACKENDS__/${{ vars.APP_CONFIG_URL_BACKENDS }}/g" -e "s/__OIDC_JWT_ID_APPUSERCONTENT__/${{ secrets.OIDC_JWT_ID_APPUSERCONTENT }}/g" -e "s/__QUARKUS_LOG_LEVEL__/${{ vars.QUARKUS_LOG_LEVEL }}/g" -e "s/__MONGODB_LOG_LEVEL__/${{ vars.MONGODB_LOG_LEVEL }}/g" /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml > /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
-          APP_CONFIG_URL_IHM: ${{ vars.APP_CONFIG_URL_IHM }}
-          APP_CONFIG_URL_BACKENDS: ${{ vars.APP_CONFIG_URL_BACKENDS }}
-          OIDC_JWT_ID_APPUSERCONTENT: ${{ secrets.OIDC_JWT_ID_APPUSERCONTENT }}
-          QUARKUS_LOG_LEVEL: ${{ vars.QUARKUS_LOG_LEVEL }}
-          MONGODB_LOG_LEVEL: ${{ vars.MONGODB_LOG_LEVEL }}
+      # Le template SAM natif n'utilise plus de placeholders texte : les valeurs sont injectées via --parameter-overrides au déploiement (voir job deploy-lambdas-apps).
+      - name: Copy SAM native template
+        run: cp /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.template.yaml /home/runner/work/gestion-budget-serverless/gestion-budget-serverless/communs/src/aws-deploy/sam.native.yaml
 
       - uses: actions/upload-artifact@v7
         name: Upload SAM Function Configuration
@@ -255,7 +251,9 @@ jobs:
     name: Deploy Lambda on PROD
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    environment: PROD
     needs:
+      - build-communs
       - build-quarkus-parametrages
       - build-quarkus-utilisateurs
       - build-quarkus-comptes
@@ -314,8 +312,19 @@ jobs:
       - run: sam build --use-container -t sam.native.yaml --config-file samconfig.toml
         name: SAM Build
       # Prevent prompts and failure when the stack is unchanged
-      - run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset -t sam.native.yaml --config-file samconfig.toml
-        name: SAM Deploy
+      - name: SAM Deploy
+        run: >
+          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset -t sam.native.yaml --config-file samconfig.toml
+          --parameter-overrides
+          Env=PROD
+          Version="${{ needs.build-communs.outputs.version }}"
+          DatabaseUrl="${{ secrets.DATABASE_URL }}"
+          DatabaseName="${{ secrets.DATABASE_NAME }}"
+          AppConfigUrlIhm="${{ vars.APP_CONFIG_URL_IHM }}"
+          AppConfigUrlBackends="${{ vars.APP_CONFIG_URL_BACKENDS }}"
+          OidcJwtIdAppUserContent="${{ secrets.OIDC_JWT_ID_APPUSERCONTENT }}"
+          QuarkusLogLevel="${{ vars.QUARKUS_LOG_LEVEL }}"
+          MongodbLogLevel="${{ vars.MONGODB_LOG_LEVEL }}"
 
 
   #
