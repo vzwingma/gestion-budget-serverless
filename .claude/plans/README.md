@@ -10,7 +10,7 @@ Cet index est **synthétique** : liste des plans + statut global uniquement (pas
 
 ## 📂 Plans Actifs / En Cours
 
-- [`001_modernisation_stack.plan.md`](./001_modernisation_stack.plan.md) — 🚀 Gate #1 validé, Phase 1 (ADR bootstrap) en cours. Modernisation backend : gouvernance ADR, upgrade Quarkus 3.x puis 4.x/Java 25, tuning infra Lambda, migrations MongoDB maison. Observabilité/OTel exclue (reportée).
+- [`001_modernisation_stack.plan.md`](./001_modernisation_stack.plan.md) — ✅ Phases 1-4 complétées (ADR, upgrade Quarkus 3.37.1, migrations Mongo, tuning infra SAM/CI). Phase 5 (Quarkus 4.x/Java 25) bloquée jusqu'à validation Phase 2 en prod. Phases 6/7/8 (backlog : hygiène technique, durcissement infra/CI, retrait workaround Jackson) ajoutées, non lancées.
 
 ---
 

@@ -416,20 +416,35 @@ BusinessTraceContext.getclear()
 
 ```
 1. Build communs        → mvn clean install + publish sur GitHub Packages
-2. Génération SAM       → sed sur samconfig.template.toml + sam.native.template.yaml
+2. Génération SAM       → sed sur samconfig.template.toml (stack_name/s3_prefix uniquement)
 3. Build µServices (parallèle)
    ├── parametrages    → mvn package -Pnative + build image Docker native
    ├── utilisateurs    → mvn package -Pnative + build image Docker native
    ├── comptes         → mvn package -Pnative + build image Docker native
    └── operations      → mvn package -Pnative + build image Docker native
-4. Déploiement SAM      → sam deploy (Lambda + API Gateway)
+4. Déploiement SAM      → sam deploy --parameter-overrides (Lambda + API Gateway)
 5. SonarCloud           → mvn verify -Psonar (sur master uniquement)
 ```
 
 ```bash
 # Déploiement manuel (depuis communs/src/aws-deploy/)
-sam deploy --config-file samconfig.template.toml
+sam deploy --config-file samconfig.template.toml --parameter-overrides \
+  Env=QUA Version=<version> DatabaseUrl=<url> DatabaseName=<db> \
+  AppConfigUrlIhm=<url> AppConfigUrlBackends=<url> \
+  OidcJwtIdAppUserContent=<id> QuarkusLogLevel=INFO MongodbLogLevel=INFO
 ```
+
+### Paramétrage SAM (Parameters + parameter-overrides)
+
+Depuis Phase 3 (tuning infra Lambda), `sam.native.template.yaml` utilise un vrai paramétrage SAM plutôt que des placeholders texte remplacés par `sed` :
+
+- **`Parameters:`** en tête de template déclare les 9 valeurs injectées au déploiement (`Env`, `Version`, `DatabaseUrl`, `DatabaseName`, `AppConfigUrlIhm`, `AppConfigUrlBackends`, `OidcJwtIdAppUserContent`, `QuarkusLogLevel`, `MongodbLogLevel`), consommées via `!Ref`/`!Sub` dans `Globals.Function.Environment.Variables`.
+- **`NoEcho: true`** sur les paramètres sensibles (`DatabaseUrl`, `OidcJwtIdAppUserContent`) — masqués dans la console AWS et les logs CloudFormation.
+- La CI (`build-on-master.yml`, `build-on-tags.yml`) ne fait plus de `sed` sur le template YAML : `sam deploy` reçoit les 9 valeurs via `--parameter-overrides`, alimentées par les mêmes secrets/vars GitHub Actions qu'avant. Le job de déploiement déclare explicitement `environment: QUA`/`PROD` pour fiabiliser la résolution des secrets scopés environnement GitHub.
+- **Exception** : `stack_name`/`s3_prefix` dans `samconfig.template.toml` gardent le placeholder texte `__ENV__`, substitué par `sed` en CI. Contrainte SAM CLI — ces valeurs pilotent la commande `sam deploy` elle-même (résolution du fichier de config avant lecture du template) et ne peuvent pas être des `Parameters` de template.
+- **LogicalIds CloudFormation** simplifiés (`ParametragesNative__ENV__` → `ParametragesNative`, etc.) : sans risque car QUA et PROD déploient dans des stacks CloudFormation séparées (`budget-app-QUA`/`budget-app-PROD`, cf. `stack_name`) — le logicalId est scopé à la stack, pas au compte AWS. Seul `Export.Name` (scope global compte+région, utilisé par `Fn::ImportValue` en cross-stack) garde le suffixe `${Env}` via `!Sub`.
+
+> ℹ️ `MemorySize` des 4 fonctions Lambda passé de 128 Mo à 256 Mo — estimation motivée (CPU proportionnel à la mémoire sur Lambda ; runtime natif GraalVM + désérialisation JSON + driver MongoDB réactif bénéficient de la marge CPU), **pas un chiffre issu d'une mesure réelle**. À confirmer via AWS Lambda Power Tuning en production dans une itération future.
 
 ### Build natif local
 

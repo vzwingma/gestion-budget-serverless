@@ -1,5 +1,9 @@
 /communs/target/
 /parametrages/target/
+/utilisateurs/target/
+/comptes/target/
+/operations/target/
+/target/
 /.idea
 .env
 .env.qua
