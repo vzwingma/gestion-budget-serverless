@@ -314,10 +314,10 @@ Dernier palier, risque élevé (breaking changes config keys, extensions renomm�
 - **Acceptation :** valeur confirmée par mesure chiffrée réelle, ajustée si besoin
 - **Dépendance :** déploiement réel effectué (bloquant, externe)
 
-#### T7.2 - Confirmer scoping secrets GitHub Environments
+#### T7.2 - Confirmer scoping secrets GitHub Environments ✅ complétée
 - **Agent :** développeur humain (vérification console GitHub, pas de code)
 - **Couvrir :** vérifier GitHub Settings → Environments que secrets `DATABASE_URL`, `DATABASE_NAME`, `OIDC_JWT_ID_APPUSERCONTENT` sont bien scopés `QUA`/`PROD` cohérent avec l'ajout `environment:` en Phase 3
-- **Acceptation :** confirmation explicite, pas de secret vide au premier déploiement
+- **Acceptation :** ✅ confirmé par développeur (2026-07-07) — les 3 secrets bien scopés `QUA`/`PROD` en tant que Secret GitHub Environment
 
 #### T7.3 - Corriger sed samconfig.template.toml
 - **Agent :** DEVon
@@ -325,11 +325,11 @@ Dernier palier, risque élevé (breaking changes config keys, extensions renomm�
 - **Couvrir :** `sed` global sur `__ENV__` altère aussi le commentaire explicatif ajouté en Phase 3 — cibler la substitution aux seules lignes fonctionnelles (`stack_name`/`s3_prefix`) ou reformuler le commentaire pour éviter le pattern `__ENV__`
 - **Acceptation :** commentaire intact après substitution CI, valeurs fonctionnelles toujours correctes
 
-#### T7.4 - Durcir --parameter-overrides
+#### T7.4 - Durcir --parameter-overrides ✅ complétée
 - **Agent :** DEVon
 - **Fichier(s) :** `.github/workflows/build-on-master.yml`, `build-on-tags.yml`
-- **Couvrir :** remplacer les arguments shell inline par un fichier de paramètres SAM (JSON) pour éliminer le risque de caractère spécial (guillemet littéral) cassant le token shell
-- **Acceptation :** déploiement toujours fonctionnel, robuste à tout contenu de secret
+- **Couvrir :** déclenchée par alerte sécurité SonarCloud réelle (PR #186, "Avoid expanding secrets in a run block"). Secrets/vars déplacés dans bloc `env:` du step "SAM Deploy" + référencés `$VAR` dans `run:` (pattern répliqué du step Sonar existant) — plus d'interpolation `${{ secrets.X }}`/`${{ vars.X }}` directe dans le shell
+- **Acceptation :** ✅ YAML valide, aucun secret/var interpolé dans `run:` (grep confirmé), fonctionnellement identique, non commité — prêt revue humaine
 
 #### T7.5 - Check désync version Quarkus
 - **Agent :** DEVon

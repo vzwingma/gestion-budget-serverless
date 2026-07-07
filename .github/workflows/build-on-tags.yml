@@ -317,14 +317,23 @@ jobs:
           sam deploy --no-confirm-changeset --no-fail-on-empty-changeset -t sam.native.yaml --config-file samconfig.toml
           --parameter-overrides
           Env=PROD
-          Version="${{ needs.build-communs.outputs.version }}"
-          DatabaseUrl="${{ secrets.DATABASE_URL }}"
-          DatabaseName="${{ secrets.DATABASE_NAME }}"
-          AppConfigUrlIhm="${{ vars.APP_CONFIG_URL_IHM }}"
-          AppConfigUrlBackends="${{ vars.APP_CONFIG_URL_BACKENDS }}"
-          OidcJwtIdAppUserContent="${{ secrets.OIDC_JWT_ID_APPUSERCONTENT }}"
-          QuarkusLogLevel="${{ vars.QUARKUS_LOG_LEVEL }}"
-          MongodbLogLevel="${{ vars.MONGODB_LOG_LEVEL }}"
+          Version="$VERSION"
+          DatabaseUrl="$DATABASE_URL"
+          DatabaseName="$DATABASE_NAME"
+          AppConfigUrlIhm="$APP_CONFIG_URL_IHM"
+          AppConfigUrlBackends="$APP_CONFIG_URL_BACKENDS"
+          OidcJwtIdAppUserContent="$OIDC_JWT_ID_APPUSERCONTENT"
+          QuarkusLogLevel="$QUARKUS_LOG_LEVEL"
+          MongodbLogLevel="$MONGODB_LOG_LEVEL"
+        env:
+          VERSION: ${{ needs.build-communs.outputs.version }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          APP_CONFIG_URL_IHM: ${{ vars.APP_CONFIG_URL_IHM }}
+          APP_CONFIG_URL_BACKENDS: ${{ vars.APP_CONFIG_URL_BACKENDS }}
+          OIDC_JWT_ID_APPUSERCONTENT: ${{ secrets.OIDC_JWT_ID_APPUSERCONTENT }}
+          QUARKUS_LOG_LEVEL: ${{ vars.QUARKUS_LOG_LEVEL }}
+          MONGODB_LOG_LEVEL: ${{ vars.MONGODB_LOG_LEVEL }}
 
 
   #
