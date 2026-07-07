@@ -304,6 +304,19 @@ gestion-budget-serverless/
 | `categories` | `parametrages` | Catégories et sous-catégories d'opérations |
 | `utilisateurs` | `utilisateurs` | Profils et préférences utilisateurs |
 | `jwkskeys` | `communs` (tous) | Clés JWKS Google (cache) |
+| `_migrations` | `communs` (tous) | Suivi d'exécution des migrations MongoDB (voir section [Migrations MongoDB](#-migrations-mongodb)) |
+
+---
+
+## 🔀 Migrations MongoDB
+
+Mécanisme maison (module `communs`, package `migrations/`) — voir [ADR-002](./adr/002-migrations-mongodb-maison.md) pour le détail du choix (Mongock écarté : risque incompatibilité GraalVM native-image).
+
+- **Déclenchement** : automatique au démarrage de chaque microservice, via `MongoMigrationRunner` (`@ApplicationScoped`, `@Observes StartupEvent`). Migrations découvertes par injection CDI standard (`Instance<IMongoMigration>`), triées par version croissante, exécutées séquentiellement.
+- **Convention de nommage** : `V<numéro sur 3 chiffres>_<description courte>` (ex. `V001_InitMigrationsCollection`, `V002_AjoutIndexComptes`). Numéro unique, strictement croissant, jamais réutilisé ni modifié une fois publié.
+- **Où ajouter une migration** : nouvelle classe `@ApplicationScoped` implémentant `IMongoMigration` dans `communs/src/main/java/.../communs/migrations/scripts/`. `V001_InitMigrationsCollection.java` sert de gabarit.
+- **Idempotence** : obligatoire. Le runner garantit la non ré-exécution d'une migration déjà en statut `SUCCES` (suivi dans la collection `_migrations`), mais le code de chaque migration doit rester défensif (ex. vérifier l'existence d'un index avant de le créer).
+- **Traçabilité** : chaque exécution (succès ou échec) est enregistrée dans `_migrations` (`MigrationRecord` : version, description, date, statut). Une migration en échec est journalisée en erreur mais ne bloque ni le démarrage de l'application ni l'exécution des migrations suivantes.
 
 ---
 
@@ -433,6 +446,7 @@ mvn clean package -Pnative -Dquarkus.native.container-build=true
 | # | Décision | Statut |
 |---|---|---|
 | [001](./adr/001-strategie-modernisation-stack.md) | Stratégie de modernisation du stack backend (paliers Quarkus 3.x→4.x, tuning infra Lambda, migrations Mongo maison) | Acceptée |
+| [002](./adr/002-migrations-mongodb-maison.md) | Mécanisme de migrations MongoDB maison (CDI, rejet de Mongock) | Acceptée |
 
 > 💡 Toute nouvelle décision architecturale majeure (nouveau framework, changement de pattern, décision de sécurité) doit faire l'objet d'un ADR délégué à l'agent 🟣 DOCly.
 
