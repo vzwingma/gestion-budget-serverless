@@ -438,6 +438,12 @@ sam deploy --config-file samconfig.template.toml --parameter-overrides \
   OidcJwtIdAppUserContent=<id> QuarkusLogLevel=INFO MongodbLogLevel=INFO
 ```
 
+### Renovate — synchronisation version Quarkus (pom.xml vs docs)
+
+Le job `build-communs` (`build-on-master.yml`) inclut une étape *"Check Quarkus version sync"* qui échoue si `quarkus.platform.version` (`pom.xml`) diverge des mentions `Quarkus X.Y.Z` codées en dur dans `README.md`, ce document, `.claude/instructions/dev.instructions.md` et `.claude/instructions/orchestrator.instructions.md`.
+
+Pour éviter que Renovate ne bump `pom.xml` seul (automerge minor/patch actif) sans mettre à jour ces 4 fichiers, `renovate.json` déclare un `customManager` regex qui suit les mêmes fichiers avec le `depName`/`datasource` de `quarkus-bom` (`io.quarkus:quarkus-bom`, datasource `maven`) — Renovate regroupe ainsi la mise à jour doc et pom dans la même PR, et le check CI ne peut plus diverger. Voir [`.claude/plans/002_fix_desync_quarkus_renovate.plan.md`](../.claude/plans/002_fix_desync_quarkus_renovate.plan.md).
+
 ### Paramétrage SAM (Parameters + parameter-overrides)
 
 Depuis Phase 3 (tuning infra Lambda), `sam.native.template.yaml` utilise un vrai paramétrage SAM plutôt que des placeholders texte remplacés par `sed` :

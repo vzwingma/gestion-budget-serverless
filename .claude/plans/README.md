@@ -10,7 +10,7 @@ Cet index est **synthétique** : liste des plans + statut global uniquement (pas
 
 ## 📂 Plans Actifs / En Cours
 
-_(Aucun plan `.claude/` actif pour l'instant)_
+- [`002_fix_desync_quarkus_renovate.plan.md`](./002_fix_desync_quarkus_renovate.plan.md) — 🔵 **En cours**. Fix désync version Quarkus (`pom.xml` vs README/ARCHITECTURE.md/instructions) sur PR Renovate — check CI "Check Quarkus version sync" cassait car Renovate ne suivait pas les fichiers doc. Phase 1 ✅ (`customManager` Renovate ajouté dans `renovate.json`) ; Phase 2 (vérification + déblocage PR en cours) et Phase 3 (doc) restantes.
 
 ---
 
