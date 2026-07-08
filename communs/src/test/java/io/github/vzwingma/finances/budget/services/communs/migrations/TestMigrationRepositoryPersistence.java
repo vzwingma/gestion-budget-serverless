@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,13 +31,12 @@ import static org.junit.jupiter.api.Assertions.fail;
  * d'interférence avec l'hypothèse "base fraîche" du test de fumée, indépendamment de l'ordre réel
  * d'exécution des méthodes ou des classes.
  * <p>
- * <b>Nettoyage</b> : {@link #nettoyerCollection()} vide entièrement la collection {@code _migrations}
- * après chaque test via {@link MigrationRepository#deleteAll()} (option explicitement suggérée pour
- * cette tâche). Sûr ici car la base {@code communs-test} / collection {@code _migrations} est dédiée
- * aux tests de ce module, exécutés séquentiellement par Surefire au sein d'un même fork JVM (pas de
- * classes {@code @QuarkusTest} exécutées en parallèle par défaut) : la collection est donc vide à
- * chaque fin d'exécution de cette classe, ce qui satisfait aussi l'hypothèse "base fraîche" du test de
- * fumée de {@link TestMigrationRepository}, quel que soit l'ordre relatif des deux classes.
+ * <b>Nettoyage</b> : {@link #nettoyerCollection()} supprime uniquement les versions de test créées par
+ * cette classe (par {@code deleteById}), pas {@link MigrationRepository#deleteAll()} — la collection
+ * contient aussi la migration réelle {@code V001_InitMigrationsCollection} appliquée par
+ * {@link MongoMigrationRunner} au démarrage Quarkus, qu'un {@code deleteAll()} effacerait et casserait
+ * l'hypothèse "base fraîche" du test de fumée {@link TestMigrationRepository} si celui-ci s'exécute après
+ * cette classe.
  * <p>
  * <b>Prérequis</b> : Docker (ou Podman) disponible sur la machine exécutant les tests, cf. javadoc de
  * {@link TestMigrationRepository} pour le détail du mécanisme Dev Services.
@@ -56,12 +56,13 @@ class TestMigrationRepositoryPersistence {
     MigrationRepository migrationRepository;
 
     /**
-     * Vide la collection {@code _migrations} après chaque test. Voir javadoc de classe pour la
-     * justification du choix de {@code deleteAll()} plutôt qu'une suppression ciblée par version.
+     * Supprime les versions de test créées par cette classe. Voir javadoc de classe pour la
+     * justification du choix d'une suppression ciblée plutôt que {@code deleteAll()}.
      */
     @AfterEach
     void nettoyerCollection() {
-        migrationRepository.deleteAll().await().indefinitely();
+        Stream.of(VERSION_SUCCES, VERSION_ECHEC, VERSION_LISTE_SUCCES_1, VERSION_LISTE_SUCCES_2, VERSION_LISTE_ECHEC)
+                .forEach(version -> migrationRepository.deleteById(version).await().indefinitely());
     }
 
     /**
