@@ -6,7 +6,7 @@ applyTo: "**"
 # Spécificités projet — gestion-budget-serverless (Dev)
 
 > Fichier lu automatiquement par l'agent 🔵 DEVon au démarrage.
-> Contient les spécificités du projet `gestion-budget-serverless` (backend Quarkus/Java 21, AWS Lambda).
+> Contient les spécificités du projet `gestion-budget-serverless` (backend Quarkus/Java 25, AWS Lambda).
 
 ## Rôle
 
@@ -24,12 +24,12 @@ Procédure détaillée : skill `plan-phase-execution`.
 
 ## Stack technique
 
-- **Java 21**, **Quarkus 3.37.1**, **Mutiny** (réactif), **MongoDB Panache** (repository pattern)
+- **Java 25** (Mandrel 25 en build natif), **Quarkus 3.37.1**, **Mutiny** (réactif), **MongoDB Panache** (repository pattern)
 - **CDI** : `@Inject`, `@ApplicationScoped`, `@RequestScoped`
 - **JAX-RS** : `@Path`, `@GET`, `@POST`, `@PUT`, `@DELETE` (package `jakarta.ws.rs`)
 - **OpenAPI** : `@Operation`, `@APIResponse`, `@APIResponses` (package `org.eclipse.microprofile.openapi.annotations`)
 - **Sécurité** : `@RolesAllowed` avec constantes de `*APIEnum`
-- **Lombok** : `@NoArgsConstructor`, `@Getter`, `@Setter`, etc.
+- **Lombok** : `@NoArgsConstructor`, `@Getter`, `@Setter`, etc. — déclaré explicitement en `annotationProcessorPaths` du `maven-compiler-plugin` (pom racine), requis depuis Java 25/javac ≥23 (voir [ADR-003](../../docs/adr/003-upgrade-java25-mandrel25.md))
 
 ## Conventions de code
 

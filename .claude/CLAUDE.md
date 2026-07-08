@@ -1,6 +1,6 @@
 # Instructions Claude — gestion-budget-serverless
 
-> Backend Quarkus/Java 21 de l'application de gestion de budget, déployé sous forme de fonctions AWS Lambda natives.
+> Backend Quarkus/Java 25 de l'application de gestion de budget, déployé sous forme de fonctions AWS Lambda natives.
 > Le frontend se trouve dans le dépôt compagnon [`gestion-budget-ihm`](../gestion-budget-ihm) (React/TypeScript).
 > Configuration Claude Code (claude.ai/code, CLI, IDEs) — infrastructure orchestrée pour développement via 5 agents spécialisés.
 

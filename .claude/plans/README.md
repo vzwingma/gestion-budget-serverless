@@ -10,7 +10,7 @@ Cet index est **synthétique** : liste des plans + statut global uniquement (pas
 
 ## 📂 Plans Actifs / En Cours
 
-- [`001_modernisation_stack.plan.md`](./001_modernisation_stack.plan.md) — ✅ Phases 1-4 complétées (ADR, upgrade Quarkus 3.37.1, migrations Mongo, tuning infra SAM/CI). Phase 5 (Quarkus 4.x/Java 25) bloquée jusqu'à validation Phase 2 en prod. Phases 6/7/8 (backlog : hygiène technique, durcissement infra/CI, retrait workaround Jackson) ajoutées, non lancées.
+- [`001_modernisation_stack.plan.md`](./001_modernisation_stack.plan.md) — ✅ Phases 1-7 complétées (ADR-001/002/003, upgrade Quarkus 3.37.1, migrations Mongo, tuning infra SAM/CI, Java 25 + Mandrel 25 sur les 5 modules) ; Phase 8 partiellement complétée (T8.2 ✅, T8.1 bloquée backport upstream Quarkus #55278). QUA/PROD déployés et fonctionnels.
 
 ---
 

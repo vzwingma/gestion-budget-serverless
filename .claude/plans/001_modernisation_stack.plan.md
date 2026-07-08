@@ -1,7 +1,7 @@
 # Plan d'Action 001 — Modernisation stack backend
 
 **Date création :** 2026-07-06
-**Statut :** ✅ Phases 1, 2, 3, 4, 6, 7 **entièrement complétées** (toutes tâches ✅, détail par tâche dans chaque section) — ADR-001/002, upgrade Quarkus 3.37.1, migrations Mongo maison, tuning infra SAM/CI, .gitignore, architect.instructions.md enrichi, mesure MemorySize réelle (256Mo confirmé), fix SonarCloud PR #186, sed cosmétique corrigé, check CI désync version. ✅ **QUA et PROD déployés et fonctionnels** (2026-07-07) après résolution de 2 incidents réels documentés (Phase 3 : stack bloquée par renommage LogicalId + CORS cassé par valeurs GitHub pré-échappées). ✅ Phase 8 : T8.2 complétée (couverture réelle `MigrationRepository` + bug générique `ObjectId`/`String` corrigé) — T8.1 bloquée (backport Quarkus #55278 non confirmé). ⏸️ **Phase 5** : T5.1 complétée (recherche réelle) — **redécoupée** : Quarkus 4.x Not-yet (pas de GA, Beta1 sept. 2026 au plus tôt), mais **Java 25 + Mandrel 25 faisables dès maintenant sur Quarkus 3.37.1 inchangé**. ✅ **Spike 5a (T5.2+T5.3) exécuté et concluant (2026-07-07)** : build JVM+natif Java25/Mandrel25 réussis sur `communs`+`parametrages`, seul breaking change réel = Lombok `annotationProcessorPaths` (fix trivial), effort largement inférieur à l'estimation initiale "M". **Gate spike (Go/No-Go pour 5b) en attente de décision développeur.**
+**Statut :** ✅ Phases 1, 2, 3, 4, 6, 7 **entièrement complétées** (toutes tâches ✅, détail par tâche dans chaque section) — ADR-001/002, upgrade Quarkus 3.37.1, migrations Mongo maison, tuning infra SAM/CI, .gitignore, architect.instructions.md enrichi, mesure MemorySize réelle (256Mo confirmé), fix SonarCloud PR #186, sed cosmétique corrigé, check CI désync version. ✅ **QUA et PROD déployés et fonctionnels** (2026-07-07) après résolution de 2 incidents réels documentés (Phase 3 : stack bloquée par renommage LogicalId + CORS cassé par valeurs GitHub pré-échappées). ✅ Phase 8 : T8.2 complétée (couverture réelle `MigrationRepository` + bug générique `ObjectId`/`String` corrigé) — T8.1 bloquée (backport Quarkus #55278 non confirmé). ✅ **Phase 5 complétée (2026-07-08)** : Quarkus 4.x Not-yet (pas de GA, Beta1 sept. 2026 au plus tôt, hors scope) — **Java 25 + Mandrel 25 déployés sur les 5 modules, Quarkus 3.37.1 inchangé**. Spike 5a (T5.2/T5.3) concluant, Gate spike Go donné par le développeur, migration complète 5b (T5.4-T5.7) réalisée : build JVM+natif Lambda verts sur les 5 modules en CI, ADR-003 rédigé. Seul breaking change réel = Lombok `annotationProcessorPaths` (javac≥23). Bug latent non lié trouvé et corrigé au passage (hypothèse fausse "base fraîche" `TestMigrationRepository`, révélée par première exécution réelle des tests Mongo en CI).
 **Porteur :** ⚫ MAINa
 **Analyse préalable :** Consultation ARCos (Gate #0) — recommandations retenues par axe :
 - Upgrade versions : palier incrémental (Quarkus 3.x dernière stable d'abord, Quarkus 4.x/Java 25 en dernier, isolé par spike) — **Option A ARCos retenue**
@@ -257,31 +257,31 @@ Risque élevé sur l'axe Quarkus 4.x initialement prévu (breaking changes, matu
 - **Couvrir :** build natif Lambda sur le module spike seul, via job CI GitHub Actions temporaire dédié (`spike-native-java25.yml`, jamais fusionné, supprimé après résultats) — Docker/Podman absents en local (même limite que Phase 2/T2.2, Phase 8/T8.2)
 - **Acceptation :** ✅ **succès** (run [28893062710](https://github.com/vzwingma/gestion-budget-serverless/actions/runs/28893062710), 6min38s, toutes étapes vertes) avec l'image `quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25`. Un premier essai avait échoué (401 Unauthorized sur GitHub Packages) — cause : runner CI frais sans le parent pom `services` en cache local (contrairement à la machine dev, déjà peuplée par les sessions précédentes), résolution retombant sur GitHub Packages sans credentials configurés dans ce workflow spike ponctuel. Corrigé par ajout d'une étape `mvn -N install` sur le pom racine avant `communs` — **non lié à Java25/Mandrel25**, artefact de la construction du workflow spike lui-même, sans impact sur 5b (les workflows CI existants `build-on-master.yml`/`build-on-tags.yml` gèrent déjà correctement cette résolution via jobs séparés + publish GitHub Packages).
 
-**→ Gate spike (Go/No-Go)** : résultats ci-dessus prêts à présenter au 👤 développeur avant 5b. Spike concluant : aucun blocage réel Java25/Mandrel25/Quarkus3.37.1 trouvé, effort largement inférieur à l'estimation. Décision Go/No-Go pour 5b (T5.4-T5.7, extension aux 4 modules restants + ADR-003) **encore à prendre par le développeur** — pas de passage automatique.
+**→ Gate spike (Go/No-Go)** ✅ **Go donné par le développeur (2026-07-08)** — spike concluant, aucun blocage réel Java25/Mandrel25/Quarkus3.37.1 trouvé, effort largement inférieur à l'estimation.
 
-**5b — Migration complète (si Go)**
+**5b — Migration complète** ✅ **complétée (2026-07-08)**
 
-#### T5.4 - Étendre aux 4 modules restants
+#### T5.4 - Étendre aux 4 modules restants ✅ complétée
 - **Agent :** DEVon
-- **Fichier(s) :** `pom.xml` racine + 5 modules (`maven.compiler.release` 21→25 ; `quarkus.platform.version` **inchangé**, reste 3.37.1 — pas d'upgrade Quarkus 4.x tant que non GA)
-- **Acceptation :** upgrade appliqué partout
+- **Fichier(s) :** `pom.xml` racine (`maven.compiler.release`/`source`/`target` 21→25, hérité par les 5 modules ; `quarkus.platform.version` **inchangé** 3.37.1)
+- **Acceptation :** ✅ upgrade appliqué, build JVM vert sur les 5 modules (`communs`, `parametrages`, `utilisateurs`, `comptes`, `operations`) sur `feat/upgrade`
 
-#### T5.5 - Corriger extensions/hints restants
+#### T5.5 - Corriger extensions/hints restants ✅ complétée
 - **Agent :** DEVon
-- **Fichier(s) :** 4× `JwtReflectionConfig.java`, `application.properties` si clés renommées
-- **Acceptation :** aucune régression reflection
+- **Fichier(s) :** 4× `JwtReflectionConfig.java`
+- **Acceptation :** ✅ les 4 fichiers identiques au spike (`@RegisterForReflection` standard sur 5 DTO JWT de `communs`), aucune modification nécessaire, confirmé valide au build natif (T5.6)
 
-#### T5.6 - Tests + build natif complet
+#### T5.6 - Tests + build natif complet ✅ complétée
 - **Agent :** QALvin
 - **Couvrir :** `mvn clean test` + build natif sur les 5 modules
-- **Acceptation :** non-régression complète confirmée
+- **Acceptation :** ✅ tests verts sur les 5 modules (JDK25). **Bug réel trouvé et corrigé au passage, sans lien avec Java25** : `TestMigrationRepository.testListerVersionsAppliqueesSurBaseFraiche` supposait à tort la collection `_migrations` vide au démarrage — en réalité `MongoMigrationRunner` y insère la migration `V001` à chaque boot Quarkus (`@Observes StartupEvent`). Jamais détecté avant (Phase 8/T8.2 : tests jamais exécutés contre un vrai MongoDB en local, pas de Docker) — révélé par la première exécution réelle en CI (`build-on-all.yml`, Docker disponible sur les runners GitHub Actions). Corrigé : assertion changée pour vérifier la présence de `V001` plutôt que la vacuité de la liste ; `TestMigrationRepositoryPersistence` corrigée en parallèle (son `@AfterEach` faisait `deleteAll()` sur toute la collection, effaçant `V001` si elle s'exécute avant le test de fumée — remplacé par une suppression ciblée des seules versions de test via `deleteById`). Build natif Lambda confirmé en CI sur les 5 fonctions (`parametrages` via spike, `communs`/`utilisateurs`/`comptes`/`operations` via workflow de validation temporaire, tous verts, image `quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25`, 3-5min par fonction). Workflows CI production (`build-on-master.yml`, `build-on-tags.yml`, `build-on-all.yml`) mis à jour JDK25/Mandrel25 ; workflows temporaires de validation supprimés après confirmation.
 
-#### T5.7 - ADR-003 + documentation
+#### T5.7 - ADR-003 + documentation ✅ complétée
 - **Agent :** DOCly
-- **Fichier(s) :** `docs/adr/003-upgrade-quarkus4-java25.md`, `docs/ARCHITECTURE.md`, `.claude/instructions/dev.instructions.md`, `.claude/instructions/qa.instructions.md`
-- **Acceptation :** version exacte choisie documentée avec justification
+- **Fichier(s) :** `docs/adr/003-upgrade-java25-mandrel25.md` (créé), `docs/ARCHITECTURE.md`, `.claude/instructions/dev.instructions.md`, `.claude/instructions/qa.instructions.md`, `.claude/instructions/orchestrator.instructions.md`, `.claude/instructions/architect.instructions.md`, `.claude/instructions/doc.instructions.md`, `.claude/CLAUDE.md`, `README.md`
+- **Acceptation :** ✅ ADR-003 rédigé et accepté (Java 25 + Mandrel 25 sur Quarkus 3.37.1 inchangé, alternatives Quarkus 4.x/statu quo écartées avec justification). Toutes mentions "Java 21" mises à jour vers "Java 25" dans la doc/instructions courante (fichiers historiques ADR-001 et corps du plan non modifiés — reflètent l'état à leur date de rédaction)
 
-**Effort :** M (révisé à la baisse — simple bump JDK/Mandrel sur Quarkus inchangé, pas de saut de version majeure Quarkus). **Risque :** moyen (mitigation : spike obligatoire isolé avant engagement large, rollback trivial tant que 5b non lancé ; statut PR #55278 à confirmer avant lancement). **Dépendances :** Phase 2 validée stable ✅ satisfaite.
+**Effort réel :** S (bien en dessous de l'estimation "M" — un seul correctif substantiel, Lombok `annotationProcessorPaths`, trouvé dès le spike et appliqué en quelques minutes ; le bug test Mongo était hors scope Java25 mais corrigé au passage). **Risque réel :** nul — aucun blocage Java25/Mandrel25/Quarkus3.37.1 sur les 5 modules, build JVM + natif Lambda confirmés en CI. **Dépendances :** Phase 2 validée stable ✅ satisfaite, spike 5a concluant ✅.
 
 ---
 
@@ -436,13 +436,13 @@ Phase 4 indépendante de Phases 2/3/5 — peut démarrer dès Phase 1 close, en 
 
 ## Critères de Succès Globaux
 
-1. ✅ ADR-001, ADR-002 rédigés et acceptés ; ADR-003 (Phase 5) — en attente si palier 4.x lancé
+1. ✅ ADR-001, ADR-002, ADR-003 rédigés et acceptés
 2. ✅ Override Netty manuel retiré (BOM 3.37.1 ≥ seuil CVE)
-3. ✅ `mvn clean test` vert sur les 5 modules (344 tests) ; build natif confirmé indirectement (déploiement QUA/PROD réel réussi), non vérifiable en local (pas de Docker)
+3. ✅ `mvn clean test` vert sur les 5 modules (JDK25) ; build natif confirmé en CI sur les 5 fonctions (Mandrel 25, `quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25`)
 4. ✅ Paramétrage SAM sans `sed` (sauf stack_name/s3_prefix, contrainte SAM CLI), `MemorySize` 256Mo confirmé par mesure réelle CloudWatch (T7.1)
 5. ✅ Mécanisme migrations Mongo fonctionnel en mode natif, idempotent, testé (15 tests + couverture repository réelle T8.2)
-6. ⏳ Spike Phase 5 — pas encore lancé
-7. ⏳ Versions cibles Quarkus 4.x/Java 25 — à revalider au lancement effectif de Phase 5
+6. ✅ Spike Phase 5 exécuté et concluant, Gate spike Go donné par le développeur
+7. ✅ Java 25 + Mandrel 25 déployés sur les 5 modules, Quarkus reste 3.37.1 (4.x reporté, pas de GA disponible)
 
 ---
 

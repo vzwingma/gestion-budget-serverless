@@ -50,7 +50,7 @@ Projet Maven multi-modules :
 
 ## Prérequis
 
-- **Java 21** (GraalVM/Mandrel pour le build natif)
+- **Java 25** (Mandrel 25 pour le build natif)
 - **Apache Maven 3.9+**
 - **MongoDB** accessible (local sur `localhost:27017` ou Atlas)
 - *(Optionnel)* **VS Code** avec les extensions [Extension Pack for Java](https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-pack) et [Quarkus](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-quarkus)
