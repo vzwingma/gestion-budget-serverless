@@ -241,7 +241,7 @@ gestion-budget-serverless/
 | `POST` | `/budgets/v2/{idBudget}/operations/versCompte/{idCompte}` | Opération intercompte | `USER_OPERATIONS` |
 | `GET` | `/budgets/v2/compte/{idCompte}/operations/libelles` | Libellés connus d'un compte | `USER_OPERATIONS` |
 | `POST` | `/budgets/v2/compte/{idCompte}/operations/libelles/override` | Surcharger un libellé | `USER_OPERATIONS` |
-| `GET` | `/budgets/v2/admin/...` | Endpoints administration (AdminBudgetResource) | `USER_OPERATIONS` |
+| `POST` | `/budgets/v2/admin/{idCompte}/operations/libelles/override` | Consolidation en masse des libellés d'un compte (AdminBudgetResource) | `USER_OPERATIONS` |
 
 ### µService `parametrages` — `/parametres/v2`
 
