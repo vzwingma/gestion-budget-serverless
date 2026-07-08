@@ -1,6 +1,8 @@
 name: VALIDATE - native Java25/Mandrel25 (5 modules, temporaire)
 
 on:
+  push:
+    branches: [ feat/upgrade ]
   workflow_dispatch:
 
 jobs:
