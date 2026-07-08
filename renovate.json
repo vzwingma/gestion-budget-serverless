@@ -11,22 +11,5 @@
       "automerge": true
     }
   ],
-  "platformAutomerge": true,
-  "customManagers": [
-    {
-      "customType": "regex",
-      "fileMatch": [
-        "^README\\.md$",
-        "^docs/ARCHITECTURE\\.md$",
-        "^\\.claude/instructions/dev\\.instructions\\.md$",
-        "^\\.claude/instructions/orchestrator\\.instructions\\.md$"
-      ],
-      "matchStrings": [
-        "Quarkus[^0-9]{0,15}(?<currentValue>\\d+\\.\\d+\\.\\d+)"
-      ],
-      "depNameTemplate": "io.quarkus:quarkus-bom",
-      "datasourceTemplate": "maven",
-      "versioningTemplate": "semver"
-    }
-  ]
+  "platformAutomerge": true
 }
