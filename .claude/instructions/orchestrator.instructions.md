@@ -21,7 +21,7 @@ Responsabilités spécifiques :
 
 ## Contexte technique du projet
 
-- **Stack** : Java 25, Quarkus 3.37.1, Mutiny (réactif), MongoDB Panache, CDI, JAX-RS, Lombok.
+- **Stack** : Java 25, Quarkus 3.37.2, Mutiny (réactif), MongoDB Panache, CDI, JAX-RS, Lombok.
 - **Structure multi-modules Maven** : `communs` (bibliothèque partagée, buildée en premier), puis microservices indépendants `parametrages`, `utilisateurs`, `comptes`, `operations`.
 - **Architecture hexagonale par microservice** : couches `api/` (REST JAX-RS) → `business/` (services + ports) → `spi/` (adaptateurs MongoDB/REST inter-services).
 - **Déploiement** : images natives GraalVM/Mandrel sur AWS Lambda via SAM. CI build `communs` d'abord, publie sur GitHub Packages, puis build chaque microservice en parallèle.
@@ -74,7 +74,7 @@ Attendu : tests créés/modifiés, résultats, couverture JaCoCo si mesurée, po
 
 Inclure : changements publics (nouveaux endpoints, contrats API), décisions architecture, fichiers modifiés, pages wiki serverless impactées, éventuelle entrée changelog.
 
-Attendu : docs et wiki synchronisés sans réécriture inutile, liens cohérents, mention ADR si décision majeure, alignement versions (Quarkus 3.37.1 / Java 25) vérifié dans `pom.xml`.
+Attendu : docs et wiki synchronisés sans réécriture inutile, liens cohérents, mention ADR si décision majeure, alignement versions (Quarkus 3.37.2 / Java 25) vérifié dans `pom.xml`.
 
 ## Ce que MAINa ne fait pas
 

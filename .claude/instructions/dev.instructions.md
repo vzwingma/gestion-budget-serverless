@@ -24,7 +24,7 @@ Procédure détaillée : skill `plan-phase-execution`.
 
 ## Stack technique
 
-- **Java 25** (Mandrel 25 en build natif), **Quarkus 3.37.1**, **Mutiny** (réactif), **MongoDB Panache** (repository pattern)
+- **Java 25** (Mandrel 25 en build natif), **Quarkus 3.37.2**, **Mutiny** (réactif), **MongoDB Panache** (repository pattern)
 - **CDI** : `@Inject`, `@ApplicationScoped`, `@RequestScoped`
 - **JAX-RS** : `@Path`, `@GET`, `@POST`, `@PUT`, `@DELETE` (package `jakarta.ws.rs`)
 - **OpenAPI** : `@Operation`, `@APIResponse`, `@APIResponses` (package `org.eclipse.microprofile.openapi.annotations`)
