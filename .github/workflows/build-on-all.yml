@@ -6,6 +6,11 @@ on:
   push:
     # Sequence of patterns matched against refs/heads
     branches-ignore: [ master, v** ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # BUILD
