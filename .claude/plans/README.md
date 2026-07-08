@@ -10,13 +10,13 @@ Cet index est **synthétique** : liste des plans + statut global uniquement (pas
 
 ## 📂 Plans Actifs / En Cours
 
-- [`001_modernisation_stack.plan.md`](./001_modernisation_stack.plan.md) — ✅ Phases 1-7 complétées (ADR-001/002/003, upgrade Quarkus 3.37.1, migrations Mongo, tuning infra SAM/CI, Java 25 + Mandrel 25 sur les 5 modules) ; Phase 8 partiellement complétée (T8.2 ✅, T8.1 bloquée backport upstream Quarkus #55278). QUA/PROD déployés et fonctionnels.
+_(Aucun plan `.claude/` actif pour l'instant)_
 
 ---
 
 ## 📋 Plans Archivés / Complétés
 
-_(Aucun plan `.claude/` complété pour l'instant)_
+- [`001_modernisation_stack.plan.md`](./001_modernisation_stack.plan.md) — 🏁 **Clôturé (Gate #4, 2026-07-08)**. Phases 1-7 complétées (ADR-001/002/003, upgrade Quarkus 3.37.1, migrations Mongo, tuning infra SAM/CI, Java 25 + Mandrel 25 sur les 5 modules) ; Phase 8 partiellement complétée (T8.2 ✅, T8.1 reste ouverte — backport upstream Quarkus #55278 non confirmé, sans date connue, à surveiller lors d'une prochaine initiative). QUA et PROD déployés et fonctionnels (`master`).
 
 ---
 
@@ -88,5 +88,5 @@ Pour contribuer ou modifier un plan existant :
 
 ---
 
-**Dernière mise à jour :** 2026-07-06
+**Dernière mise à jour :** 2026-07-08
 **Gestionnaire des Plans :** ⚫ MAINa & 👤 Développeur humain
