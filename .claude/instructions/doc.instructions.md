@@ -6,7 +6,7 @@ applyTo: "**"
 # Spécificités projet — gestion-budget-serverless (Doc)
 
 > Fichier lu automatiquement par l'agent 🟣 DOCly au démarrage.
-> Contient les spécificités du projet `gestion-budget-serverless` (backend Quarkus/Java 21, AWS Lambda).
+> Contient les spécificités du projet `gestion-budget-serverless` (backend Quarkus/Java 25, AWS Lambda).
 
 ## Rôle
 

@@ -11,7 +11,7 @@ microservices sont compiles en binaires natifs GraalVM et deployes sous forme de
 | Propriété | Valeur |
 |---|---|
 | **Type** | Backend – API REST serverless |
-| **Stack principale** | Java 21 + Quarkus 3.37.1 + Mutiny + MongoDB Panache |
+| **Stack principale** | Java 25 (Mandrel 25 natif) + Quarkus 3.37.1 + Mutiny + MongoDB Panache |
 | **Plateforme cible** | AWS Lambda (natif GraalVM/Mandrel) |
 | **Version applicative** | 24.0.0-SNAPSHOT |
 | **Statut** | En développement actif |
@@ -179,7 +179,7 @@ gestion-budget-serverless/
 | Catégorie | Librairie | Version | Rôle |
 |---|---|---|---|
 | Framework | Quarkus | **3.37.1** | Runtime Lambda natif |
-| Langage | Java | **21** | LTS, Records, Pattern Matching |
+| Langage | Java | **25** (Mandrel 25 en natif) | LTS, Records, Pattern Matching |
 | Réactif | SmallRye Mutiny | (via Quarkus BOM) | `Uni<T>` / `Multi<T>` |
 | Persistence | MongoDB Panache | (via Quarkus BOM) | Repository pattern |
 | API | RESTEasy Reactive (JAX-RS) | (via Quarkus BOM) | Endpoints REST |
@@ -195,6 +195,8 @@ gestion-budget-serverless/
 > ⚠️ Maintenir ce tableau à jour à chaque montée de version majeure (vérifier dans `pom.xml`).
 >
 > ℹ️ Depuis Quarkus 3.37.1, l'override Netty explicite dans les POM a été retiré : le BOM Quarkus embarque nativement Netty 4.1.135.Final, qui couvre déjà les CVE-2026-33870/33871.
+>
+> ℹ️ Depuis Java 25 (upgrade [ADR-003](./adr/003-upgrade-java25-mandrel25.md)), Lombok est déclaré explicitement en `annotationProcessorPaths` dans la configuration `maven-compiler-plugin` du pom racine — `javac` ≥ 23 n'active plus les annotation processors présents sur le classpath par simple auto-discovery.
 
 ### Variables d'environnement
 

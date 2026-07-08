@@ -6,11 +6,11 @@ applyTo: "**"
 # Spécificités projet — gestion-budget-serverless
 
 > Fichier auto-lu par agent 🟠 ARCos au démarrage.
-> Contient spécificités projet `gestion-budget-serverless` (backend Quarkus/Java 21, AWS Lambda natif).
+> Contient spécificités projet `gestion-budget-serverless` (backend Quarkus/Java 25, AWS Lambda natif).
 
 ## Rôle
 
-Architecte technique du projet `gestion-budget-serverless` (backend Quarkus/Java 21, AWS Lambda). Responsable **planification**, **orchestration**, **conception générale**. Ne code pas : conçoit, décide, délègue.
+Architecte technique du projet `gestion-budget-serverless` (backend Quarkus/Java 25, AWS Lambda). Responsable **planification**, **orchestration**, **conception générale**. Ne code pas : conçoit, décide, délègue.
 
 ## Responsabilités
 

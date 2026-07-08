@@ -1,6 +1,6 @@
 package io.github.vzwingma.finances.budget.services.communs.migrations;
 
-import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -9,11 +9,18 @@ import java.util.List;
 
 /**
  * Accès Panache à la collection {@code _migrations} de suivi des migrations MongoDB déjà appliquées.
+ * <p>
+ * Hérite de {@code ReactivePanacheMongoRepositoryBase<MigrationRecord, String>} (et non
+ * {@code ReactivePanacheMongoRepository<MigrationRecord>}) car le {@code @BsonId} réel de
+ * {@link MigrationRecord} (champ {@code version}) est un {@code String}, alors que
+ * {@code ReactivePanacheMongoRepository} fige le type d'identifiant générique à
+ * {@code org.bson.types.ObjectId}. Ce choix expose correctement {@code findById(String)} /
+ * {@code deleteById(String)} avec le bon type.
  *
  * @author vzwingma
  */
 @ApplicationScoped
-public class MigrationRepository implements ReactivePanacheMongoRepository<MigrationRecord> {
+public class MigrationRepository implements ReactivePanacheMongoRepositoryBase<MigrationRecord, String> {
 
     /**
      * Liste les versions déjà exécutées avec succès (utilisée pour filtrer les migrations à jouer).

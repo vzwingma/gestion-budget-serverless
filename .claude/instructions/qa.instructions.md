@@ -6,7 +6,7 @@ applyTo: "**"
 # Spécificités projet — gestion-budget-serverless (QA)
 
 > Fichier auto-lu par 🟢 QALvin au démarrage.
-> Contient les spécificités du projet `gestion-budget-serverless` (backend Quarkus/Java 21, AWS Lambda).
+> Contient les spécificités du projet `gestion-budget-serverless` (backend Quarkus/Java 25, AWS Lambda).
 
 ## Rôle
 
