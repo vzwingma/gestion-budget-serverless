@@ -14,7 +14,7 @@ applyTo: "**"
 
 ## Quand créer un ADR
 
-ADR **doit** être créé immédiatement après validation solution choisie par 👤 Développeur humain (étape 3 méthodologie ARCos), pour décisions qui :
+ADR **doit** être créé immédiatement après validation solution par 👤 Développeur humain (étape 3 méthodologie ARCos), pour décisions qui :
 
 - Introduisent **nouvelle techno ou lib** dans projet
 - Définissent **nouveau pattern archi** (couche, service, état global, routing…)
@@ -35,7 +35,7 @@ ADR **doit** être créé immédiatement après validation solution choisie par 
 | **Numéro** | Séquentiel 3 chiffres, dernier ADR existant + 1 |
 | **Titre** | Kebab-case, court, décrit décision (pas problème) |
 
-Trouver prochain numéro : lister fichiers `docs/adr/`, prendre suivant.
+Prochain numéro : lister fichiers `docs/adr/`, prendre suivant.
 
 ---
 
@@ -52,7 +52,7 @@ Trouver prochain numéro : lister fichiers `docs/adr/`, prendre suivant.
 
 ## Procédure ARCos — Préparer le contenu de l'ADR
 
-Après décision humaine, ARCos produit bloc de délégation à DOCly structuré ainsi :
+Après décision humaine, ARCos produit bloc délégation à DOCly structuré ainsi :
 
 ```markdown
 ## 📋 Contenu ADR à rédiger
@@ -103,7 +103,7 @@ Quand ARCos délègue rédaction ADR :
 1. **Lire contenu fourni** par ARCos (bloc ci-dessus)
 2. **Déterminer numéro** : lister `docs/adr/`, prendre suivant
 3. **Créer fichier** `docs/adr/NNN-titre-court.md` depuis template `docs/adr/ADR-TEMPLATE.md`
-4. **Remplir chaque section** avec contenu fourni par ARCos
+4. **Remplir chaque section** avec contenu fourni ARCos
 5. **Ne pas interpréter** : recopier fidèlement décisions et alternatives fournies
 
 ---

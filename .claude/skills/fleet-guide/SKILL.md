@@ -12,23 +12,23 @@ applyTo: "**"
 
 ## Quand utiliser /fleet
 
-- **Tâches indépendantes du même agent**: Plusieurs composants/services/fichiers sans dépendance
-- **Délégation multi-agents en parallèle**: Deux agents démarrent simultanément (ex: QALvin + DOCly sur même feature après DEVon)
-- **Phases parallèles d'un Plan d'Action**: Deux phases s'exécutent simultanément
+- **Tâches indépendantes, même agent**: plusieurs composants/services/fichiers, zéro dépendance
+- **Délégation multi-agents parallèle**: deux agents démarrent simultané (ex: QALvin + DOCly sur même feature après DEVon)
+- **Phases parallèles d'un Plan d'Action**: deux phases exécutent simultané
 
 ---
 
 ## Quand NE PAS utiliser /fleet
 
-- Tâche B **dépend du résultat** de tâche A
-- Deux sous-tâches **modifient le même fichier** (risque conflit)
-- Fichier setup commun doit être créé d'abord
+- Tâche B **dépend résultat** tâche A
+- Deux sous-tâches **modifient même fichier** (risque conflit)
+- Fichier setup commun doit créer d'abord
 
 ---
 
-## Comment indiquer l'usage de /fleet
+## Comment indiquer usage /fleet
 
-Dans plan ou délégation, signaler explicitement tâches parallélisables:
+Dans plan ou délégation, signaler explicite tâches parallélisables:
 
 ```
 💡 Ces tâches sont indépendantes → lancer en /fleet :
