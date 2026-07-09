@@ -6,8 +6,8 @@ applyTo: "**"
 
 # Skill : Exécution de Phase d'un Plan d'Action (AP)
 
-> Skill = procédure standard agent exécute phase Plan Action.
-> Chaque agent connaît propre identifiant + cibles délégation (voir instructions).
+> Skill décrit **procédure standard** pour agent exécute phase Plan Action.
+> Chaque agent connaît propre identifiant et cibles délégation (voir instructions).
 > Référence complète format AP : `.claude/PLANS.md`
 
 ---
@@ -15,9 +15,9 @@ applyTo: "**"
 ## Avant de démarrer
 
 1. **Lire plan complet** : `.claude/plans/<NO>_<nom>.plan.md`
-2. **Identifier tes tâches** : chercher identifiant agent dans phase (ex: `🔵 DEVon`, `🟢 QALvin`, etc.)
-3. **Lister tâches** assignées (T<N>.X, T<N>.Y, etc.) + séquence
-4. **Comprendre dépendances** : quelle(s) phase(s) compléter avant tienne
+2. **Identifier tes tâches** : Chercher ton identifiant agent dans phase (ex: `🔵 DEVon`, `🟢 QALvin`, etc.)
+3. **Lister tâches** assignées (T<N>.X, T<N>.Y, etc.) et séquence
+4. **Comprendre dépendances** : Quelle(s) phase(s) doit-on compléter avant tienne
 5. **Identifier rapport à remplir** : `.claude/plans/<NO>_reports/PHASE_N_COMPLETION_REPORT.md`
 
 ---
@@ -57,14 +57,14 @@ Pour chaque tâche T<N>.<M> :
 
 ## Après chaque tâche
 
-- ✅ MAJ statut rapport (🔄 → ✅ ou ❌)
-- ✅ Vérifier tâche suivante peut démarrer (dépendances internes)
+- ✅ Mettre à jour statut dans rapport (🔄 → ✅ ou ❌)
+- ✅ Vérifier que tâche suivante peut démarrer (dépendances internes)
 
 ---
 
 ## ⚡ Compact avant phase suivante (recommandé)
 
-Avant déclencher phase suivante, recommander `/compact` — évite accumulation skill blobs en contexte :
+Avant de déclencher la phase suivante, recommander `/compact` pour éviter l'accumulation de skill blobs en contexte :
 
 ```
 /compact
@@ -72,7 +72,7 @@ Instruction : Résume en 200 mots max — phase courante, numéro, tâches resta
 Supprime : blobs skill des phases précédentes, historique détaillé résolu, confirmations ("oui", "go", etc.).
 ```
 
-> 💡 Sans compact entre phases, chaque skill injecté (~4-8KB) reste en contexte tous tours suivants. Sur 4 phases : ~20-30KB contexte inutile accumulé.
+> 💡 Sans compact entre phases, chaque skill injecté (~4-8KB) reste en contexte pour tous les tours suivants. Sur 4 phases, cela représente ~20-30KB de contexte inutile accumulé.
 
 ---
 
@@ -92,14 +92,14 @@ Remplir **Synthèse Phase** dans rapport :
 **Prochaine Phase :** Phase X peut démarrer (toutes les dépendances ✅)
 ```
 
-Puis **signaler à agent suivant** selon instructions délégation.
+Puis **signaler à agent suivant** selon tes instructions délégation.
 
 ---
 
 ## Règle obligatoire — Synchronisation de l'index des plans
 
-- `.claude/plans/README.md` = index **plans + statut global uniquement** (jamais détails phases).
-- Si MAJ entraîne changement **statut global** plan, MAJ `.claude/plans/README.md` dans **même changement**.
+- `.claude/plans/README.md` est index **plans + statut global uniquement** (jamais détails phases).
+- Si tes mises à jour entraînent changement **statut global** plan, mets à jour `.claude/plans/README.md` dans **même changement**.
 
 ---
 

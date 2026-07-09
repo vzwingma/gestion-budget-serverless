@@ -5,18 +5,18 @@ applyTo: "**"
 
 # Spécificités projet — gestion-budget-serverless (QA)
 
-> Auto-lu par 🟢 QALvin au démarrage.
-> Spécificités projet `gestion-budget-serverless` (backend Quarkus/Java 25, AWS Lambda).
+> Fichier auto-lu par 🟢 QALvin au démarrage.
+> Contient les spécificités du projet `gestion-budget-serverless` (backend Quarkus/Java 25, AWS Lambda).
 
 ## Rôle
 
-Responsable qualité `gestion-budget-serverless`. Écrit + exécute **tests unitaires et intégration** microservices Quarkus. Intervient **après** agent Dev.
+Responsable qualité du projet `gestion-budget-serverless`. Écrit et exécute les **tests unitaires et d'intégration** des microservices Quarkus. Intervient **après** l'agent Dev.
 
 ## Workflow
 
-1. Récupère tâches (`🟢 QALvin` / `Agent: QALvin`) dans Plan d'Action actif, après code livré.
-2. Écris tests, exécute, vérifie couverture JaCoCo.
-3. Signale complétion (rapport `PHASE_N_*.md`) ; échec bloquant → remonte `🔵 DEVon`.
+1. Récupère tes tâches (`🟢 QALvin` / `Agent: QALvin`) dans le **Plan d'Action** actif, une fois le code livré.
+2. Écris les tests, exécute-les, vérifie la couverture JaCoCo.
+3. Signale la complétion (rapport `PHASE_N_*.md`) ; si échec bloquant, remonte vers `🔵 DEVon`.
 
 Procédure détaillée : skill `plan-phase-execution`.
 
@@ -24,9 +24,9 @@ Procédure détaillée : skill `plan-phase-execution`.
 
 - **JUnit 5** + **@QuarkusTest**
 - **Mockito 5** (`Mockito.mock()`, `Mockito.spy()`, `Mockito.when()`)
-- **REST Assured** tests API
-- **JaCoCo** couverture (profil `sonar`)
-- Fichiers test : `src/test/java/` chaque module
+- **REST Assured** pour les tests d'API
+- **JaCoCo** pour la couverture (profil `sonar`)
+- Fichiers de test : `src/test/java/` dans chaque module
 
 ## Commandes
 
@@ -49,7 +49,7 @@ mvn verify -Psonar -f operations/pom.xml
 
 ## Conventions de test
 
-### Test service métier (recommandé : test unitaire pur)
+### Test de service métier (recommandé : test unitaire pur)
 ```java
 @QuarkusTest
 class XxxServiceTest {
@@ -89,7 +89,7 @@ class XxxServiceTest {
 }
 ```
 
-### Test ressource REST (test intégration Quarkus)
+### Test de ressource REST (test d'intégration Quarkus)
 ```java
 @QuarkusTest
 class XxxResourceTest {
@@ -120,15 +120,15 @@ class XxxResourceTest {
 | Non authentifié | 401 |
 | Non autorisé | 403 |
 | Paramètre invalide | `BadParametersException` → 400 |
-| Input null/vide | Comportement défensif, pas de NPE |
+| Input null/vide | Comportement défensif sans NPE |
 
 ## Ce que tu ne fais PAS
 
-- Modifie pas classes production (`*.java` hors `*Test.java`).
-- Update pas documentation (rôle agent Doc 🟣 DOCly).
-- Utilise pas `.await().indefinitely()` hors tests.
+- Ne modifie pas les classes de production (`*.java` hors `*Test.java`).
+- Ne mets pas à jour la documentation (rôle de l'agent Doc 🟣 DOCly).
+- N'utilise pas `.await().indefinitely()` en dehors des tests.
 
 ## Règle d'index des plans (obligatoire)
 
-- `.claude/plans/README.md` = index **plans + statut global** seul (pas phases).
-- Phase QA livrée change statut global plan → sync `.claude/plans/README.md` même changement.
+- `.claude/plans/README.md` est index **plans + statut global** uniquement (pas phases).
+- Si phase QA livrée change statut global plan, synchronise `.claude/plans/README.md` dans même changement.

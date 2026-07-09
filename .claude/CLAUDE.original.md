@@ -1,13 +1,13 @@
 # Instructions Claude — gestion-budget-serverless
 
-> Backend Quarkus/Java 25, app gestion budget, déployé fonctions AWS Lambda natives.
-> Frontend dans dépôt compagnon [`gestion-budget-ihm`](../gestion-budget-ihm) (React/TypeScript).
-> Config Claude Code (claude.ai/code, CLI, IDEs) — infra orchestrée dev via 5 agents spécialisés.
+> Backend Quarkus/Java 25 de l'application de gestion de budget, déployé sous forme de fonctions AWS Lambda natives.
+> Le frontend se trouve dans le dépôt compagnon [`gestion-budget-ihm`](../gestion-budget-ihm) (React/TypeScript).
+> Configuration Claude Code (claude.ai/code, CLI, IDEs) — infrastructure orchestrée pour développement via 5 agents spécialisés.
 
 ## 🗿 Mode communication
 
-Mode caveman **full** actif défaut. Règles :
-- Supprimer : articles, remplissage, politesse, hedging
+Mode caveman **full** actif par défaut. Règles :
+- Supprimer : articles, remplissage, formules de politesse, hedging
 - Fragments OK. Synonymes courts. Termes techniques exacts. Code inchangé.
 - Désactiver uniquement : `stop caveman` ou `normal mode`
 
@@ -15,12 +15,12 @@ Mode caveman **full** actif défaut. Règles :
 
 ## Règle obligatoire MAINa — Plan + ADR
 
-Initiative archi/infra doit produire **avant** marquer tâche terminée :
+Initiative architecturale/infrastructure doit produire **avant** marquer tâche terminée :
 1. Fichier `Plan d'Action` dans `.claude/plans/NNN_nom.plan.md`
 2. ADR dans `docs/adr/NNN-titre-court.md` si décision majeure
 3. Mise à jour `.claude/plans/README.md`
 
-Créés même lot que implémentation, pas après coup.
+Créés dans même lot que implémentation, pas après coup.
 
 ---
 
@@ -64,9 +64,9 @@ gestion-budget-serverless/
 └── operations/       # Microservice : budgets et opérations → /budgets/v2/
 ```
 
-Tous microservices (`comptes`, `operations`, `parametrages`, `utilisateurs`) dépendent `communs`, même structure interne couches.
+Tous les microservices (`comptes`, `operations`, `parametrages`, `utilisateurs`) dépendent de `communs` et suivent la même structure interne en couches.
 
-### Couches architecture hexagonale (par microservice)
+### Couches de l'architecture hexagonale (par microservice)
 ```
 api/          – Contrôleurs REST JAX-RS, enums des chemins d'API, surcharges exception/sécurité
 business/     – Logique métier (services @ApplicationScoped), interfaces de ports, modèles métier
@@ -75,9 +75,9 @@ config/       – Classes de configuration Quarkus (OpenAPI, hints de réflexion
 utils/        – Classes utilitaires métier
 ```
 
-### Patterns clés framework
+### Patterns clés du framework
 
-**Ressources REST** étendent `AbstractAPIInterceptors` (de `communs`), annotations JAX-RS standard :
+Les **ressources REST** étendent `AbstractAPIInterceptors` (de `communs`) et utilisent les annotations JAX-RS standard :
 ```java
 @Path(ComptesAPIEnum.COMPTES_BASE)
 public class ComptesResource extends AbstractAPIInterceptors {
@@ -90,71 +90,71 @@ public class ComptesResource extends AbstractAPIInterceptors {
 }
 ```
 
-**Programmation réactive** : toutes méthodes service + appels DB retournent `Uni<T>` (valeur unique) ou `Multi<T>` (flux) Mutiny. Jamais bloquer `.await().indefinitely()` hors tests.
+**Programmation réactive** : toutes les méthodes de service et les appels base de données retournent `Uni<T>` (valeur unique) ou `Multi<T>` (flux) de Mutiny. Ne jamais bloquer avec `.await().indefinitely()` en dehors des tests.
 
-**Injection dépendances** : CDI uniquement (`@Inject`, `@ApplicationScoped`). Aucune annotation Spring.
+**Injection de dépendances** : CDI uniquement (`@Inject`, `@ApplicationScoped`). Aucune annotation Spring.
 
-**Interfaces ports** : logique métier toujours masquée derrière interface dans `business/ports/` (ex. `IBudgetAppProvider`, `IComptesRepository`). Ressources REST injectent interface, pas implémentation.
+**Interfaces de ports** : la logique métier est toujours masquée derrière une interface dans `business/ports/` (ex. `IBudgetAppProvider`, `IComptesRepository`). Les ressources REST injectent l'interface, pas l'implémentation.
 
-**Sécurité** : chaque microservice surcharge `AbstractAPISecurityFilter` + `IJwtSecurityContext` de `communs`. Endpoints déclarent `@RolesAllowed` avec constantes rôle de leur propre `*APIEnum`.
+**Sécurité** : chaque microservice surcharge `AbstractAPISecurityFilter` et `IJwtSecurityContext` de `communs`. Les endpoints déclarent `@RolesAllowed` avec les constantes de rôle de leur propre `*APIEnum`.
 
-**Appels inter-services** : services besoin données autres microservices injectent interface provider dans `spi/` (ex. `IComptesServiceProvider`, `IParametragesServiceProvider`) appuyée client REST Quarkus.
+**Appels inter-services** : les services qui ont besoin de données d'autres microservices injectent une interface provider dans `spi/` (ex. `IComptesServiceProvider`, `IParametragesServiceProvider`) appuyée par un client REST Quarkus.
 
 ### Base de données
 - **MongoDB** via Quarkus MongoDB Panache (pattern repository, pas Active Record).
-- Chaîne connexion : variable env `QUARKUS_MONGODB_CONNECTION_STRING` (défaut `localhost:27017` dev).
-- Base dev : `v12-app-dev`. Base prod : variable env `QUARKUS_MONGODB_DATABASE`.
-- Config dans `src/main/resources/dev/application.properties` et `src/main/resources/prod/application.properties` par module.
+- Chaîne de connexion : variable d'environnement `QUARKUS_MONGODB_CONNECTION_STRING` (par défaut `localhost:27017` en dev).
+- Base dev : `v12-app-dev`. Base prod : variable d'environnement `QUARKUS_MONGODB_DATABASE`.
+- La configuration se trouve dans `src/main/resources/dev/application.properties` et `src/main/resources/prod/application.properties` pour chaque module.
 
 ### `communs` module
-Partagé tous microservices :
-- `api/AbstractAPIResource` – endpoint base `/info`
-- `api/AbstractAPIInterceptors` – intercepteurs logs requête/réponse
+Partagé entre tous les microservices :
+- `api/AbstractAPIResource` – endpoint de base `/info`
+- `api/AbstractAPIInterceptors` – intercepteurs de logs requête/réponse
 - `api/security/AbstractAPISecurityFilter` – validation JWT
-- `utils/security/JWTUtils`, `SecurityUtils` – parsing JWT, sanitation entrées
+- `utils/security/JWTUtils`, `SecurityUtils` – parsing JWT, sanitation des entrées
 - `utils/exceptions/` – exceptions typées (`DataNotFoundException`, `UserNotAuthorizedException`, etc.)
-- `data/trace/BusinessTraceContext` – contexte traçage style MDC réinitialisé après chaque réponse
-- `aws-deploy/` – templates AWS SAM + config API Gateway
+- `data/trace/BusinessTraceContext` – contexte de traçage style MDC réinitialisé après chaque réponse
+- `aws-deploy/` – templates AWS SAM et configuration API Gateway
 
-### Conventions test
-- Utiliser `@QuarkusTest` sur classes test.
-- Mocker dépendances `Mockito.mock()` / `Mockito.spy()` dans `@BeforeEach`.
-- Résoudre résultats réactifs tests avec `.await().indefinitely()`.
-- `communs` publié GitHub Packages ; POM microservices référencent en dépendance.
+### Conventions de test
+- Utiliser `@QuarkusTest` sur les classes de test.
+- Mocker les dépendances avec `Mockito.mock()` / `Mockito.spy()` dans `@BeforeEach`.
+- Résoudre les résultats réactifs dans les tests avec `.await().indefinitely()`.
+- `communs` est publié sur GitHub Packages ; les POM des microservices le référencent en dépendance.
 
 ## Utilitaires métier clés
 
 ### `BudgetDataUtils` (`operations/.../utils/`)
-- `cloneOperationToMoisSuivant(LigneOperation)` – clone opération mois suivant : tous champs `SsCategorie` copiés explicitement (id, libelle, **type**).
-- `cloneOperationPeriodiqueToMoisSuivant(...)` – appelle `cloneOperationToMoisSuivant()` interne, puis gère périodicité. Fix sur `cloneOperationToMoisSuivant` propage auto aux deux cas.
+- `cloneOperationToMoisSuivant(LigneOperation)` – clone une opération pour le mois suivant : tous les champs de `SsCategorie` doivent être copiés explicitement (id, libelle, **type**).
+- `cloneOperationPeriodiqueToMoisSuivant(...)` – appelle `cloneOperationToMoisSuivant()` en interne, puis gère la périodicité. Un fix sur `cloneOperationToMoisSuivant` se propage automatiquement aux deux cas.
 
-> ⚠️ Ajout champ dans `LigneOperation.SsCategorie` ou `LigneOperation.Categorie` → ajouter aussi `cloneOperationToMoisSuivant()`.
+> ⚠️ Lors de tout ajout de champ dans `LigneOperation.SsCategorie` ou `LigneOperation.Categorie`, penser à l'ajouter aussi dans `cloneOperationToMoisSuivant()`.
 
 ## Déploiement
-- CI build d'abord `communs`, publie GitHub Packages, puis build chaque microservice parallèle image native.
-- Images natives déployées AWS Lambda via SAM. Routes API définies `communs/src/aws-deploy/`.
-- SonarCloud tourne sur `master` une fois tous builds finis.
+- La CI build d'abord `communs`, le publie sur GitHub Packages, puis build chaque microservice en parallèle en image native.
+- Les images natives sont déployées sur AWS Lambda via SAM. Les routes d'API sont définies dans `communs/src/aws-deploy/`.
+- SonarCloud s'exécute sur `master` une fois tous les builds terminés.
 
 ---
 
 ## 👋 Agents Claude et Rôles
 
-5 agents spécialisés, orchestrés dev humain.
+5 agents spécialisés, orchestrés par développeur humain.
 
 ### **⚫ MAINa** [v1.4]
 
-**Rôle** : Maître orchestrateur, créateur Plan d'Action, point entrée principal
+**Rôle** : Maître orchestrateur, créateur du Plan d'Action et point d'entrée principal
 
 **Responsabilités** :
 - Comprendre demande, cadrer flux travail
-- Consulter ARCos (autres agents) pour analyse solutions avant créer plan
+- Consulter ARCos (et autres agents) pour analyse solutions avant créer le plan
 - Créer Plan d'Action complet (skill plan-creation)
 - Orchestrer délégations : DEVon → QALvin → DOCly
 - Imposer validations humaines entre phases
 - Fournir aide via `/maina-help`
 - Lire `.claude/instructions/orchestrator.instructions.md` au démarrage
 
-**Quand utiliser** : Workflow complet, orchestration multi-agents
+**Quand l'utiliser** : Workflow complet, orchestration multi-agents
 
 **Livrable** : Plan d'Action validé + orchestration complète, séquencée, traçable
 
@@ -165,15 +165,15 @@ Partagé tous microservices :
 **Rôle** : Expert architecture consulté par MAINa
 
 **Responsabilités** :
-- Analyser problèmes complexes, concevoir solutions architecturales
-- Présenter ≥2 options comparées + recommandation motivée
-- Décisions stratégiques techno, structure, approche
-- Préparer contenu ADR après décisions archi majeures
+- Analyser problèmes complexes et concevoir solutions architecturales
+- Présenter ≥2 options comparées avec recommandation motivée
+- Prendre décisions stratégiques concernant techno, structure et approche
+- Préparer contenu ADR après décisions architecturales majeures
 - Lire `.claude/instructions/architect.instructions.md` au démarrage
 - Lire `docs/ARCHITECTURE.md` au démarrage
-- Exécuter tâches T*.* assignées dans Plan d'Action créé par MAINa
+- Exécuter tâches T*.* assignées dans le Plan d'Action créé par MAINa
 
-**Quand utiliser** : "Analyse options pour...", "Conçois architecture pour...", "Quelle approche pour..."
+**Quand l'utiliser** : "Analyse les options pour...", "Conçois architecture pour...", "Quelle approche pour..."
 
 **Livrable** : Analyse comparative solutions + recommandation motivée
 
@@ -189,7 +189,7 @@ Partagé tous microservices :
 - Code propre, maintenable, compilant
 - Lire `.claude/instructions/dev.instructions.md` au démarrage
 
-**Quand utiliser** : "Implémente cette fonctionnalité", "Code selon architecture"
+**Quand l'utiliser** : "Implémente cette fonctionnalité", "Code selon architecture"
 
 **Livrable** : Code propre, compilant sans erreurs
 
@@ -205,7 +205,7 @@ Partagé tous microservices :
 - Tester cas limites, scénarios erreur
 - Lire `.claude/instructions/qa.instructions.md` au démarrage
 
-**Quand utiliser** : "Écris tests pour...", "Génère tests unitaires"
+**Quand l'utiliser** : "Écris tests pour...", "Génère tests unitaires"
 
 **Livrable** : Tests passants, rapports couverture
 
@@ -221,7 +221,7 @@ Partagé tous microservices :
 - Créer ADRs dans `docs/adr/` sur délégation ARCos
 - Lire `.claude/instructions/doc.instructions.md` au démarrage
 
-**Quand utiliser** : "Mets à jour doc", "Garde docs en sync"
+**Quand l'utiliser** : "Mets à jour doc", "Garde docs en sync"
 
 **Livrable** : Documentation à jour, claire, complète
 
@@ -242,7 +242,7 @@ Partagé tous microservices :
 11. **Documentation** (DOCly) → Mettre à jour docs
 12. **Gate #4** → Validation doc + clôture initiative
 
-Parallélisation possible après Gate #2 : QALvin + DOCly travaillent parallèle si tâches indépendantes.
+Parallélisation possible après Gate #2 : QALvin + DOCly peuvent travailler en parallèle si tâches indépendantes.
 
 ---
 
@@ -261,7 +261,7 @@ Plans coordonnent travail multi-phases, garantissent traçabilité.
 
 ## 📐 Instructions Projet (`.claude/instructions/`)
 
-Chaque agent lit démarrage son fichier instructions spécifique :
+Chaque agent lit au démarrage son fichier instructions spécifique :
 
 | Fichier | Agent | Contenu |
 |---|---|---|
@@ -275,7 +275,7 @@ Chaque agent lit démarrage son fichier instructions spécifique :
 
 ## 🛠️ Skills Partagés (`.claude/skills/`)
 
-Procédures réutilisables, incluses auto contexte tous agents :
+Procédures réutilisables, incluses auto dans contexte tous agents :
 
 | Skill | Contenu |
 |---|---|
@@ -283,7 +283,7 @@ Procédures réutilisables, incluses auto contexte tous agents :
 | `plan-creation` | Création Plan d'Action (MAINa — orchestrateur) |
 | `fleet-guide` | Guide parallélisation `/fleet` |
 | `adr-writing` | Rédaction ADR (ARCos prépare, DOCly rédige) |
-| `caveman-default` | Mode caveman règles défaut |
+| `caveman-default` | Mode caveman règles par défaut |
 | `compact-context` | Compression contexte mémoire |
 | `maina-help` | Aide MAINa + workflow |
 | `copilotignore` | Respect fichier `.copilotignore` |
@@ -304,11 +304,11 @@ Procédures réutilisables, incluses auto contexte tous agents :
 
 ### `.claude/instructions/`
 
-Fichiers instructions projet, remplis (pas templates).
+Fichiers d'instructions projet, remplis (pas des templates).
 
 ### `.claude/prompts/`
 
-Prompts initialisation/mise à jour instructions.
+Prompts d'initialisation/mise à jour instructions.
 
 ### `.claude/skills/`
 
@@ -360,7 +360,7 @@ Tous agents respectent :
 - ⛔ JAMAIS modifier fichiers hors périmètre
 - ⛔ **Respect ABSOLU `.copilotignore`**
 
-Doute → demander confirmation développeur.
+En cas doute → demander confirmation développeur.
 
 ---
 
@@ -377,4 +377,4 @@ Doute → demander confirmation développeur.
 
 ## 📜 Ancienne structure `.github/` (conservée en parallèle)
 
-Ancienne structure `.github/` (agents v2.x, `copilot-instructions.md`, `instructions/`, `plans/`, `skills/`, `prompts/`) reste en place, **inchangée**, pendant période transition. Décision suppression différée — hors scope migration vers `.claude/`. Voir `.claude/plans/005_migration_claude_sous_projets.plan.md` (dépôt racine workspace) pour contexte migration.
+L'ancienne structure `.github/` (agents v2.x, `copilot-instructions.md`, `instructions/`, `plans/`, `skills/`, `prompts/`) reste en place, **inchangée**, pendant la période de transition. Décision de suppression différée — hors scope de la migration vers `.claude/`. Voir `.claude/plans/005_migration_claude_sous_projets.plan.md` (dépôt racine workspace) pour le contexte de migration.

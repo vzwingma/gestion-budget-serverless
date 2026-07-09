@@ -1,20 +1,20 @@
 # 🤖 Agents Claude — Architecture Multi-Agents
 
-5 agent orchestré system. Structure dev via Claude Code.
+Système orchestré de 5 agents spécialisés pour structurer développement via Claude Code.
 
 ## 🎯 Agents
 
 ### ⚫ [MAINa](./Maina.agent.md) — Maître Orchestrateur
 
-**Quand** : Entry point pour travail complexe
+**Quand** : Point d'entrée pour tout travail complexe
 
-Rôle : Comprend besoin, crée Plan d'Action, orchestre workflow strict, impose validations humaines entre phases.
+Rôle : Comprendre besoin, créer le Plan d'Action, orchestrer workflow strict, imposer validations humaines entre phases.
 
 **Workflow strict** :
-1. Intake → Clarifie besoin
+1. Intake → Clarifier besoin
 2. ARCos → Analyse solutions (≥2 options + reco)
 3. Gate #0 → Choix solution par développeur
-4. MAINa → Crée Plan d'Action
+4. MAINa → Crée le Plan d'Action
 5. Gate #1 → Validation plan
 6. DEVon → Implémentation
 7. Gate #2 → Validation code
@@ -29,20 +29,20 @@ Rôle : Comprend besoin, crée Plan d'Action, orchestre workflow strict, impose 
 
 **Quand** : "Conçois une architecture pour", "Analyse les options pour"
 
-Rôle : Analyse solutions, conception, décisions archi. **MAINa** crée Plan d'Action.
+Rôle : Analyse de solutions, conception, décisions architecturales. **MAINa** crée le Plan d'Action.
 
 **Responsabilités** :
-- Pose clarifications nécessaires
-- Présente ≥2 solutions alternatives + comparaison
-- Fournit reco motivée à MAINa
-- Conçoit solution retenue + prépare contenu ADR
-- Fournit découpage candidat comme entrée au Plan d'Action de MAINa
+- Poser clarifications nécessaires
+- Présenter ≥2 solutions alternatives + comparaison
+- Fournir une recommandation motivée à MAINa
+- Concevoir solution retenue + préparer contenu ADR
+- Fournir le découpage candidat comme entrée au Plan d'Action de MAINa
 
 **Points clés** :
 - ✅ Pas coder — Réfléchir stratégiquement
-- ✅ Propose options, laisse choix au développeur
-- ✅ Specs claires pour MAINa + agents en aval
-- ❌ Pas créer Plan d'Action (rôle MAINa)
+- ✅ Proposer options, laisser choix au développeur
+- ✅ Specs claires pour MAINa et agents en aval
+- ❌ Pas créer le Plan d'Action (rôle MAINa)
 - ❌ Pas présupposer détails implémentation
 
 ---
@@ -54,14 +54,14 @@ Rôle : Analyse solutions, conception, décisions archi. **MAINa** crée Plan d'
 Rôle : Implémentation code production.
 
 **Responsabilités** :
-- Traduit exigences en code qualité production
-- Respecte patterns architecturaux + conventions projet
-- Assure code propre, testé, maintenable
-- Identifie + gère cas limites
+- Traduire exigences en code qualité production
+- Respecter patterns architecturaux + conventions projet
+- Assurer code propre, testé, maintenable
+- Identifier et gérer cas limites
 
 **Points clés** :
-- ✅ Implémente exactement demandé, pas plus
-- ✅ Étudie patterns existants
+- ✅ Implémenter exactement ce qui demandé, pas plus
+- ✅ Étudier patterns existants
 - ✅ Code compile, s'exécute, s'intègre correctement
 - ❌ Pas de dérive périmètre
 - ❌ Pas concevoir architecture
@@ -76,13 +76,13 @@ Rôle : Implémentation code production.
 Rôle : Tests unitaires, couverture qualité.
 
 **Responsabilités** :
-- Écrit tests unitaires complets (composants, services)
-- Exécute + vérifie passage, couverture ≥80%
-- Identifie cas limites, conditions erreur, scénarios frontières
-- Mock dépendances externes
+- Écrire tests unitaires complets (composants, services)
+- Exécuter + vérifier passage avec couverture ≥80%
+- Identifier cas limites, conditions erreur, scénarios frontières
+- Mocker dépendances externes
 
 **Points clés** :
-- ✅ Min 80% couverture code
+- ✅ Minimum 80% couverture code
 - ✅ Tests maintenables, lisibles
 - ✅ Cas limites + erreurs couverts
 - ❌ Pas écrire code implémentation
@@ -97,10 +97,10 @@ Rôle : Tests unitaires, couverture qualité.
 Rôle : Documentation après code + tests validés.
 
 **Responsabilités** :
-- Met à jour README.md, `docs/ARCHITECTURE.md`
-- Crée/maintient ADRs dans `docs/adr/`
-- Assure cohérence terminologie, structure, qualité
-- Identifie + corrige infos obsolètes
+- Mettre à jour README.md, `docs/ARCHITECTURE.md`
+- Créer/maintenir ADRs dans `docs/adr/`
+- Assurer cohérence terminologie, structure, qualité
+- Identifier + corriger infos obsolètes
 
 **Hiérarchie priorité** :
 1. README.md (plus visible)
@@ -138,20 +138,20 @@ Rôle : Documentation après code + tests validés.
 ✅ Clôture initiative
 ```
 
-**Validation humaine obligatoire** chaque étape avant progression.
+**Validation humaine obligatoire** à chaque étape avant progression.
 
 ---
 
 ## 🔐 Règles absolues
 
 Tous agents respectent :
-- ⛔ Jamais supprimer fichiers/répertoires
-- ⛔ Jamais commandes SQL destructives
-- ⛔ Jamais `git clean`, `git reset --hard`
-- ⛔ Jamais modifier fichiers hors périmètre
+- ⛔ Ne JAMAIS supprimer fichiers/répertoires
+- ⛔ Ne JAMAIS commandes SQL destructives
+- ⛔ Ne JAMAIS `git clean`, `git reset --hard`
+- ⛔ Ne JAMAIS modifier fichiers hors périmètre
 - ⛔ Respect ABSOLU `.copilotignore`
 
-Doute → demande confirmation développeur.
+En cas doute → demander confirmation développeur.
 
 ---
 
@@ -165,4 +165,4 @@ Doute → demande confirmation développeur.
 @MAINa "Voici besoin : ..."
 ```
 
-Chaque agent lit auto ses instructions projet au démarrage si présentes.
+Chaque agent lit automatiquement ses instructions projet au démarrage si présentes.

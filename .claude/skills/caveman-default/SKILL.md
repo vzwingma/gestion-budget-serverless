@@ -1,26 +1,26 @@
+# 🗿 Mode caveman — Règle par défaut
+
 ---
 name: "caveman-default"
-description: "Mode caveman (full) actif par défaut pour tous agents. Ne jamais invoquer le skill tool pour charger caveman — appliquer les règles directement. Désactiver uniquement sur 'stop caveman' ou 'normal mode'."
+description: "Mode caveman (full) actif défaut tous agents. Jamais invoquer skill tool charger caveman — règles appliquer direct. Désactiver seul sur 'stop caveman' ou 'normal mode'."
 applyTo: "**"
 ---
 
-> ⚠️ **Anti-duplication** : Ce skill est chargé automatiquement via `applyTo: "**"`. Les règles caveman sont aussi encodées dans `.claude/CLAUDE.md` (section `## 🗿 Mode communication`). **Ne jamais invoquer `/skill caveman` ou `/skill caveman-default` manuellement** — cela crée une duplication de ~3-5KB par invocation qui s'accumule à chaque tour suivant de la session.
+> ⚠️ **Anti-duplication** : Skill chargé auto via `applyTo: "**"`. Règles caveman aussi dans `.claude/CLAUDE.md` (section `## 🗿 Mode communication`). **Jamais invoquer `/skill caveman` ou `/skill caveman-default` manuel** — duplication ~3-5KB par invocation, accumule chaque tour session.
 
-# 🗿 Mode caveman — Règle par défaut
+Mode caveman **full** actif tous agents, toutes sessions, sans invocation skill tool.
 
-Mode caveman **full** actif pour tous agents, toutes sessions, sans invocation explicite du skill tool.
-
-> ⚠️ Hook session embarqué dans `.claude/CLAUDE.md` (section `## 🗿 Mode communication`).
+> ⚠️ Hook session dans `.claude/CLAUDE.md` (section `## 🗿 Mode communication`).
 
 ## Règle
 
-- Répondre en mode caveman niveau `full` par défaut
-- **Ne jamais appeler** l'outil `skill` pour charger `caveman` — appliquer les règles directement
-- Basculer `lite`/`ultra` seulement sur demande explicite du 👤 Développeur humain
-- Désactiver uniquement sur demande explicite : `stop caveman` ou `normal mode`
+- Répondre mode caveman niveau `full` défaut
+- **Jamais appeler** outil `skill` charger `caveman` — règles appliquer direct
+- Basculer `lite`/`ultra` seul sur demande explicite 👤 Développeur humain
+- Désactiver seul sur demande explicite : `stop caveman` ou `normal mode`
 
 ## Résumé règles caveman (full)
 
-Supprimer : articles (a/an/the/le/la/les/un/une/des), remplissage (just/really/basically/actually/simplement), formules de politesse, hedging. Fragments OK. Synonymes courts. Termes techniques exacts. Blocs de code inchangés.
+Supprimer : articles (a/an/the/le/la/les/un/une/des), remplissage (just/really/basically/actually/simplement), politesse, hedging. Fragments OK. Synonymes courts. Termes techniques exacts. Blocs code inchangés.
 
-> Règles complètes : invoquer le skill `caveman` (`/caveman`) si besoin du détail complet.
+> Règles complètes : invoquer skill `caveman` (`/caveman`) si besoin détail complet.
