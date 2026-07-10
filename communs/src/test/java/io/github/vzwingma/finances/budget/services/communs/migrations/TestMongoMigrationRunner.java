@@ -40,21 +40,21 @@ class TestMongoMigrationRunner {
     @BeforeEach
     void setup() {
         migrationRepository = Mockito.mock(MigrationRepository.class);
-        runner = new MongoMigrationRunner();
-        runner.migrationRepository = migrationRepository;
+        // runner instancié dans setMigrations() une fois l'Instance<IMongoMigration> mockée disponible
+        // (injection désormais par constructeur, cf. MongoMigrationRunner).
     }
 
     /**
      * Construit un {@link Instance} mocké dont le {@code .stream()} renvoie les migrations fournies,
      * dans l'ordre donné (le runner est responsable de trier, on ne trie pas ici pour garder le test
-     * de tri significatif).
+     * de tri significatif), puis instancie le runner via son constructeur avec cette Instance mockée.
      */
     @SafeVarargs
     private void setMigrations(IMongoMigration... migrations) {
         @SuppressWarnings("unchecked")
         Instance<IMongoMigration> instance = Mockito.mock(Instance.class);
         Mockito.when(instance.stream()).thenAnswer(inv -> java.util.Arrays.stream(migrations));
-        runner.migrations = instance;
+        runner = new MongoMigrationRunner(instance, migrationRepository);
     }
 
     private IMongoMigration migrationSucces(String version, String description) {
@@ -92,7 +92,7 @@ class TestMongoMigrationRunner {
         // Assert
         Mockito.verify(migration, Mockito.times(1)).migrate();
         Mockito.verify(migrationRepository, Mockito.times(1))
-                .enregistrerSucces(eq("V001"), eq("Init collection"));
+                .enregistrerSucces("V001", "Init collection");
         Mockito.verify(migrationRepository, Mockito.never()).enregistrerEchec(anyString(), anyString());
     }
 
@@ -191,12 +191,12 @@ class TestMongoMigrationRunner {
 
         // Assert : V001 enregistree en echec, V002 executee et enregistree en succes malgre l'echec precedent
         Mockito.verify(migrationRepository, Mockito.times(1))
-                .enregistrerEchec(eq("V001"), eq("Premiere en echec"));
+                .enregistrerEchec("V001", "Premiere en echec");
         Mockito.verify(migrationRepository, Mockito.never())
                 .enregistrerSucces(eq("V001"), anyString());
         Mockito.verify(v002, Mockito.times(1)).migrate();
         Mockito.verify(migrationRepository, Mockito.times(1))
-                .enregistrerSucces(eq("V002"), eq("Deuxieme ok"));
+                .enregistrerSucces("V002", "Deuxieme ok");
     }
 
     @Test
