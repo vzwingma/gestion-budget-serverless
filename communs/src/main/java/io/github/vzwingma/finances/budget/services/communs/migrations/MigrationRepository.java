@@ -3,7 +3,9 @@ package io.github.vzwingma.finances.budget.services.communs.migrations;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -21,6 +23,20 @@ import java.util.List;
  */
 @ApplicationScoped
 public class MigrationRepository implements ReactivePanacheMongoRepositoryBase<MigrationRecord, String> {
+
+    private final Clock clock;
+
+    /**
+     * Constructeur CDI — injection par constructeur de l'horloge applicative UTC (ADR-004), pas
+     * d'injection par champ (cohérent avec la convention constructor injection déjà appliquée à
+     * {@link MongoMigrationRunner}, Phase A).
+     *
+     * @param clock horloge applicative injectée (voir {@code ClockConfig})
+     */
+    @Inject
+    public MigrationRepository(Clock clock) {
+        this.clock = clock;
+    }
 
     /**
      * Liste les versions déjà exécutées avec succès (utilisée pour filtrer les migrations à jouer).
@@ -42,7 +58,7 @@ public class MigrationRepository implements ReactivePanacheMongoRepositoryBase<M
      * @return {@link Uni} terminé une fois l'enregistrement persisté
      */
     public Uni<Void> enregistrerSucces(String version, String description) {
-        return persist(new MigrationRecord(version, description, LocalDateTime.now(), MigrationRecord.MigrationStatutEnum.SUCCES))
+        return persist(new MigrationRecord(version, description, LocalDateTime.now(clock), MigrationRecord.MigrationStatutEnum.SUCCES))
                 .replaceWithVoid();
     }
 
@@ -55,7 +71,7 @@ public class MigrationRepository implements ReactivePanacheMongoRepositoryBase<M
      * @return {@link Uni} terminé une fois l'enregistrement persisté
      */
     public Uni<Void> enregistrerEchec(String version, String description) {
-        return persist(new MigrationRecord(version, description, LocalDateTime.now(), MigrationRecord.MigrationStatutEnum.ECHEC))
+        return persist(new MigrationRecord(version, description, LocalDateTime.now(clock), MigrationRecord.MigrationStatutEnum.ECHEC))
                 .replaceWithVoid();
     }
 }

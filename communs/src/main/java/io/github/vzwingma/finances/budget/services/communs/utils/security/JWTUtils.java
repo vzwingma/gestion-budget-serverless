@@ -12,6 +12,7 @@ import java.security.*;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Map;
@@ -176,14 +177,25 @@ public class JWTUtils {
     }
 
     /**
-     * Vérifie si le token est expiré en comparant la date et l'heure actuelles à la date d'expiration.
+     * Vérifie si le token est expiré en comparant la date et l'heure actuelles (horloge applicative
+     * UTC par défaut, {@link Clock#systemUTC()}) à la date d'expiration. Voir {@link #isNotExpired(JWTAuthToken, Clock)}
+     * pour la variante testable avec horloge injectée.
      * @return Vrai si le token est expiré, faux sinon.
      */
     public static boolean isNotExpired(JWTAuthToken token) {
+        return isNotExpired(token, Clock.systemUTC());
+    }
+
+    /**
+     * Vérifie si le token est expiré en comparant la date et l'heure actuelles à la date d'expiration.
+     * @param clock horloge applicative (ADR-004) utilisée pour déterminer l'instant courant.
+     * @return Vrai si le token est expiré, faux sinon.
+     */
+    public static boolean isNotExpired(JWTAuthToken token, Clock clock) {
         boolean isExpired = true;
-        LocalDateTime expAt = token.expiredAt();
+        LocalDateTime expAt = token.expiredAt(clock);
         if (expAt != null) {
-            isExpired = !LocalDateTime.now().isBefore(expAt);
+            isExpired = !LocalDateTime.now(clock).isBefore(expAt);
         }
         if(isExpired){
             LOG.warn("Le token est expiré depuis {}", expAt);

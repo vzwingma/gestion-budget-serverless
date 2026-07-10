@@ -1,7 +1,7 @@
 # Plan d'Action 003 — Remédiation Sonar (314 issues ouvertes)
 
 **Date création :** 2026-07-10
-**Statut :** 🔵 En cours (Phase A complétée, Phase B/C/D en attente)
+**Statut :** 🔵 En cours (Phase A complétée ; Phase B — ADR-004 produit, en attente validation humaine avant B1 ; Phase C/D en attente)
 **Porteur :** ⚫ MAINa
 
 ---
@@ -85,9 +85,56 @@ Scope : S2699 (1) + S6813/S2629 (4) + S6068/S125 (4, même fichier) = 9 issues, 
 
 ---
 
-## Phase B — S8688 `.now()` sans zone (UTC) — hors scope session courante
+## Phase B — S8688 `.now()` sans zone (UTC)
 
-Nécessite ADR-004 (Clock UTC) préalable. Déclenchement sur nouvelle sollicitation.
+### Contexte
+
+18 issues S8688 (`.now()` sans zone explicite), réparties `communs` + `operations`/`utilisateurs`. Décision Clock UTC tranchée Gate #0 antérieure. ADR-004 (`docs/adr/004-clock-injection-convention.md`) préparé par ARCos, rédigé par DOCly — **produit**, en attente validation humaine (Gate #1 spécifique sous-phase) avant que DEVon démarre B1.
+
+### Critères de réussite
+
+- ADR-004 validé par le développeur humain.
+- B1 : `ClockConfig` (bean `@Produces @ApplicationScoped Clock`, package `config` de `communs`) créé ; 5 call sites `communs` migrés vers injection constructeur ; tests avec `Clock.fixed(...)` déterministes.
+- B2 (après B1 mergé + `communs` republié GitHub Packages) : 13 call sites `operations`/`utilisateurs` migrés ; vigilance particulière sur `cloneOperationToMoisSuivant`/`cloneOperationPeriodiqueToMoisSuivant` (`BudgetDataUtils`, fragilité documentée `.claude/CLAUDE.md`).
+- Tests ciblés + suite module verts, pas de régression logique métier budget.
+
+### Tâches
+
+#### T B.0 - Rédiger ADR-004 Clock UTC ✅ complétée
+- **Agent :** ARCos (contenu) + DOCly (rédaction, skill `adr-writing`)
+- **Fichier(s) :** `docs/adr/004-clock-injection-convention.md`
+- **Couvrir :** Contexte (18 hits S8688, risques tests non déterministes/ambiguïté zone/incohérences dates), Décision (`Clock.systemUTC()` bean CDI `communs/config/ClockConfig.java`, injection constructeur), Alternatives rejetées (`ZoneId.systemDefault()`, inline sans bean), Conséquences (testabilité vs effort migration + risque `BudgetDataUtils`)
+- **Acceptation :** ✅ ADR créé, statut Accepté, aligné style ADR-001. **Gate #1 spécifique Phase B en attente validation humaine avant T B.1.**
+
+#### T B.1 - Producer Clock + migration communs
+- **Agent :** DEVon
+- **Fichier(s) :**
+  - `communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/config/ClockConfig.java` (nouveau)
+  - `communs/.../utils/security/JWTUtils.java:186`
+  - `communs/.../data/JWTAuthToken.java:61,73`
+  - `communs/.../migrations/MigrationRepository.java:45,58`
+- **Couvrir / Implémenter :**
+  - Bean `@Produces @ApplicationScoped Clock` retournant `Clock.systemUTC()`
+  - Remplacer chaque `.now()` par appel via `Clock` injecté par constructeur
+  - Tests : injecter `Clock.fixed(instant, ZoneOffset.UTC)` pour déterminisme
+- **Acceptation :** 5 call sites migrés, `mvn clean test -f communs/pom.xml` vert, aucune régression comportementale (JWT expiration, migrations Mongo).
+
+#### T B.2 - Migration operations + utilisateurs (dépend T B.1 mergé + communs republié)
+- **Agent :** DEVon
+- **Fichier(s) :**
+  - `operations/.../business/BudgetService.java:296,333,407,435`
+  - `operations/.../business/model/LigneOperation.java:142-144`
+  - `operations/.../utils/BudgetDataUtils.java:158,202`
+  - `operations/.../business/OperationsService.java:249,255`
+  - `utilisateurs/.../business/model/Utilisateur.java:54`
+  - `utilisateurs/.../business/UtilisateursService.java:80`
+- **Couvrir / Implémenter :**
+  - Injection constructeur `Clock` (dépendance `communs` republiée) dans chaque classe
+  - Remplacer `.now()` par appel via `Clock`
+  - **Vigilance particulière** : `cloneOperationToMoisSuivant`/`cloneOperationPeriodiqueToMoisSuivant` dans `BudgetDataUtils` — logique fragile documentée `.claude/CLAUDE.md` (champs `SsCategorie`/`Categorie`), tout changement de comportement de date doit être testé explicitement
+- **Acceptation :** 13 call sites migrés, tests `operations` + `utilisateurs` verts, comportement clonage mois suivant inchangé (vérifié explicitement par QALvin).
+
+**Effort :** B1 Faible, B2 Moyen. **Risque :** B1 faible, B2 MEDIUM (`BudgetDataUtils`/`BudgetService`, logique métier budget). **Dépendances :** ADR-004 validé (Gate #1 sous-phase) → T B.1 → `communs` republié → T B.2.
 
 ## Phase C — S8924 imports statiques Mockito (267, mécanique) — hors scope session courante
 
