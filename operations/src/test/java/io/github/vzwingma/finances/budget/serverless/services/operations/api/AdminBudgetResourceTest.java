@@ -21,10 +21,11 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static io.restassured.RestAssured.given;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -41,21 +42,21 @@ class AdminBudgetResourceTest {
 
     @BeforeAll
     static void init() {
-        QuarkusMock.installMockForType(Mockito.mock(BudgetAdminService.class), BudgetAdminService.class);
-        QuarkusMock.installMockForType(Mockito.mock(BudgetService.class), BudgetService.class);
-        QuarkusMock.installMockForType(Mockito.mock(OperationsService.class), OperationsService.class);
-        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
+        QuarkusMock.installMockForType(mock(BudgetAdminService.class), BudgetAdminService.class);
+        QuarkusMock.installMockForType(mock(BudgetService.class), BudgetService.class);
+        QuarkusMock.installMockForType(mock(OperationsService.class), OperationsService.class);
+        QuarkusMock.installMockForType(mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
     @BeforeEach
     void setup() {
-        Mockito.when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys())
+        when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys())
                 .thenReturn(Multi.createFrom().item(BudgetsResourceTest.jwksAuthKey()));
     }
 
     @Test
     void testConsolidateLibellesOperations() {
-        Mockito.when(budgetAdminService.overrideLibellesOperations(anyString(), anyList()))
+        when(budgetAdminService.overrideLibellesOperations(anyString(), anyList()))
                 .thenReturn(io.smallrye.mutiny.Multi.createFrom().items("C1_2022_01", "C1_2022_02"));
 
         String url = OperationsAPIEnum.BUDGET_ADMIN_BASE

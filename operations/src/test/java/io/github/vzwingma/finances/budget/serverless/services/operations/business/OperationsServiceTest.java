@@ -20,7 +20,6 @@ import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -31,6 +30,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
@@ -47,12 +52,12 @@ class OperationsServiceTest {
 
     @BeforeEach
     void setup() {
-        mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
-        operationsAppProvider = Mockito.spy(new OperationsService());
-        IBudgetAppProvider budgetAppProvider = Mockito.mock(BudgetService.class);
+        mockOperationDataProvider = mock(IOperationsRepository.class);
+        operationsAppProvider = spy(new OperationsService());
+        IBudgetAppProvider budgetAppProvider = mock(BudgetService.class);
         operationsAppProvider.setDataOperationsProvider(mockOperationDataProvider);
         operationsAppProvider.setBudgetService(budgetAppProvider);
-        IParametragesServiceProvider mockParam = Mockito.mock(IParametragesServiceProvider.class);
+        IParametragesServiceProvider mockParam = mock(IParametragesServiceProvider.class);
         operationsAppProvider.setParametragesService(mockParam);
         operationsAppProvider.setClock(clockFixe);
     }
@@ -168,7 +173,7 @@ class OperationsServiceTest {
     void testAddOperationRemboursementCatFailure() {
         Assertions.assertThrows(DataNotFoundException.class,
                 () -> operationsAppProvider.addOrReplaceOperation(new ArrayList<>(), MockDataOperations.getOperationRemboursement(), "userTest", null));
-        Mockito.verify(mockOperationDataProvider, Mockito.never()).sauvegardeBudgetMensuel(Mockito.any());
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any());
     }
 
     @Test
@@ -211,7 +216,7 @@ class OperationsServiceTest {
     @Test
     void testGetIntervalleBudgets() {
         Instant[] intervalle = {Instant.now().minusSeconds(3600), Instant.now()};
-        Mockito.when(mockOperationDataProvider.chargeIntervalleBudgets("C1"))
+        when(mockOperationDataProvider.chargeIntervalleBudgets("C1"))
                 .thenReturn(Uni.createFrom().item(intervalle));
         Instant[] result = operationsAppProvider.getIntervalleBudgets("C1").await().indefinitely();
         assertNotNull(result);

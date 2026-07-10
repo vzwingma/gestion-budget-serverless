@@ -1,7 +1,7 @@
 # Plan d'Action 003 — Remédiation Sonar (314 issues ouvertes)
 
 **Date création :** 2026-07-10
-**Statut :** 🔵 En cours (Phase A complétée ; Phase B complétée [T B.1 + T B.2] ; Phase C/D en attente sollicitation explicite)
+**Statut :** 🔵 En cours (Phase A complétée ; Phase B complétée ; Phase C complétée ; Phase D en attente sollicitation explicite)
 **Porteur :** ⚫ MAINa
 
 ---
@@ -158,28 +158,82 @@ Scope : S2699 (1) + S6813/S2629 (4) + S6068/S125 (4, même fichier) = 9 issues, 
 
 Phase B (T B.0 ADR + T B.1 `communs` + T B.2 `operations`/`utilisateurs`) intégralement complétée. 18/18 issues S8688 adressées. Gates #2/#3 obtenues côté utilisateur pour T B.1 et T B.2.
 
-## Phase C — S8924 imports statiques Mockito (267, mécanique) — en attente sollicitation explicite du développeur, non démarrée
+## Phase C — S8924 imports statiques Mockito (267, mécanique) ✅ complétée
+
+### Contexte
+
+267 issues S8924 "Use static import for mock/when", tests uniquement, mécanique, risque LOW. Pas d'ADR requis (cleanup mécanique pur, aucune décision architecturale). Découpage en 4 lots par module — reviewabilité, pas risque technique.
+
+### Méthode
+
+Remplacer `Mockito.mock(`/`Mockito.when(`/autres `Mockito.xxx(` statiques par imports statiques (`import static org.mockito.Mockito.xxx;`) + appels nus. Conversion **uniquement si pas d'usage mixte restant** dans le fichier après conversion (vérifier avant) ; si usage mixte, convertir toutes les occurrences Mockito du fichier en une fois pour cohérence — pas de conversion partielle. Fichier par fichier ou recherche/remplacement contrôlé (pas de sed aveugle multi-fichiers). Compile + teste après chaque lot.
+
+### Tâches
+
+#### T C.1 - Lot 1 : operations (123 issues) ✅ complétée
+- **Agent :** DEVon
+- **Fichier(s) :** `operations/src/test/.../business/*` (105) + `operations/src/test/.../api/*` (18)
+- **Acceptation :** imports statiques appliqués, `mvn clean test -f operations/pom.xml` vert.
+- **Résultat :** 123/123 issues converties (105 `business/*` + 18 `api/*`). `mvn clean test -f operations/pom.xml` vert.
+
+#### T C.2 - Lot 2 : communs migrations tests (74 issues) ✅ complétée
+- **Agent :** DEVon
+- **Fichier(s) :** `communs/src/test/.../migrations/*`
+- **Acceptation :** imports statiques appliqués, `mvn clean test -f communs/pom.xml` vert (hors 4 erreurs infra pré-existantes actées).
+- **Résultat :** 74/74 issues converties. `mvn clean test -f communs/pom.xml` vert hors 4 erreurs `MongoTimeoutException` pré-existantes (actées Phase A/B, sans lien).
+
+#### T C.3 - Lot 3 : parametrages + utilisateurs (39 issues) ✅ complétée
+- **Agent :** DEVon
+- **Fichier(s) :** `parametrages/src/test/**` (20) + `utilisateurs/src/test/**` (19)
+- **Acceptation :** imports statiques appliqués, `mvn clean test -f parametrages/pom.xml` et `mvn clean test -f utilisateurs/pom.xml` verts.
+- **Résultat :** 39/39 issues converties (20 `parametrages` + 19 `utilisateurs`). `mvn clean test -f parametrages/pom.xml` et `mvn clean test -f utilisateurs/pom.xml` verts.
+
+#### T C.4 - Lot 4 : reste éparpillé (~31 issues) ✅ complétée
+- **Agent :** DEVon
+- **Fichier(s) :** fichiers restants tous modules (`comptes` compris)
+- **Acceptation :** imports statiques appliqués, suites concernées vertes.
+- **Résultat :** 31/31 issues converties, dont `comptes`. Suites concernées vertes tous modules.
+
+**Effort :** M (volume, mécanique). **Risque :** LOW uniforme. **Dépendances :** aucune (indépendant Phase A/B). 4 lots traités séquentiellement par DEVon sans repasser par validation humaine entre chaque lot (décision utilisateur, vu risque LOW/mécanique) — Gate #2 consolidée une fois les 4 lots codés.
+
+### QA Phase C (allégée)
+
+QALvin : pas d'ajout de tests nécessaire (changement de style d'import uniquement, comportement des tests inchangé) — juste confirmer compilation + suite verte par module touché (`operations`, `communs`, `parametrages`, `utilisateurs`, `comptes`).
+
+QALvin a validé indépendamment : recherche résiduelle confirmant 0 usage qualifié Mockito restant, `mvn clean test` vert sur les 5 modules (`comptes`, `communs`, `operations`, `parametrages`, `utilisateurs` — mêmes 4 erreurs infra pré-existantes sur `communs`), et absence de régression sur les fichiers déjà remaniés en Phase A/B (assertions `Clock.fixed` intactes).
+
+### Clôture Phase C
+
+- 267/267 issues S8924 corrigées (123 T C.1 + 74 T C.2 + 39 T C.3 + 31 T C.4), 0 résidu Mockito qualifié constaté (DEVon + confirmé indépendamment par QALvin).
+- 5 modules (`comptes`, `communs`, `operations`, `parametrages`, `utilisateurs`) validés indépendamment par DEVon et QALvin : tous verts, sauf `communs` qui conserve les 4 erreurs `MongoTimeoutException` pré-existantes (actées Phase A/B, sans lien avec Phase C).
+- Aucune régression sur les fichiers déjà remaniés en Phase A/B (assertions `Clock.fixed` intactes, confirmé QALvin).
+- Gates #2 (validation code) et #3 (validation tests) obtenues côté utilisateur.
 
 ## Phase D — Reliquats (S7467 unnamed pattern, S6213 nom réservé, S5778 lambda, S8700 durée zone-aware) — hors scope session courante
 
 ---
 
-## Résumé par agent (Phase A uniquement)
+## Résumé par agent (Phases A + B + C)
 
 | Agent | Tâches | Livrable |
 |---|---|---|
-| DEVon | T A.1, T A.2, T A.3 | ✅ Code corrigé, compilant, 8/9 issues Sonar résolues (S125 introuvable) |
-| QALvin | Post Gate #2 | ✅ Exécution + validation suite tests `communs` (11/11) + racine (142/146, 4 erreurs infra pré-existantes), rapport |
-| DOCly | Clôture Phase A | ✅ Mise à jour plan 003 + README plans (cette mise à jour) |
+| DEVon | T A.1, T A.2, T A.3, T B.1, T B.2, T C.1, T C.2, T C.3, T C.4 | ✅ Code corrigé, compilant. Phase A : 8/9 issues Sonar résolues (S125 introuvable). Phase B : 18/18 issues S8688 résolues (5 call sites `communs` + 13 call sites `operations`/`utilisateurs`). Phase C : 267/267 issues S8924 résolues (123 `operations` + 74 `communs` migrations + 39 `parametrages`/`utilisateurs` + 31 reste éparpillé dont `comptes`) |
+| ARCos | T B.0 (contenu ADR-004) | ✅ ADR-004 Clock UTC préparé |
+| QALvin | Post Gate #2 (Phase A, T B.1, T B.2, Phase C) | ✅ Exécution + validation suites tests : `communs` (149/149 hors infra), `operations` (90/90), `utilisateurs` (36/36), racine Phase A (142/146, 4 erreurs infra pré-existantes). Phase C : 0 résidu Mockito qualifié confirmé, `mvn clean test` vert sur 5 modules (mêmes 4 erreurs infra `communs`), aucune régression Phase A/B |
+| DOCly | T B.0 (rédaction ADR), clôture Phase A, clôture Phase B, clôture Phase C | ✅ ADR-004 rédigé ; mise à jour plan 003 + README plans (Phase A, puis Phase B, puis Phase C — cette mise à jour) |
 
 ## Dépendances
 
 ```
-Phase A (DEVon T A.1-A.3) → Gate #2 (humain) → QALvin (tests) → Gate #3 (humain)
-   ↳ Phase B/C/D : attendent nouvelle sollicitation explicite
+Phase A (DEVon T A.1-A.3) → Gate #2 (humain) → QALvin (tests) → Gate #3 (humain) → ✅ complétée
+Phase B (ADR-004 → T B.1 → communs republié → T B.2) → Gate #2/#3 (humain, par sous-tâche) → ✅ complétée
+Phase C (DEVon T C.1-C.4, séquentiel) → Gate #2 (humain, consolidée) → QALvin (tests) → Gate #3 (humain) → ✅ complétée
+   ↳ Phase D : attend nouvelle sollicitation explicite
 ```
 
-## Critères succès globaux (Phase A)
+## Critères succès globaux (Phases A + B + C)
+
+### Phase A
 
 - [x] 8/9 issues Sonar Phase A corrigées dans le code (S2699 x1, S6813 x2, S2629 x2, S6068 x3) — S125 introuvable dans le fichier au moment de l'exécution, considéré déjà résolu/non applicable, sans action nécessaire
 - [x] `mvn clean test -f communs/pom.xml` (ciblé `TestMongoMigrationRunner` + `TestV001InitMigrationsCollection`) passe — 11/11 verts
@@ -187,15 +241,33 @@ Phase A (DEVon T A.1-A.3) → Gate #2 (humain) → QALvin (tests) → Gate #3 (h
 - [x] Gate #2 (validation code) obtenue avant QALvin
 - [x] Gate #3 (validation tests) obtenue avant clôture Phase A
 - [x] Comportement démarrage migration inchangé (constat DEVon/QALvin, tests ciblés verts)
-- [x] Phases B/C/D explicitement différées, non démarrées
+
+### Phase B
+
+- [x] ADR-004 validé par le développeur humain
+- [x] T B.1 : 5 call sites `communs` migrés, `mvn clean test -f communs/pom.xml` vert (149/149 hors erreurs infra pré-existantes)
+- [x] T B.2 : 13 call sites `operations`/`utilisateurs` migrés, `mvn clean test -f operations/pom.xml` (90/90) et `mvn clean test -f utilisateurs/pom.xml` (36/36) verts
+- [x] Vigilance clonage mois suivant (`BudgetDataUtils`) vérifiée explicitement par QALvin, comportement métier inchangé
+- [x] Gates #2/#3 obtenues pour T B.1 et T B.2
+
+### Phase C
+
+- [x] 267/267 issues S8924 corrigées (123 T C.1 `operations` + 74 T C.2 `communs` migrations + 39 T C.3 `parametrages`/`utilisateurs` + 31 T C.4 reste éparpillé dont `comptes`)
+- [x] 0 résidu Mockito qualifié constaté (DEVon + confirmé indépendamment par QALvin)
+- [x] 5 modules validés indépendamment DEVon + QALvin : `mvn clean test` vert sur `comptes`, `operations`, `parametrages`, `utilisateurs` ; `communs` vert hors 4 erreurs infra pré-existantes (actées Phase A/B)
+- [x] Aucune régression sur fichiers déjà remaniés Phase A/B (assertions `Clock.fixed` intactes)
+- [x] Gates #2/#3 obtenues côté utilisateur
+
+### Global
+
+- [x] Phase D explicitement différée, non démarrée, en attente sollicitation explicite du développeur
 
 ## Plan d'exécution
 
-1. Phase A démarrée immédiatement (cette session) : DEVon implémente T A.1 → T A.3.
-2. Gate #2 : validation humaine du code avant tests (peut être implicite si aucune décision requise — sinon pause explicite).
-3. QALvin exécute suite tests ciblée + racine, complète rapport.
-4. Gate #3 : validation tests → clôture Phase A.
-5. Phase B (ADR-004 + S8688 UTC), Phase C (S8924 imports statiques), Phase D (reliquats) : attendent nouvelle sollicitation développeur.
+1. Phase A (complétée) : DEVon implémente T A.1 → T A.3, Gate #2, QALvin tests, Gate #3.
+2. Phase B (complétée) : ARCos+DOCly rédigent ADR-004, validation humaine, DEVon T B.1 (`communs`), Gate #2/#3, republication `communs`, DEVon T B.2 (`operations`/`utilisateurs`), Gate #2/#3.
+3. Phase C (complétée) : DEVon traite T C.1 → T C.4 séquentiellement (267 issues S8924, 5 modules), Gate #2 consolidée, QALvin validation indépendante, Gate #3, DOCly clôture doc.
+4. Phase D (reliquats) : attend nouvelle sollicitation développeur.
 
 ---
 

@@ -4,8 +4,8 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBanc
 import org.bson.codecs.configuration.CodecRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
+import static org.mockito.Mockito.mock;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -20,7 +20,7 @@ class RegisterPanacheCodecsTest {
     @BeforeEach
     void setup() {
         registerPanacheCodecs = new RegisterPanacheCodecs();
-        mockRegistry = Mockito.mock(CodecRegistry.class);
+        mockRegistry = mock(CodecRegistry.class);
     }
 
     @Test

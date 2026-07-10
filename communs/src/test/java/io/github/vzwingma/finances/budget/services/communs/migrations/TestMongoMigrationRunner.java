@@ -5,10 +5,16 @@ import jakarta.enterprise.inject.Instance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import java.util.List;
 
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -39,7 +45,7 @@ class TestMongoMigrationRunner {
 
     @BeforeEach
     void setup() {
-        migrationRepository = Mockito.mock(MigrationRepository.class);
+        migrationRepository = mock(MigrationRepository.class);
         // runner instancié dans setMigrations() une fois l'Instance<IMongoMigration> mockée disponible
         // (injection désormais par constructeur, cf. MongoMigrationRunner).
     }
@@ -52,24 +58,24 @@ class TestMongoMigrationRunner {
     @SafeVarargs
     private void setMigrations(IMongoMigration... migrations) {
         @SuppressWarnings("unchecked")
-        Instance<IMongoMigration> instance = Mockito.mock(Instance.class);
-        Mockito.when(instance.stream()).thenAnswer(inv -> java.util.Arrays.stream(migrations));
+        Instance<IMongoMigration> instance = mock(Instance.class);
+        when(instance.stream()).thenAnswer(inv -> java.util.Arrays.stream(migrations));
         runner = new MongoMigrationRunner(instance, migrationRepository);
     }
 
     private IMongoMigration migrationSucces(String version, String description) {
-        IMongoMigration migration = Mockito.mock(IMongoMigration.class);
-        Mockito.when(migration.version()).thenReturn(version);
-        Mockito.when(migration.description()).thenReturn(description);
-        Mockito.when(migration.migrate()).thenReturn(Uni.createFrom().voidItem());
+        IMongoMigration migration = mock(IMongoMigration.class);
+        when(migration.version()).thenReturn(version);
+        when(migration.description()).thenReturn(description);
+        when(migration.migrate()).thenReturn(Uni.createFrom().voidItem());
         return migration;
     }
 
     private IMongoMigration migrationEchec(String version, String description, RuntimeException erreur) {
-        IMongoMigration migration = Mockito.mock(IMongoMigration.class);
-        Mockito.when(migration.version()).thenReturn(version);
-        Mockito.when(migration.description()).thenReturn(description);
-        Mockito.when(migration.migrate()).thenReturn(Uni.createFrom().failure(erreur));
+        IMongoMigration migration = mock(IMongoMigration.class);
+        when(migration.version()).thenReturn(version);
+        when(migration.description()).thenReturn(description);
+        when(migration.migrate()).thenReturn(Uni.createFrom().failure(erreur));
         return migration;
     }
 
@@ -81,19 +87,19 @@ class TestMongoMigrationRunner {
         IMongoMigration migration = migrationSucces("V001", "Init collection");
         setMigrations(migration);
 
-        Mockito.when(migrationRepository.listerVersionsAppliquees())
+        when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
-        Mockito.when(migrationRepository.enregistrerSucces(anyString(), anyString()))
+        when(migrationRepository.enregistrerSucces(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
         // Act
         runner.onStart(null);
 
         // Assert
-        Mockito.verify(migration, Mockito.times(1)).migrate();
-        Mockito.verify(migrationRepository, Mockito.times(1))
+        verify(migration, times(1)).migrate();
+        verify(migrationRepository, times(1))
                 .enregistrerSucces("V001", "Init collection");
-        Mockito.verify(migrationRepository, Mockito.never()).enregistrerEchec(anyString(), anyString());
+        verify(migrationRepository, never()).enregistrerEchec(anyString(), anyString());
     }
 
     // ====== 2. Idempotence : migration déjà en SUCCES n'est pas ré-exécutée ======
@@ -104,16 +110,16 @@ class TestMongoMigrationRunner {
         IMongoMigration migration = migrationSucces("V001", "Init collection");
         setMigrations(migration);
 
-        Mockito.when(migrationRepository.listerVersionsAppliquees())
+        when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of("V001")));
 
         // Act
         runner.onStart(null);
 
         // Assert : ni exécution, ni nouvel enregistrement
-        Mockito.verify(migration, Mockito.never()).migrate();
-        Mockito.verify(migrationRepository, Mockito.never()).enregistrerSucces(anyString(), anyString());
-        Mockito.verify(migrationRepository, Mockito.never()).enregistrerEchec(anyString(), anyString());
+        verify(migration, never()).migrate();
+        verify(migrationRepository, never()).enregistrerSucces(anyString(), anyString());
+        verify(migrationRepository, never()).enregistrerEchec(anyString(), anyString());
     }
 
     @Test
@@ -125,7 +131,7 @@ class TestMongoMigrationRunner {
         runner.onStart(null);
 
         // Assert : court-circuit avant même d'interroger _migrations
-        Mockito.verifyNoInteractions(migrationRepository);
+        verifyNoInteractions(migrationRepository);
     }
 
     // ====== 3. Tri par version croissante ======
@@ -138,21 +144,21 @@ class TestMongoMigrationRunner {
         IMongoMigration v002 = migrationSucces("V002", "Deuxieme");
         setMigrations(v003, v001, v002);
 
-        Mockito.when(migrationRepository.listerVersionsAppliquees())
+        when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
-        Mockito.when(migrationRepository.enregistrerSucces(anyString(), anyString()))
+        when(migrationRepository.enregistrerSucces(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
         List<String> ordreExecution = new java.util.ArrayList<>();
-        Mockito.doAnswer(inv -> {
+        doAnswer(inv -> {
             ordreExecution.add("migrate:" + v001.version());
             return Uni.createFrom().voidItem();
         }).when(v001).migrate();
-        Mockito.doAnswer(inv -> {
+        doAnswer(inv -> {
             ordreExecution.add("migrate:" + v002.version());
             return Uni.createFrom().voidItem();
         }).when(v002).migrate();
-        Mockito.doAnswer(inv -> {
+        doAnswer(inv -> {
             ordreExecution.add("migrate:" + v003.version());
             return Uni.createFrom().voidItem();
         }).when(v003).migrate();
@@ -164,7 +170,7 @@ class TestMongoMigrationRunner {
         assertEquals(List.of("migrate:V001", "migrate:V002", "migrate:V003"), ordreExecution);
 
         ArgumentCaptor<String> versionCaptor = ArgumentCaptor.forClass(String.class);
-        Mockito.verify(migrationRepository, Mockito.times(3))
+        verify(migrationRepository, times(3))
                 .enregistrerSucces(versionCaptor.capture(), anyString());
         assertEquals(List.of("V001", "V002", "V003"), versionCaptor.getAllValues());
     }
@@ -179,23 +185,23 @@ class TestMongoMigrationRunner {
         IMongoMigration v002 = migrationSucces("V002", "Deuxieme ok");
         setMigrations(v001, v002);
 
-        Mockito.when(migrationRepository.listerVersionsAppliquees())
+        when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
-        Mockito.when(migrationRepository.enregistrerSucces(anyString(), anyString()))
+        when(migrationRepository.enregistrerSucces(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
-        Mockito.when(migrationRepository.enregistrerEchec(anyString(), anyString()))
+        when(migrationRepository.enregistrerEchec(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
         // Act : onStart ne doit lever aucune exception (non bloquant pour le demarrage)
         assertDoesNotThrow(() -> runner.onStart(null));
 
         // Assert : V001 enregistree en echec, V002 executee et enregistree en succes malgre l'echec precedent
-        Mockito.verify(migrationRepository, Mockito.times(1))
+        verify(migrationRepository, times(1))
                 .enregistrerEchec("V001", "Premiere en echec");
-        Mockito.verify(migrationRepository, Mockito.never())
+        verify(migrationRepository, never())
                 .enregistrerSucces(eq("V001"), anyString());
-        Mockito.verify(v002, Mockito.times(1)).migrate();
-        Mockito.verify(migrationRepository, Mockito.times(1))
+        verify(v002, times(1)).migrate();
+        verify(migrationRepository, times(1))
                 .enregistrerSucces("V002", "Deuxieme ok");
     }
 
@@ -207,14 +213,14 @@ class TestMongoMigrationRunner {
         IMongoMigration migration = migrationSucces("V001", "Init collection");
         setMigrations(migration);
 
-        Mockito.when(migrationRepository.listerVersionsAppliquees())
+        when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
-        Mockito.when(migrationRepository.enregistrerSucces(anyString(), anyString()))
+        when(migrationRepository.enregistrerSucces(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().failure(new RuntimeException("Ecriture _migrations indisponible")));
         // Le mapper onFailure().recoverWithUni(...) du runner n'intervient qu'en cas d'échec de migrate() ;
         // ici migrate() réussit et c'est enregistrerSucces qui échoue : ce chemin n'appelle donc jamais
         // enregistrerEchec, mais on le stub par prudence pour ne dépendre d'aucun comportement implicite Mockito.
-        Mockito.when(migrationRepository.enregistrerEchec(anyString(), anyString()))
+        when(migrationRepository.enregistrerEchec(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
         // Act / Assert : aucune exception ne doit remonter au StartupEvent
@@ -228,17 +234,17 @@ class TestMongoMigrationRunner {
         IMongoMigration v002 = migrationEchec("V002", "Deuxieme", new RuntimeException("boom2"));
         setMigrations(v001, v002);
 
-        Mockito.when(migrationRepository.listerVersionsAppliquees())
+        when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
-        Mockito.when(migrationRepository.enregistrerEchec(anyString(), anyString()))
+        when(migrationRepository.enregistrerEchec(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
         // Act
         assertDoesNotThrow(() -> runner.onStart(null));
 
         // Assert
-        Mockito.verify(migrationRepository, Mockito.times(1)).enregistrerEchec(eq("V001"), anyString());
-        Mockito.verify(migrationRepository, Mockito.times(1)).enregistrerEchec(eq("V002"), anyString());
+        verify(migrationRepository, times(1)).enregistrerEchec(eq("V001"), anyString());
+        verify(migrationRepository, times(1)).enregistrerEchec(eq("V002"), anyString());
     }
 
     // ====== Cas mixte additionnel : combinaison tri + idempotence + echec ======
@@ -252,22 +258,22 @@ class TestMongoMigrationRunner {
         IMongoMigration v003 = migrationEchec("V003", "En echec", new RuntimeException("boom3"));
         setMigrations(v003, v001, v002);
 
-        Mockito.when(migrationRepository.listerVersionsAppliquees())
+        when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of("V001")));
-        Mockito.when(migrationRepository.enregistrerSucces(anyString(), anyString()))
+        when(migrationRepository.enregistrerSucces(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
-        Mockito.when(migrationRepository.enregistrerEchec(anyString(), anyString()))
+        when(migrationRepository.enregistrerEchec(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
         // Act
         assertDoesNotThrow(() -> runner.onStart(null));
 
         // Assert
-        Mockito.verify(v001, Mockito.never()).migrate();
-        Mockito.verify(v002, Mockito.times(1)).migrate();
-        Mockito.verify(v003, Mockito.times(1)).migrate();
-        Mockito.verify(migrationRepository, Mockito.never()).enregistrerSucces(eq("V001"), anyString());
-        Mockito.verify(migrationRepository, Mockito.times(1)).enregistrerSucces(eq("V002"), anyString());
-        Mockito.verify(migrationRepository, Mockito.times(1)).enregistrerEchec(eq("V003"), anyString());
+        verify(v001, never()).migrate();
+        verify(v002, times(1)).migrate();
+        verify(v003, times(1)).migrate();
+        verify(migrationRepository, never()).enregistrerSucces(eq("V001"), anyString());
+        verify(migrationRepository, times(1)).enregistrerSucces(eq("V002"), anyString());
+        verify(migrationRepository, times(1)).enregistrerEchec(eq("V003"), anyString());
     }
 }

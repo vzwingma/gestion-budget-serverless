@@ -24,12 +24,13 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.HashMap;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
 import static org.mockito.ArgumentMatchers.*;
@@ -48,19 +49,19 @@ class BudgetsResourceTest {
 
     @BeforeAll
     static void init() {
-        QuarkusMock.installMockForType(Mockito.mock(BudgetService.class), BudgetService.class);
-        QuarkusMock.installMockForType(Mockito.mock(OperationsService.class), OperationsService.class);
-        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
+        QuarkusMock.installMockForType(mock(BudgetService.class), BudgetService.class);
+        QuarkusMock.installMockForType(mock(OperationsService.class), OperationsService.class);
+        QuarkusMock.installMockForType(mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
     @BeforeEach
     void setup() {
-        Mockito.when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().item(jwksAuthKey()));
+        when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().item(jwksAuthKey()));
     }
 
     @Test
     void testInfoEndpoint() {
-        Mockito.when(budgetService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
+        when(budgetService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
         given()
                 .when().get(OperationsAPIEnum.BUDGET_BASE + "/_info")
                 .then()
@@ -74,7 +75,7 @@ class BudgetsResourceTest {
     @Test
     void testSetEtatActif() {
         // Init des données
-        Mockito.when(budgetService.setBudgetActif(anyString(), anyBoolean()))
+        when(budgetService.setBudgetActif(anyString(), anyBoolean()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
         // Test
         String url = OperationsAPIEnum.BUDGET_BASE
@@ -98,7 +99,7 @@ class BudgetsResourceTest {
     @Test
     void testIsActifOK() {
         // Init des données
-        Mockito.when(budgetService.isBudgetMensuelActif(anyString()))
+        when(budgetService.isBudgetMensuelActif(anyString()))
                 .thenReturn(Uni.createFrom().item(Boolean.TRUE));
         // Test
         String url = OperationsAPIEnum.BUDGET_BASE
@@ -118,7 +119,7 @@ class BudgetsResourceTest {
     @Test
     void testIsActifNOK() {
         // Init des données
-        Mockito.when(budgetService.isBudgetMensuelActif(anyString()))
+        when(budgetService.isBudgetMensuelActif(anyString()))
                 .thenReturn(Uni.createFrom().item(Boolean.FALSE));
         // Test
         String url = OperationsAPIEnum.BUDGET_BASE
@@ -137,7 +138,7 @@ class BudgetsResourceTest {
     @Test
     void testGetBudgetsUtilisateurById() {
         // Init des données
-        Mockito.when(budgetService.getBudgetMensuel(anyString()))
+        when(budgetService.getBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
         // Test
         String url = OperationsAPIEnum.BUDGET_BASE
@@ -156,7 +157,7 @@ class BudgetsResourceTest {
     @Test
     void testGetBudgetsUtilisateurByParams() {
         // Init des données
-        Mockito.when(budgetService.getBudgetMensuel(anyString(), any(Month.class), anyInt()))
+        when(budgetService.getBudgetMensuel(anyString(), any(Month.class), anyInt()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
         // Test
         String url = OperationsAPIEnum.BUDGET_BASE
@@ -178,7 +179,7 @@ class BudgetsResourceTest {
         projection.setMois(Month.JANUARY);
         projection.getSoldes().setSoldeAtFinMoisCourant(123.45D);
 
-        Mockito.when(budgetService.getSoldesBudgetMensuel(anyString(), any(Month.class), anyInt()))
+        when(budgetService.getSoldesBudgetMensuel(anyString(), any(Month.class), anyInt()))
                 .thenReturn(Multi.createFrom().item(projection));
 
         String url = OperationsAPIEnum.BUDGET_BASE
@@ -209,7 +210,7 @@ class BudgetsResourceTest {
     @Test
     void testReinitBudget() {
         // Init des données
-        Mockito.when(budgetService.reinitialiserBudgetMensuel(anyString()))
+        when(budgetService.reinitialiserBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
         // Test
         String url = OperationsAPIEnum.BUDGET_BASE

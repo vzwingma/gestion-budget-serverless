@@ -7,8 +7,8 @@ import org.bson.BsonWriter;
 import org.bson.json.JsonReader;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
+import static org.mockito.Mockito.mock;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -120,7 +120,7 @@ class TestComptePanacheCodec {
 
     @Test
     void testEncodeDoesNotThrow() {
-        assertDoesNotThrow(() -> new ComptePanacheCodec().encode(Mockito.mock(BsonWriter.class), new CompteBancaire(), null));
+        assertDoesNotThrow(() -> new ComptePanacheCodec().encode(mock(BsonWriter.class), new CompteBancaire(), null));
     }
 
 }
