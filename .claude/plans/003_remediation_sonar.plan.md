@@ -1,7 +1,7 @@
 # Plan d'Action 003 — Remédiation Sonar (314 issues ouvertes)
 
 **Date création :** 2026-07-10
-**Statut :** 🔵 En cours (Phase A complétée ; Phase B — ADR-004 produit, en attente validation humaine avant B1 ; Phase C/D en attente)
+**Statut :** 🔵 En cours (Phase A complétée ; Phase B — T B.1 `communs` complétée, T B.2 en attente republication `communs` + feu vert explicite ; Phase C/D en attente)
 **Porteur :** ⚫ MAINa
 
 ---
@@ -106,7 +106,7 @@ Scope : S2699 (1) + S6813/S2629 (4) + S6068/S125 (4, même fichier) = 9 issues, 
 - **Couvrir :** Contexte (18 hits S8688, risques tests non déterministes/ambiguïté zone/incohérences dates), Décision (`Clock.systemUTC()` bean CDI `communs/config/ClockConfig.java`, injection constructeur), Alternatives rejetées (`ZoneId.systemDefault()`, inline sans bean), Conséquences (testabilité vs effort migration + risque `BudgetDataUtils`)
 - **Acceptation :** ✅ ADR créé, statut Accepté, aligné style ADR-001. **Gate #1 spécifique Phase B en attente validation humaine avant T B.1.**
 
-#### T B.1 - Producer Clock + migration communs
+#### T B.1 - Producer Clock + migration communs ✅ complétée
 - **Agent :** DEVon
 - **Fichier(s) :**
   - `communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/config/ClockConfig.java` (nouveau)
@@ -118,6 +118,13 @@ Scope : S2699 (1) + S6813/S2629 (4) + S6068/S125 (4, même fichier) = 9 issues, 
   - Remplacer chaque `.now()` par appel via `Clock` injecté par constructeur
   - Tests : injecter `Clock.fixed(instant, ZoneOffset.UTC)` pour déterminisme
 - **Acceptation :** 5 call sites migrés, `mvn clean test -f communs/pom.xml` vert, aucune régression comportementale (JWT expiration, migrations Mongo).
+
+**Résultats T B.1 (clôture) :**
+- 5/5 call sites migrés : `MigrationRepository.java` x2 en injection constructeur stricte (bean CDI géré conteneur, cas nominal) ; `JWTUtils.java` x1 et `JWTAuthToken.java` x2 en paramètre `Clock` explicite + overload par défaut `Clock.systemUTC()` — écart ADR-004 documenté (classe statique non instanciable CDI pour `JWTUtils`, POJO `new` ~15 endroits blast radius disproportionné pour `JWTAuthToken`), voir section "Nuance d'implémentation" `docs/adr/004-clock-injection-convention.md`.
+- `mvn clean test -f communs/pom.xml` : 149 tests, 0 failure, 4 erreurs `MongoTimeoutException` pré-existantes, sans lien avec T B.1 — mêmes 4 erreurs infra qu'en Phase A (absence Mongo réel local).
+- Validation QALvin : compilation des 4 microservices (`comptes`, `operations`, `parametrages`, `utilisateurs`) confirmée OK contre le nouveau `communs` — aucune signature cassée côté appelants existants (`RequestJWTHeaderFactory.java`, `AbstractAPISecurityFilter.java`, etc.).
+- Aucune régression sur l'intégration Phase A (`MongoMigrationRunner`/`MigrationRepository`).
+- Gates #2 (validation code) et #3 (validation tests) obtenues côté utilisateur.
 
 #### T B.2 - Migration operations + utilisateurs (dépend T B.1 mergé + communs republié)
 - **Agent :** DEVon
