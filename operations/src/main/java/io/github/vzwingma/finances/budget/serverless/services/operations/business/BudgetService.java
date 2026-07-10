@@ -36,6 +36,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
@@ -75,6 +76,14 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
 
     @Inject
     IJwtSigningKeyReadRepository iJwtSigningKeyReadRepository;
+
+    /**
+     * Horloge applicative UTC (ADR-004). Valeur par défaut {@link Clock#systemUTC()} pour les instances
+     * non gérées par le conteneur CDI (tests directs via {@code new BudgetService()}), écrasée par
+     * injection CDI (champ, cohérent avec le reste de la classe) pour les instances gérées par le conteneur.
+     */
+    @Inject
+    Clock clock = Clock.systemUTC();
     /**
      * Chargement du budget du mois courant
      *
@@ -293,7 +302,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
         budgetInitVide.setNewBudget(true);
         budgetInitVide.setId();
 
-        budgetInitVide.setDateMiseAJour(LocalDateTime.now());
+        budgetInitVide.setDateMiseAJour(LocalDateTime.now(clock));
 
         // MAJ Calculs à partir du mois précédent
         // Recherche du budget précédent
@@ -330,7 +339,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
             budgetInitVide.setIdCompteBancaire(budgetPrecedent.getIdCompteBancaire());
             // #116 : Le résultat du moins précédent est le compte réel, pas le compte avancé
             budgetInitVide.getSoldes().setSoldeAtFinMoisPrecedent(budgetPrecedent.getSoldes().getSoldeAtFinMoisCourant());
-            budgetInitVide.setDateMiseAJour(LocalDateTime.now());
+            budgetInitVide.setDateMiseAJour(LocalDateTime.now(clock));
             if (budgetPrecedent.getListeOperations() != null) {
 
                 // Recopie de toutes les opérations reportées, non périodique
@@ -340,7 +349,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                                 .filter(op -> OperationEtatEnum.REPORTEE.equals(op.getEtat())
                                         && (op.getMensualite() == null || OperationPeriodiciteEnum.PONCTUELLE.equals(op.getMensualite().getPeriode())))
                                 // .peek(op -> LOGGER.info("Opération reportée à copier : {}", op))
-                                .map(BudgetDataUtils::cloneOperationToMoisSuivant)
+                                .map(op -> BudgetDataUtils.cloneOperationToMoisSuivant(op, clock))
                                 .toList());
 
                 // Recopie de toutes les opérations périodiques
@@ -350,7 +359,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                                 .filter(op -> op.getMensualite() != null && !OperationPeriodiciteEnum.PONCTUELLE.equals(op.getMensualite().getPeriode()))
                                 // .peek(op -> LOGGER.info("Opération périodique reportée à copier : {}", op))
                                 // Les opérations périodiques peuvent créer de nouvelles opérations (période suivante)
-                                .map(ligneOperation -> BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(ligneOperation, budgetInitVide.getMois(), budgetInitVide.getAnnee()))
+                                .map(ligneOperation -> BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(ligneOperation, budgetInitVide.getMois(), budgetInitVide.getAnnee(), clock))
                                 .flatMap(List::stream)
                                 .toList());
             }
@@ -404,7 +413,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
         return dataOperationsProvider.chargeBudgetMensuel(idBudgetMensuel)
                 .map(budgetMensuel -> {
                     budgetMensuel.setActif(budgetActif);
-                    budgetMensuel.setDateMiseAJour(LocalDateTime.now());
+                    budgetMensuel.setDateMiseAJour(LocalDateTime.now(clock));
                     //  #119 #141 : Toutes les opérations en attente sont reportées
                     if (!budgetActif) {
                         LOGGER.info("Toutes les opérations prévues sont reportées :");
@@ -432,7 +441,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      */
 
     private Uni<BudgetMensuel> sauvegardeBudget(BudgetMensuel budget) {
-        budget.setDateMiseAJour(LocalDateTime.now());
+        budget.setDateMiseAJour(LocalDateTime.now(clock));
         return dataOperationsProvider.sauvegardeBudgetMensuel(budget);
     }
 

@@ -19,6 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -82,6 +83,20 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
      * @param etat        état
      */
     public LigneOperation(SsCategorieOperations ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat) {
+        this(ssCategorie, libelle, typeDepense, absValeur, etat, Clock.systemUTC());
+    }
+
+    /**
+     * Constructeur
+     *
+     * @param ssCategorie Catégorie
+     * @param libelle     libellé
+     * @param typeDepense type d'opération
+     * @param absValeur   valeur montant en valeur absolue
+     * @param etat        état
+     * @param clock       horloge applicative (ADR-004) utilisée pour dater la création
+     */
+    public LigneOperation(SsCategorieOperations ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Clock clock) {
         Categorie c = null;
         SsCategorie ssc = null;
         if (ssCategorie != null && ssCategorie.getCategorieParente() != null) {
@@ -97,7 +112,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
             ssc.setType(ssCategorie.getType());
             setSsCategorie(ssc);
         }
-        buildLigneOperation(c, ssc, libelle, typeDepense, absValeur, etat, null);
+        buildLigneOperation(c, ssc, libelle, typeDepense, absValeur, etat, null, clock);
     }
 
 
@@ -112,7 +127,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
      * @param etat        état
      */
     public LigneOperation(Categorie categorie, SsCategorie ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Mensualite mensualite) {
-        buildLigneOperation(categorie, ssCategorie, libelle, typeDepense, absValeur, etat, mensualite);
+        this(categorie, ssCategorie, libelle, typeDepense, absValeur, etat, mensualite, Clock.systemUTC());
     }
 
     /**
@@ -124,8 +139,24 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
      * @param typeDepense type d'opération
      * @param absValeur   valeur montant en valeur absolue
      * @param etat        état
+     * @param clock       horloge applicative (ADR-004) utilisée pour dater la création
      */
-    private void buildLigneOperation(Categorie categorie, SsCategorie ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Mensualite mensualite) {
+    public LigneOperation(Categorie categorie, SsCategorie ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Mensualite mensualite, Clock clock) {
+        buildLigneOperation(categorie, ssCategorie, libelle, typeDepense, absValeur, etat, mensualite, clock);
+    }
+
+    /**
+     * Constructeur
+     *
+     * @param categorie   Catégorie
+     * @param ssCategorie Sous Catégorie
+     * @param libelle     libellé
+     * @param typeDepense type d'opération
+     * @param absValeur   valeur montant en valeur absolue
+     * @param etat        état
+     * @param clock       horloge applicative (ADR-004) utilisée pour dater la création
+     */
+    private void buildLigneOperation(Categorie categorie, SsCategorie ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Mensualite mensualite, Clock clock) {
         this.id = UUID.randomUUID().toString();
         this.libelle = libelle;
         this.typeOperation = typeDepense;
@@ -139,9 +170,9 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
         this.mensualite = mensualite;
 
         AddInfos addInfos = new AddInfos();
-        addInfos.setDateMaj(LocalDateTime.now());
-        addInfos.setDateOperation(LocalDate.now());
-        addInfos.setDateCreate(LocalDateTime.now());
+        addInfos.setDateMaj(LocalDateTime.now(clock));
+        addInfos.setDateOperation(LocalDate.now(clock));
+        addInfos.setDateCreate(LocalDateTime.now(clock));
         // Autres infos
         this.autresInfos = addInfos;
     }

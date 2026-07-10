@@ -8,6 +8,7 @@ import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.Budg
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
@@ -132,12 +133,23 @@ public class BudgetDataUtils {
 
 
     /**
-     * Clone d'une ligne opération
+     * Clone d'une ligne opération (horloge système UTC)
      *
      * @param ligneOperation : ligneOpérations à cloner
      * @return Ligne dépense clonée
      */
     public static LigneOperation cloneOperationToMoisSuivant(LigneOperation ligneOperation) {
+        return cloneOperationToMoisSuivant(ligneOperation, Clock.systemUTC());
+    }
+
+    /**
+     * Clone d'une ligne opération
+     *
+     * @param ligneOperation : ligneOpérations à cloner
+     * @param clock          horloge applicative (ADR-004) utilisée pour dater le clone
+     * @return Ligne dépense clonée
+     */
+    public static LigneOperation cloneOperationToMoisSuivant(LigneOperation ligneOperation, Clock clock) {
         LigneOperation ligneOperationClonee = new LigneOperation();
         ligneOperationClonee.setId(UUID.randomUUID().toString());
         ligneOperationClonee.setLibelle(ligneOperation.getLibelle());
@@ -155,7 +167,7 @@ public class BudgetDataUtils {
             ligneOperationClonee.setSsCategorie(ssCatClonee);
         }
         ligneOperationClonee.setAutresInfos(new LigneOperation.AddInfos());
-        ligneOperationClonee.getAutresInfos().setDateMaj(LocalDateTime.now());
+        ligneOperationClonee.getAutresInfos().setDateMaj(LocalDateTime.now(clock));
         // #73
         LocalDate nextDate = null;
         if(ligneOperation.getAutresInfos() != null && ligneOperation.getAutresInfos().getDateOperation() != null){
@@ -171,14 +183,24 @@ public class BudgetDataUtils {
 
 
     /**
-     * Clone d'une ligne opération
+     * Clone d'une ligne opération (horloge système UTC)
      *
      * @return Ligne dépense clonée
      */
     public static List<LigneOperation> cloneOperationPeriodiqueToMoisSuivant(final LigneOperation ligneOperation, Month moisCible, int anneeCible) {
+        return cloneOperationPeriodiqueToMoisSuivant(ligneOperation, moisCible, anneeCible, Clock.systemUTC());
+    }
+
+    /**
+     * Clone d'une ligne opération
+     *
+     * @param clock horloge applicative (ADR-004) utilisée pour dater le clone et calculer la date budget cible
+     * @return Ligne dépense clonée
+     */
+    public static List<LigneOperation> cloneOperationPeriodiqueToMoisSuivant(final LigneOperation ligneOperation, Month moisCible, int anneeCible, Clock clock) {
         List<LigneOperation> lignesOperationClonees = new ArrayList<>();
 
-        LigneOperation ligneOperationClonee = cloneOperationToMoisSuivant(ligneOperation);
+        LigneOperation ligneOperationClonee = cloneOperationToMoisSuivant(ligneOperation, clock);
 
         /*
          *  Recalcul des mensualités et des récurrences
@@ -194,12 +216,12 @@ public class BudgetDataUtils {
             // Si une opération était à échéance, mais a été reportée - on la réinjecte, en retard
             if (ligneOperation.getMensualite().getProchaineEcheance() == ligneOperation.getMensualite().getPeriode().getNbMois()
                     && OperationEtatEnum.REPORTEE.equals(ligneOperation.getEtat())) {
-                cloneOperationAEcheanceReportee(lignesOperationClonees, ligneOperation);
+                cloneOperationAEcheanceReportee(lignesOperationClonees, ligneOperation, clock);
             }
 
             defnirEtatEtEcheance(ligneOperationClonee, mensualiteClonee, prochaineMensualite);
 
-            LocalDate dateBudgetCible = LocalDate.now().withMonth(moisCible.getValue()).withYear(anneeCible);
+            LocalDate dateBudgetCible = LocalDate.now(clock).withMonth(moisCible.getValue()).withYear(anneeCible);
             if(!gererDateFinMensualite(ligneOperationClonee, ligneOperation.getMensualite().getDateFin(), dateBudgetCible)){
                 // La date de fin de mensualité est dépassée - ne pas cloner
                 return lignesOperationClonees;
@@ -266,12 +288,13 @@ public class BudgetDataUtils {
      *
      * @param lignesOperationClonees liste des opérations
      * @param ligneOperation         opération à traiter
+     * @param clock                  horloge applicative (ADR-004) utilisée pour dater le clone
      */
-    private static void cloneOperationAEcheanceReportee(List<LigneOperation> lignesOperationClonees, LigneOperation ligneOperation) {
+    private static void cloneOperationAEcheanceReportee(List<LigneOperation> lignesOperationClonees, LigneOperation ligneOperation, Clock clock) {
         if (LOGGER.isWarnEnabled() && ligneOperation.getMensualite() != null && ligneOperation.getMensualite().getPeriode() != null) {
             LOGGER.warn("L'opération périodique {} est reportée : en retard", ligneOperation.getMensualite().getPeriode().name());
         }
-        LigneOperation ligneOperationEcheanceReportee = cloneOperationToMoisSuivant(ligneOperation);
+        LigneOperation ligneOperationEcheanceReportee = cloneOperationToMoisSuivant(ligneOperation, clock);
         if (ligneOperationEcheanceReportee.getStatuts() == null){
             ligneOperationEcheanceReportee.setStatuts(new ArrayList<>());
         }

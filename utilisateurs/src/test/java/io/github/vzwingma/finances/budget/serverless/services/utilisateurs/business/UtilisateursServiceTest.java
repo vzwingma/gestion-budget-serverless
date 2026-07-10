@@ -15,9 +15,13 @@ import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.EnumMap;
 import java.util.concurrent.CompletionException;
 
@@ -32,10 +36,16 @@ class UtilisateursServiceTest {
     private IUtilisateursRepository serviceDataProvider;
     private UtilisateursService utilisateursService;
 
+    /**
+     * Horloge fixe (ADR-004) pour rendre déterministe la date de dernier accès.
+     */
+    private static final Instant INSTANT_FIXE = Instant.parse("2026-07-10T10:15:30Z");
+    private final Clock clockFixe = Clock.fixed(INSTANT_FIXE, ZoneOffset.UTC);
+
     @BeforeEach
     void setup() {
         serviceDataProvider = Mockito.mock(IUtilisateursRepository.class);
-        utilisateursService = Mockito.spy(new UtilisateursService(serviceDataProvider));
+        utilisateursService = Mockito.spy(new UtilisateursService(serviceDataProvider, clockFixe));
         appProvider = utilisateursService;
 
         Mockito.when(serviceDataProvider.chargeUtilisateur("Test")).thenReturn(Uni.createFrom().item(MockDataUtilisateur.getTestUtilisateur()));
@@ -67,7 +77,11 @@ class UtilisateursServiceTest {
         LocalDateTime lastAccess = appProvider.getLastAccessDate("Test").await().indefinitely();
         assertNotNull(lastAccess);
         Mockito.verify(serviceDataProvider, Mockito.times(1)).chargeUtilisateur(Mockito.anyString());
-        Mockito.verify(serviceDataProvider, Mockito.times(1)).majUtilisateur(Mockito.any());
+        // Horodatage déterministe (ADR-004, Clock.fixed injecté dans setup()) : le clone persisté
+        // (majUtilisateur) porte la date de dernier accès calculée via l'horloge applicative
+        ArgumentCaptor<Utilisateur> cloneCaptor = ArgumentCaptor.forClass(Utilisateur.class);
+        Mockito.verify(serviceDataProvider, Mockito.times(1)).majUtilisateur(cloneCaptor.capture());
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), cloneCaptor.getValue().getDernierAcces());
     }
 
     @Test

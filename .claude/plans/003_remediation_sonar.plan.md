@@ -1,7 +1,7 @@
 # Plan d'Action 003 — Remédiation Sonar (314 issues ouvertes)
 
 **Date création :** 2026-07-10
-**Statut :** 🔵 En cours (Phase A complétée ; Phase B — T B.1 `communs` complétée, T B.2 en attente republication `communs` + feu vert explicite ; Phase C/D en attente)
+**Statut :** 🔵 En cours (Phase A complétée ; Phase B complétée [T B.1 + T B.2] ; Phase C/D en attente sollicitation explicite)
 **Porteur :** ⚫ MAINa
 
 ---
@@ -85,7 +85,7 @@ Scope : S2699 (1) + S6813/S2629 (4) + S6068/S125 (4, même fichier) = 9 issues, 
 
 ---
 
-## Phase B — S8688 `.now()` sans zone (UTC)
+## Phase B — S8688 `.now()` sans zone (UTC) ✅ complétée
 
 ### Contexte
 
@@ -93,10 +93,10 @@ Scope : S2699 (1) + S6813/S2629 (4) + S6068/S125 (4, même fichier) = 9 issues, 
 
 ### Critères de réussite
 
-- ADR-004 validé par le développeur humain.
-- B1 : `ClockConfig` (bean `@Produces @ApplicationScoped Clock`, package `config` de `communs`) créé ; 5 call sites `communs` migrés vers injection constructeur ; tests avec `Clock.fixed(...)` déterministes.
-- B2 (après B1 mergé + `communs` republié GitHub Packages) : 13 call sites `operations`/`utilisateurs` migrés ; vigilance particulière sur `cloneOperationToMoisSuivant`/`cloneOperationPeriodiqueToMoisSuivant` (`BudgetDataUtils`, fragilité documentée `.claude/CLAUDE.md`).
-- Tests ciblés + suite module verts, pas de régression logique métier budget.
+- [x] ADR-004 validé par le développeur humain.
+- [x] B1 : `ClockConfig` (bean `@Produces @ApplicationScoped Clock`, package `config` de `communs`) créé ; 5 call sites `communs` migrés vers injection constructeur ; tests avec `Clock.fixed(...)` déterministes.
+- [x] B2 (après B1 mergé + `communs` republié GitHub Packages) : 13 call sites `operations`/`utilisateurs` migrés ; vigilance particulière sur `cloneOperationToMoisSuivant`/`cloneOperationPeriodiqueToMoisSuivant` (`BudgetDataUtils`, fragilité documentée `.claude/CLAUDE.md`) — vérifiée explicitement par QALvin, comportement métier inchangé.
+- [x] Tests ciblés + suite module verts, pas de régression logique métier budget — `operations` 90/90, `utilisateurs` 36/36.
 
 ### Tâches
 

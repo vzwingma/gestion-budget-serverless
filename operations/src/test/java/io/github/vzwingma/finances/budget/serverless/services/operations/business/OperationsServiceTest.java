@@ -22,7 +22,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +39,12 @@ class OperationsServiceTest {
     private OperationsService operationsAppProvider;
     private IOperationsRepository mockOperationDataProvider;
 
+    /**
+     * Horloge fixe (ADR-004) pour rendre déterministes les assertions sur les dates de mise à jour d'opération.
+     */
+    private static final Instant INSTANT_FIXE = Instant.parse("2026-07-10T10:15:30Z");
+    private final Clock clockFixe = Clock.fixed(INSTANT_FIXE, ZoneOffset.UTC);
+
     @BeforeEach
     void setup() {
         mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
@@ -45,6 +54,7 @@ class OperationsServiceTest {
         operationsAppProvider.setBudgetService(budgetAppProvider);
         IParametragesServiceProvider mockParam = Mockito.mock(IParametragesServiceProvider.class);
         operationsAppProvider.setParametragesService(mockParam);
+        operationsAppProvider.setClock(clockFixe);
     }
 
     @Test
@@ -57,6 +67,8 @@ class OperationsServiceTest {
         assertEquals(1, listeOperations.size());
         assertEquals(OperationEtatEnum.REALISEE, listeOperations.getFirst().getEtat());
         assertNotNull(listeOperations.getFirst().getAutresInfos().getDateOperation());
+        // Horodatage déterministe (ADR-004, Clock.fixed injecté dans setup())
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), listeOperations.getFirst().getAutresInfos().getDateMaj());
     }
 
     @Test

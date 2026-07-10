@@ -61,6 +61,23 @@ Pour ces deux cas, alternative pragmatique appliquée (validée développeur hum
 
 Règle retenue : injection par constructeur si bean CDI géré par le conteneur ; sinon (classe statique non instanciée par CDI, ou POJO largement instancié via `new` avec blast radius de migration disproportionné hors scope tâche courante), paramètre de méthode explicite + overload par défaut `Clock.systemUTC()`.
 
+### Sous-nuance : bean CDI avec pattern field injection déjà établi (constatée en T B.2)
+
+Le cas nominal ci-dessus suppose implicitement que la classe cible, si vrai bean CDI `@ApplicationScoped`, n'a pas de convention d'injection préexistante contraire. T B.2 (migration `operations`/`utilisateurs`) fait apparaître un troisième cas de figure : `BudgetService`, `OperationsService`, `UtilisateursService` sont bien de vrais beans CDI `@ApplicationScoped` — mais utilisaient déjà, avant la migration Clock (hors scope Phase A/B de remédiation Sonar), un pattern établi de **field injection** (`@Inject` sur champ, classes en `@NoArgsConstructor`/`@Setter` Lombok), avec leurs tests (`BudgetServiceTest`, `OperationsServiceTest`, `UtilisateursServiceTest`) instanciant via `new X()` + setters sur des dizaines de cas existants.
+
+Forcer l'injection constructeur sur ces 3 classes pour la seule migration Clock aurait imposé une réécriture large des `@BeforeEach` de 3 fichiers de test — refactoring de style disproportionné, hors périmètre de la remédiation S8688.
+
+Décision actée (validée développeur humain) : respecter le pattern déjà en place plutôt que de forcer une bascule de style non liée au scope Sonar/Clock. Le `Clock` est ajouté en field injection cohérente avec l'existant :
+
+```java
+@Inject
+Clock clock = Clock.systemUTC();
+```
+
+La valeur par défaut `Clock.systemUTC()` sert de filet en dehors du conteneur CDI (ex. instanciation `new` en test sans override), cohérent avec le pattern `@NoArgsConstructor`/`@Setter` déjà en usage sur ces classes.
+
+Ce principe de proportionnalité complète celui déjà acté pour `JWTUtils`/`JWTAuthToken` (T B.1) : dans les deux cas, la convention "injection constructeur" de cet ADR ne s'applique pas rétroactivement pour forcer un refactoring de style hors scope de la tâche Clock courante.
+
 ---
 
 ## Alternatives Considérées

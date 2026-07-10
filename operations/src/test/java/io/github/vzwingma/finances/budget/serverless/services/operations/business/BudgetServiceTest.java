@@ -23,8 +23,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.Month;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 
@@ -41,6 +44,12 @@ class BudgetServiceTest {
     private IComptesServiceProvider mockCompteServiceProvider;
     private IParametragesServiceProvider mockParametragesServiceProvider;
 
+    /**
+     * Horloge fixe (ADR-004) pour rendre déterministes les assertions sur les dates de mise à jour de budget.
+     */
+    private static final Instant INSTANT_FIXE = Instant.parse("2026-07-10T10:15:30Z");
+    private final Clock clockFixe = Clock.fixed(INSTANT_FIXE, ZoneOffset.UTC);
+
     @BeforeEach
     void setup() {
         mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
@@ -49,6 +58,7 @@ class BudgetServiceTest {
 
         OperationsService operationsService = Mockito.spy(new OperationsService());
         operationsService.setDataOperationsProvider(mockOperationDataProvider);
+        operationsService.setClock(clockFixe);
         operationsAppProvider = operationsService;
 
         budgetAppProvider = Mockito.spy(new BudgetService());
@@ -56,6 +66,7 @@ class BudgetServiceTest {
         budgetAppProvider.setComptesService(mockCompteServiceProvider);
         budgetAppProvider.setOperationsAppProvider(operationsAppProvider);
         budgetAppProvider.setParametragesService(mockParametragesServiceProvider);
+        budgetAppProvider.setClock(clockFixe);
 
     }
 
@@ -236,6 +247,8 @@ class BudgetServiceTest {
         BudgetMensuel budgetReinit = budgetAppProvider.reinitialiserBudgetMensuel(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue().getId()).await().indefinitely();
         // Assertion
         assertNotNull(budgetReinit);
+        // Horodatage déterministe (ADR-004, Clock.fixed injecté dans setup())
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), budgetReinit.getDateMiseAJour());
         Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(budgetReinit);
     }
 
@@ -297,6 +310,8 @@ class BudgetServiceTest {
 
         assertFalse(budgetDesactive.isActif());
         assertEquals(OperationEtatEnum.REPORTEE, budgetDesactive.getListeOperations().getFirst().getEtat());
+        // Horodatage déterministe (ADR-004, Clock.fixed injecté dans setup())
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), budgetDesactive.getDateMiseAJour());
 
         Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(budgetDesactive);
     }
