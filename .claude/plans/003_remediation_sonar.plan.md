@@ -126,7 +126,7 @@ Scope : S2699 (1) + S6813/S2629 (4) + S6068/S125 (4, même fichier) = 9 issues, 
 - Aucune régression sur l'intégration Phase A (`MongoMigrationRunner`/`MigrationRepository`).
 - Gates #2 (validation code) et #3 (validation tests) obtenues côté utilisateur.
 
-#### T B.2 - Migration operations + utilisateurs (dépend T B.1 mergé + communs republié)
+#### T B.2 - Migration operations + utilisateurs ✅ complétée
 - **Agent :** DEVon
 - **Fichier(s) :**
   - `operations/.../business/BudgetService.java:296,333,407,435`
@@ -141,9 +141,24 @@ Scope : S2699 (1) + S6813/S2629 (4) + S6068/S125 (4, même fichier) = 9 issues, 
   - **Vigilance particulière** : `cloneOperationToMoisSuivant`/`cloneOperationPeriodiqueToMoisSuivant` dans `BudgetDataUtils` — logique fragile documentée `.claude/CLAUDE.md` (champs `SsCategorie`/`Categorie`), tout changement de comportement de date doit être testé explicitement
 - **Acceptation :** 13 call sites migrés, tests `operations` + `utilisateurs` verts, comportement clonage mois suivant inchangé (vérifié explicitement par QALvin).
 
+**Résultats T B.2 (clôture) :**
+- 13/13 call sites migrés, 10 fichiers modifiés.
+- `BudgetDataUtils.java` (classe statique) : overloads `Clock` + défaut `systemUTC()` sur `cloneOperationToMoisSuivant`/`cloneOperationPeriodiqueToMoisSuivant`/`cloneOperationAEcheanceReportee`.
+- `LigneOperation.java` (POJO) : overloads `Clock` + défaut sur 2 constructeurs.
+- `BudgetService.java`/`OperationsService.java`/`UtilisateursService.java` (beans CDI) : champ `@Inject Clock clock = Clock.systemUTC()` (field injection) — écart ADR-004 documenté (pattern Lombok existant respecté), nuance ajoutée par DOCly précédemment.
+- `Utilisateur.java` : overload `Clock` + défaut sur constructeur clone.
+- Fix incident accepté : cohérence horloge dans `BudgetService.initBudgetFromBudgetPrecedent` (passage `clock` explicite au lieu de l'overload par défaut).
+- Vigilance clonage mois suivant (`BudgetDataUtils`, fragilité documentée `.claude/CLAUDE.md`) : QALvin a vérifié en priorité la couverture — comportement métier inchangé, tests `Clock.fixed` couvrant les cas limites pertinents.
+- Résultats Maven confirmés (DEVon + QALvin indépendamment) : `mvn clean test -f operations/pom.xml` → 90/90 verts ; `mvn clean test -f utilisateurs/pom.xml` → 36/36 verts.
+- Gates #2 (validation code) et #3 (validation tests) obtenues côté utilisateur.
+
 **Effort :** B1 Faible, B2 Moyen. **Risque :** B1 faible, B2 MEDIUM (`BudgetDataUtils`/`BudgetService`, logique métier budget). **Dépendances :** ADR-004 validé (Gate #1 sous-phase) → T B.1 → `communs` republié → T B.2.
 
-## Phase C — S8924 imports statiques Mockito (267, mécanique) — hors scope session courante
+### Clôture Phase B
+
+Phase B (T B.0 ADR + T B.1 `communs` + T B.2 `operations`/`utilisateurs`) intégralement complétée. 18/18 issues S8688 adressées. Gates #2/#3 obtenues côté utilisateur pour T B.1 et T B.2.
+
+## Phase C — S8924 imports statiques Mockito (267, mécanique) — en attente sollicitation explicite du développeur, non démarrée
 
 ## Phase D — Reliquats (S7467 unnamed pattern, S6213 nom réservé, S5778 lambda, S8700 durée zone-aware) — hors scope session courante
 
