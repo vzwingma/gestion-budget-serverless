@@ -29,11 +29,15 @@ public class MongoMigrationRunner {
 
     private static final Logger LOG = LoggerFactory.getLogger(MongoMigrationRunner.class);
 
-    @Inject
-    Instance<IMongoMigration> migrations;
+    private final Instance<IMongoMigration> migrations;
+
+    private final MigrationRepository migrationRepository;
 
     @Inject
-    MigrationRepository migrationRepository;
+    public MongoMigrationRunner(Instance<IMongoMigration> migrations, MigrationRepository migrationRepository) {
+        this.migrations = migrations;
+        this.migrationRepository = migrationRepository;
+    }
 
     /**
      * Point d'entrée déclenché au démarrage de Quarkus. Applique séquentiellement les migrations non
@@ -71,7 +75,9 @@ public class MongoMigrationRunner {
         Uni<Void> chaine = Uni.createFrom().voidItem();
         for (IMongoMigration migration : migrationsTriees) {
             if (versionsAppliquees.contains(migration.version())) {
-                LOG.debug("[MIGRATIONS] Migration {} ({}) déjà appliquée, ignorée", migration.version(), migration.description());
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("[MIGRATIONS] Migration {} ({}) déjà appliquée, ignorée", migration.version(), migration.description());
+                }
                 continue;
             }
             chaine = chaine.chain(() -> executerMigration(migration));
@@ -84,7 +90,9 @@ public class MongoMigrationRunner {
      * la collection {@code _migrations} en cas de succès comme en cas d'échec (traçabilité).
      */
     private Uni<Void> executerMigration(IMongoMigration migration) {
-        LOG.info("[MIGRATIONS] Exécution migration {} : {}", migration.version(), migration.description());
+        if (LOG.isInfoEnabled()) {
+            LOG.info("[MIGRATIONS] Exécution migration {} : {}", migration.version(), migration.description());
+        }
         return migration.migrate()
                 .chain(() -> migrationRepository.enregistrerSucces(migration.version(), migration.description()))
                 .invoke(() -> LOG.info("[MIGRATIONS] Migration {} appliquée avec succès", migration.version()))

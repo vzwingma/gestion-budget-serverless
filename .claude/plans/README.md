@@ -10,6 +10,7 @@ Cet index est **synthétique** : liste des plans + statut global uniquement (pas
 
 ## 📂 Plans Actifs / En Cours
 
+- [`003_remediation_sonar.plan.md`](./003_remediation_sonar.plan.md) — 🔵 **En cours (Phase A complétée, Phase B/C/D en attente)**. Remédiation 314 issues SonarCloud OPEN (`vzwingma_gestion-budget-serverless`). Phase A (blocker + majeurs `MongoMigrationRunner.java`, fichier partagé 4 microservices) ✅ complétée : DEVon (T A.1-A.3) → Gate #2 → QALvin → Gate #3, toutes obtenues. 8/9 issues corrigées dans le code (S125 introuvable, non applicable). Tests ciblés 11/11 verts ; `mvn clean test` racine 142/146 (4 erreurs `MongoTimeout` pré-existantes, sans lien, validation complète différée au scan CI `master` post-merge). PR (`fix/sonar-migration-runner-majors-blocker`) restant à committer/pousser par l'utilisateur. Phases B (S8688 `.now()` UTC, ADR-004 requis), C (S8924 imports statiques Mockito, 267 issues) et D (reliquats) toujours différées, attendent nouvelle sollicitation.
 - [`002_fix_desync_quarkus_renovate.plan.md`](./002_fix_desync_quarkus_renovate.plan.md) — 🔵 **En cours**. Fix désync version Quarkus (`pom.xml` vs README/ARCHITECTURE.md/instructions) sur PR Renovate — check CI "Check Quarkus version sync" cassait car Renovate ne suivait pas les fichiers doc. Phase 1 ✅ (`customManager` Renovate ajouté dans `renovate.json`) ; Phase 2 (vérification + déblocage PR en cours) et Phase 3 (doc) restantes.
 
 ---
@@ -88,5 +89,5 @@ Pour contribuer ou modifier un plan existant :
 
 ---
 
-**Dernière mise à jour :** 2026-07-08
+**Dernière mise à jour :** 2026-07-10 (clôture Phase A, plan 003)
 **Gestionnaire des Plans :** ⚫ MAINa & 👤 Développeur humain
