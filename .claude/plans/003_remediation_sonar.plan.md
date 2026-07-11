@@ -209,7 +209,70 @@ QALvin a validé indépendamment : recherche résiduelle confirmant 0 usage qual
 - Aucune régression sur les fichiers déjà remaniés en Phase A/B (assertions `Clock.fixed` intactes, confirmé QALvin).
 - Gates #2 (validation code) et #3 (validation tests) obtenues côté utilisateur.
 
-## Phase D — Reliquats (S7467 unnamed pattern, S6213 nom réservé, S5778 lambda, S8700 durée zone-aware) — hors scope session courante
+## Phase D — Reliquats (S7467 unnamed pattern, S6213 nom réservé, S5778 lambda, S8700 durée zone-aware)
+
+### Contexte
+
+Dernière phase Plan 003 — ~17 issues restantes, 4 sous-lots indépendants, risque LOW uniforme, fixes isolés.
+
+### Tâches
+
+#### T D.1 - S7467 : catch unnamed pattern Java 22 (10 issues, main)
+- **Agent :** DEVon
+- **Fichier(s) :** `AbstractAPISecurityFilter.java:53`, `JWTUtils.java:77,138`, `BudgetsResource.java:87,134` + autres identifiés via Grep `catch \(Exception e\)` / règle S7467
+- **Couvrir :** remplacer `catch (Exception e)` par `catch (Exception _)` **uniquement** si `e` réellement inutilisé dans le corps du catch — vérifier site par site avant remplacement, ne pas convertir si `e` est loggé/inspecté.
+- **Acceptation :** 10 issues résolues, aucun site avec usage réel de l'exception converti à tort.
+
+#### T D.2 - S6213 : renommage variable nom réservé (3 issues, test)
+- **Agent :** DEVon
+- **Fichier(s) :** `communs/.../TestMigrationRecord.java:19,29,46`
+- **Acceptation :** 3 issues résolues, tests toujours verts.
+
+#### T D.3 - S5778 : refactor lambda mal utilisée (2 issues, test)
+- **Agent :** DEVon
+- **Fichier(s) :** `operations/.../BudgetServiceTest.java:381`, `utilisateurs/.../UtilisateursServiceTest.java:75`
+- **Acceptation :** 2 issues résolues, comportement test inchangé.
+
+#### T D.4 - S8700 : conversion type zone-aware avant calcul durée (1 issue, test)
+- **Agent :** DEVon
+- **Fichier(s) :** `communs/.../TestJWTUtils.java:102`
+- **Couvrir :** réutiliser convention `Clock`/zone-aware établie Phase B (ADR-004) plutôt que fix ad hoc.
+- **Acceptation :** 1 issue résolue, cohérent avec pattern Phase B.
+
+**Effort :** S. **Risque :** LOW uniforme. **Dépendances :** aucune, indépendant A/B/C. 4 sous-lots traités séquentiellement par DEVon sans repasser par validation humaine entre chaque lot (comme Phase C) — Gate #2 consolidée une fois les 4 lots codés.
+
+### QA Phase D
+
+QALvin : confirme absence de régression sur les 4 sous-lots + module concernés (`comptes`? à vérifier via AbstractAPISecurityFilter, `communs`, `operations`, `utilisateurs`). Ajoute test ciblé si trou de couverture identifié (attention particulière T D.4 S8700, comme fait en Phase B pour Clock).
+
+---
+
+## Action de clôture différée — validation Mongo réelle `TestMigrationRepository`/`TestMigrationRepositoryPersistence`
+
+**Statut :** ⚠️ Point de vigilance ouvert — non bloquant pour avancement Phases A/B/C/D, **bloquant pour clôture définitive Plan 003**.
+
+### Constat
+
+Depuis Phase A, 4 tests échouent systématiquement, tous environnements agents (DEVon, QALvin) + poste utilisateur, sans exception :
+
+- `communs/src/test/java/io/github/vzwingma/finances/budget/services/communs/migrations/TestMigrationRepository.java`
+- `communs/src/test/java/io/github/vzwingma/finances/budget/services/communs/migrations/TestMigrationRepositoryPersistence.java`
+
+**Nature échec :** `MongoTimeoutException` / `Connection refused: 127.0.0.1:27017`. Cause : aucun Mongo/Docker (MongoDB Dev Services Quarkus) disponible dans environnements agents ni poste utilisateur utilisés durant exécution intégrale Plan 003.
+
+**Historique :** écart constaté + documenté à chaque clôture de phase (A ligne 82, B ligne 124, C lignes 183/203/208) sans résolution — aucun environnement disponible pendant Plan 003 n'avait Mongo/Docker actif. Validation complète systématiquement différée au scan CI `master` post-merge, **jamais vérifiée réellement avec Mongo actif à date**.
+
+### Action requise avant clôture définitive Plan 003
+
+Après Phase D (ou clôture anticipée si Phase D reste non sollicitée) :
+
+1. Exécuter `TestMigrationRepository` + `TestMigrationRepositoryPersistence` dans environnement Mongo réel disponible :
+   - soit scan/build CI `master` (infra complète, Mongo Dev Services) ;
+   - soit poste local avec Docker actif.
+2. Confirmer passage au vert.
+3. Si échec réel révélé (pas seulement infra manquante) : documenter écart ici + ouvrir remédiation dédiée (nouvelle tâche ou nouveau plan selon ampleur).
+
+Tant que cette vérification n'est pas faite, Plan 003 reste **non clôturable définitivement (Gate #4)** malgré Phases A/B/C complétées et D différée.
 
 ---
 

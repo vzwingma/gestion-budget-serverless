@@ -50,7 +50,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
                 else {
                     logger.error("Token JWT invalide");
                 }
-            } catch (DecodeException e) {
+            } catch (DecodeException _) {
                 logger.error("Erreur lors du décodage du token JWT : {}", rawJWTToken);
             }
         }

@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -99,7 +100,8 @@ class TestJWTUtils {
         assertEquals(1672660002L, token.getPayload().getIat());
         assertNotNull(token.expiredAt());
         assertEquals(1672663602L, token.getPayload().getExp());
-        assertEquals(Duration.ofHours(1), Duration.between(token.issuedAt(), token.expiredAt()));
+        // Conversion en type zone-aware (ADR-004, convention Clock UTC Phase B) avant calcul de durée (S8700)
+        assertEquals(Duration.ofHours(1), Duration.between(token.issuedAt().atZone(ZoneOffset.UTC), token.expiredAt().atZone(ZoneOffset.UTC)));
 
         LOG.info(LocalDateTime.now().toString());
         LOG.info(token.expiredAt().toString());

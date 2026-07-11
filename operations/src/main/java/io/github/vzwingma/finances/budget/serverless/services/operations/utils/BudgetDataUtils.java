@@ -38,7 +38,7 @@ public class BudgetDataUtils {
         if (budgetId != null) {
             try {
                 return Month.of(Integer.parseInt(budgetId.substring(budgetId.lastIndexOf('_') + 1)));
-            } catch (Exception e) {
+            } catch (Exception _) {
                 // Erreur dans l'id
                 throw new BudgetNotFoundException("Erreur de mois dans l'id du budget " + budgetId + ". Données (mois) incohérentes");
             }
@@ -55,7 +55,7 @@ public class BudgetDataUtils {
         if (budgetId != null) {
             try {
                 return budgetId.substring(0, budgetId.indexOf('_'));
-            } catch (Exception e) {
+            } catch (Exception _) {
                 // Erreur dans l'id
                 throw new BudgetNotFoundException("Erreur de compte dans l'id du budget " + budgetId + ". Données (compte) incohérentes");
             }
@@ -74,7 +74,7 @@ public class BudgetDataUtils {
         if (budgetId != null) {
             try {
                 return Integer.parseInt(budgetId.substring(budgetId.indexOf('_') + 1, budgetId.lastIndexOf('_')));
-            } catch (Exception e) {
+            } catch (Exception _) {
                 // Erreur dans l'id
                 throw new BudgetNotFoundException("Erreur d'année dans l'id du budget " + budgetId + ". Données (année) incohérentes");
             }
@@ -351,7 +351,7 @@ public class BudgetDataUtils {
             valeurS = valeurS.replace(",", ".");
             try {
                 return Double.valueOf(valeurS);
-            } catch (Exception e) {
+            } catch (Exception _) {
                 // Erreur de parsing
             }
         }

@@ -75,7 +75,7 @@ public class JWTUtils {
             String chunks0 = encoder.encodeToString(headerJson.getBytes()).replace("==", "");
             String chunks1 = encoder.encodeToString(payloadJson.getBytes()).replace("==", "");
             return chunks0 + "." + chunks1;
-        } catch (Exception e) {
+        } catch (Exception _) {
             LOG.error("Erreur lors de l'encodage du token [{}]", jwt);
             throw new EncodeException("Erreur lors de l'encodage du token");
         }
@@ -136,7 +136,7 @@ public class JWTUtils {
 
             return publicKey;
 
-        } catch (InvalidKeySpecException | NoSuchAlgorithmException  | IllegalArgumentException e) {
+        } catch (InvalidKeySpecException | NoSuchAlgorithmException  | IllegalArgumentException _) {
 
             return null;
         }

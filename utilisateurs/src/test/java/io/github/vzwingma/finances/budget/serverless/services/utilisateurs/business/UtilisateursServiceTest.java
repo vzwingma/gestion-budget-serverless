@@ -72,10 +72,7 @@ class UtilisateursServiceTest {
 
     @Test
     void testGetUtilisateurKO() {
-        Assertions.assertThrows(CompletionException.class, () -> {
-            var uni = appProvider.getUtilisateur("Test2");
-            uni.await().indefinitely();
-        });
+        Assertions.assertThrows(CompletionException.class, () -> appProvider.getUtilisateur("Test2").await().indefinitely());
         verify(serviceDataProvider, times(1)).chargeUtilisateur(anyString());
         verify(serviceDataProvider, never()).majUtilisateur(any());
     }
