@@ -16,36 +16,36 @@ class TestMigrationRecord {
     void testConstructeurEtGetters() {
         LocalDateTime date = LocalDateTime.of(2026, 7, 6, 10, 30);
 
-        MigrationRecord migrationRecord = new MigrationRecord("V001", "Init collection", date, MigrationRecord.MigrationStatutEnum.SUCCES);
+        MigrationRecord migration = new MigrationRecord("V001", "Init collection", date, MigrationRecord.MigrationStatutEnum.SUCCES);
 
-        assertEquals("V001", migrationRecord.getVersion());
-        assertEquals("Init collection", migrationRecord.getDescription());
-        assertEquals(date, migrationRecord.getDateExecution());
-        assertEquals(MigrationRecord.MigrationStatutEnum.SUCCES, migrationRecord.getStatut());
+        assertEquals("V001", migration.getVersion());
+        assertEquals("Init collection", migration.getDescription());
+        assertEquals(date, migration.getDateExecution());
+        assertEquals(MigrationRecord.MigrationStatutEnum.SUCCES, migration.getStatut());
     }
 
     @Test
     void testSetters() {
-        MigrationRecord migrationRecord = new MigrationRecord();
+        MigrationRecord migration = new MigrationRecord();
         LocalDateTime date = LocalDateTime.now();
 
-        migrationRecord.setVersion("V002");
-        migrationRecord.setDescription("Autre migration");
-        migrationRecord.setDateExecution(date);
-        migrationRecord.setStatut(MigrationRecord.MigrationStatutEnum.ECHEC);
+        migration.setVersion("V002");
+        migration.setDescription("Autre migration");
+        migration.setDateExecution(date);
+        migration.setStatut(MigrationRecord.MigrationStatutEnum.ECHEC);
 
-        assertEquals("V002", migrationRecord.getVersion());
-        assertEquals("Autre migration", migrationRecord.getDescription());
-        assertEquals(date, migrationRecord.getDateExecution());
-        assertEquals(MigrationRecord.MigrationStatutEnum.ECHEC, migrationRecord.getStatut());
+        assertEquals("V002", migration.getVersion());
+        assertEquals("Autre migration", migration.getDescription());
+        assertEquals(date, migration.getDateExecution());
+        assertEquals(MigrationRecord.MigrationStatutEnum.ECHEC, migration.getStatut());
     }
 
     @Test
     void testToStringContientLesChampsCles() {
         LocalDateTime date = LocalDateTime.of(2026, 7, 6, 10, 30);
-        MigrationRecord migrationRecord = new MigrationRecord("V001", "Init collection", date, MigrationRecord.MigrationStatutEnum.SUCCES);
+        MigrationRecord migration = new MigrationRecord("V001", "Init collection", date, MigrationRecord.MigrationStatutEnum.SUCCES);
 
-        String repr = migrationRecord.toString();
+        String repr = migration.toString();
 
         assertTrue(repr.contains("V001"));
         assertTrue(repr.contains("Init collection"));
