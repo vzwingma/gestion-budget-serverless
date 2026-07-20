@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.services.communs.migrations;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -14,7 +15,7 @@ class TestMigrationRecord {
 
     @Test
     void testConstructeurEtGetters() {
-        LocalDateTime date = LocalDateTime.of(2026, 7, 6, 10, 30);
+        LocalDateTime date = LocalDateTime.of(2026, Month.JULY.getValue(), 6, 10, 30);
 
         MigrationRecord migration = new MigrationRecord("V001", "Init collection", date, MigrationRecord.MigrationStatutEnum.SUCCES);
 
@@ -42,7 +43,7 @@ class TestMigrationRecord {
 
     @Test
     void testToStringContientLesChampsCles() {
-        LocalDateTime date = LocalDateTime.of(2026, 7, 6, 10, 30);
+        LocalDateTime date = LocalDateTime.of(2026, Month.JULY.getValue(), 6, 10, 30);
         MigrationRecord migration = new MigrationRecord("V001", "Init collection", date, MigrationRecord.MigrationStatutEnum.SUCCES);
 
         String repr = migration.toString();
