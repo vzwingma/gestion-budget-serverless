@@ -482,8 +482,8 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                 .invoke(tuple -> {
                     try {
                         this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, tuple.getItem3());
-                    } catch (DataNotFoundException e) {
-                        tuple.mapItem1(u -> Uni.createFrom().failure(e));
+                    } catch (DataNotFoundException dne) {
+                        tuple.mapItem1(u -> Uni.createFrom().failure(dne));
                     }
                 })
                 .onItem().transform(Tuple2::getItem1)

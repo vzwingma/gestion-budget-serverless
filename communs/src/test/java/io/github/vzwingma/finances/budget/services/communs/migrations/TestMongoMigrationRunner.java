@@ -217,9 +217,6 @@ class TestMongoMigrationRunner {
                 .thenReturn(Uni.createFrom().item(List.of()));
         when(migrationRepository.enregistrerSucces(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().failure(new RuntimeException("Ecriture _migrations indisponible")));
-        // Le mapper onFailure().recoverWithUni(...) du runner n'intervient qu'en cas d'échec de migrate() ;
-        // ici migrate() réussit et c'est enregistrerSucces qui échoue : ce chemin n'appelle donc jamais
-        // enregistrerEchec, mais on le stub par prudence pour ne dépendre d'aucun comportement implicite Mockito.
         when(migrationRepository.enregistrerEchec(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
