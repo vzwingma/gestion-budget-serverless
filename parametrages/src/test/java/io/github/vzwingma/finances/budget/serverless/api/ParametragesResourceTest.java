@@ -17,11 +17,16 @@ import org.junit.jupiter.api.BeforeEach;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
 
@@ -32,33 +37,33 @@ class ParametragesResourceTest {
 
     @BeforeAll
     static void init() {
-        parametragesServiceMock = Mockito.mock(ParametragesService.class);
+        parametragesServiceMock = mock(ParametragesService.class);
         QuarkusMock.installMockForType(parametragesServiceMock, ParametragesService.class);
     }
 
     @BeforeEach
     void setup() {
-        Mockito.reset(parametragesServiceMock);
+        reset(parametragesServiceMock);
     }
 
     @Test
     void testInfoEndpoint() {
 
-        Mockito.doReturn(Uni.createFrom().voidItem()).when(parametragesServiceMock).refreshJwksSigningKeys();
-        Mockito.doReturn(Uni.createFrom().item(new HashMap<>())).when(parametragesServiceMock).loadJwksSigningKeys();
+        doReturn(Uni.createFrom().voidItem()).when(parametragesServiceMock).refreshJwksSigningKeys();
+        doReturn(Uni.createFrom().item(new HashMap<>())).when(parametragesServiceMock).loadJwksSigningKeys();
         given()
                 .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
                 .then()
                 .statusCode(200)
                 .body(containsStringIgnoringCase("param"));
-        Mockito.verify(parametragesServiceMock, Mockito.times(1)).refreshJwksSigningKeys();
+        verify(parametragesServiceMock, times(1)).refreshJwksSigningKeys();
     }
 
     @Test
     void testGetCategories() {
 
         // Init des données
-        Mockito.when(parametragesServiceMock.getCategories()).thenReturn(Uni.createFrom().item(MockDataCategoriesOperations.getListeTestCategories()));
+        when(parametragesServiceMock.getCategories()).thenReturn(Uni.createFrom().item(MockDataCategoriesOperations.getListeTestCategories()));
         // Test
         given()
                 .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
@@ -71,7 +76,7 @@ class ParametragesResourceTest {
     @Test
     void testGetCategorieById() {
         // Init des données
-        Mockito.when(parametragesServiceMock.getCategorieById("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a"))
+        when(parametragesServiceMock.getCategorieById("8f1614c9-503c-4e7d-8cb5-0c9a9218b84a"))
                 .thenReturn(Uni.createFrom().item(MockDataCategoriesOperations.getListeTestCategories().getFirst()));
         // Test
         given()
@@ -85,7 +90,7 @@ class ParametragesResourceTest {
     @Test
     void testGetCategorieByIdIntrouvable() {
         // Init des données
-        Mockito.when(parametragesServiceMock.getCategorieById("unknown"))
+        when(parametragesServiceMock.getCategorieById("unknown"))
                 .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Catégorie non trouvée")));
         // Test
         given()
@@ -97,8 +102,8 @@ class ParametragesResourceTest {
 
     @Test
     void testRefreshJwksSigningKeys() {
-        Mockito.doReturn(Uni.createFrom().voidItem()).when(parametragesServiceMock).refreshJwksSigningKeys();
-        Mockito.doReturn(Uni.createFrom().item(new HashMap<>())).when(parametragesServiceMock).loadJwksSigningKeys();
+        doReturn(Uni.createFrom().voidItem()).when(parametragesServiceMock).refreshJwksSigningKeys();
+        doReturn(Uni.createFrom().item(new HashMap<>())).when(parametragesServiceMock).loadJwksSigningKeys();
         given()
                 .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
                 .then()

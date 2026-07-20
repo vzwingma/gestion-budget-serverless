@@ -8,10 +8,11 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.List;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 
@@ -23,7 +24,7 @@ class BudgetAdminServiceTest {
 
     @BeforeEach
     void setup() {
-        mockRepository = Mockito.mock(IOperationsRepository.class);
+        mockRepository = mock(IOperationsRepository.class);
         budgetAdminService = new BudgetAdminService();
         budgetAdminService.setDataOperationsProvider(mockRepository);
     }
@@ -31,7 +32,7 @@ class BudgetAdminServiceTest {
     @Test
     void testOverrideLibellesOperations() {
         BudgetMensuel budget = MockDataBudgets.getBudgetActifCompteC1et1operationPrevue();
-        Mockito.when(mockRepository.overrideLibellesOperations(anyString(), anyList()))
+        when(mockRepository.overrideLibellesOperations(anyString(), anyList()))
                 .thenReturn(Multi.createFrom().item(budget));
 
         LibelleAvantApres libelle = new LibelleAvantApres();
@@ -49,7 +50,7 @@ class BudgetAdminServiceTest {
 
     @Test
     void testOverrideLibellesOperationsListeVide() {
-        Mockito.when(mockRepository.overrideLibellesOperations(anyString(), anyList()))
+        when(mockRepository.overrideLibellesOperations(anyString(), anyList()))
                 .thenReturn(Multi.createFrom().empty());
 
         List<String> result = budgetAdminService

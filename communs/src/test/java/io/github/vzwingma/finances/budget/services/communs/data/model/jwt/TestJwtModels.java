@@ -2,6 +2,12 @@ package io.github.vzwingma.finances.budget.services.communs.data.model.jwt;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -126,6 +132,60 @@ class TestJwtModels {
         payload.setExp(1672663602L);
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
         assertNotNull(token.expiredAt());
+    }
+
+    // ====== JWTAuthToken - horloge injectée (ADR-004), déterminisme ======
+
+    @Test
+    void testJwtAuthTokenIssuedAtAvecHorlogeFigee() {
+        JWTAuthPayload payload = new JWTAuthPayload();
+        payload.setIat(1672660002L);
+        JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
+
+        // Horloge figée sur un instant arbitraire (été) : sert à prouver que issuedAt(Clock) utilise
+        // bien l'horloge injectée (déterminisme, ADR-004) et non l'horloge système réelle.
+        Clock horlogeFigee = Clock.fixed(Instant.parse("2026-07-10T12:00:00Z"), ZoneOffset.UTC);
+        LocalDateTime issuedAt = token.issuedAt(horlogeFigee);
+
+        assertNotNull(issuedAt);
+        LocalDateTime attendu = LocalDateTime.ofEpochSecond(1672660002L, 0,
+                ZoneId.of("Europe/Berlin").getRules().getOffset(LocalDateTime.now(horlogeFigee)));
+        assertEquals(attendu, issuedAt);
+    }
+
+    @Test
+    void testJwtAuthTokenExpiredAtAvecHorlogeFigee() {
+        JWTAuthPayload payload = new JWTAuthPayload();
+        payload.setExp(1672663602L);
+        JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
+
+        Clock horlogeFigee = Clock.fixed(Instant.parse("2026-07-10T12:00:00Z"), ZoneOffset.UTC);
+        LocalDateTime expiredAt = token.expiredAt(horlogeFigee);
+
+        assertNotNull(expiredAt);
+        LocalDateTime attendu = LocalDateTime.ofEpochSecond(1672663602L, 0,
+                ZoneId.of("Europe/Berlin").getRules().getOffset(LocalDateTime.now(horlogeFigee)));
+        assertEquals(attendu, expiredAt);
+    }
+
+    @Test
+    void testJwtAuthTokenIssuedAtDependDeLhorlogeInjectee() {
+        // Vérifie que issuedAt(Clock) réagit bien au changement d'horloge injectée (deux horloges
+        // figées sur des saisons différentes -> offsets Europe/Berlin différents -> résultats différents).
+        JWTAuthPayload payload = new JWTAuthPayload();
+        payload.setIat(1672660002L);
+        JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
+
+        Clock horlogeHiver = Clock.fixed(Instant.parse("2026-01-10T12:00:00Z"), ZoneOffset.UTC);
+        Clock horlogeEte = Clock.fixed(Instant.parse("2026-07-10T12:00:00Z"), ZoneOffset.UTC);
+
+        LocalDateTime issuedAtHiver = token.issuedAt(horlogeHiver);
+        LocalDateTime issuedAtEte = token.issuedAt(horlogeEte);
+
+        assertNotNull(issuedAtHiver);
+        assertNotNull(issuedAtEte);
+        assertNotEquals(issuedAtHiver, issuedAtEte,
+                "Europe/Berlin observe un décalage horaire différent hiver/été (CET vs CEST)");
     }
 
     @Test

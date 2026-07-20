@@ -22,11 +22,13 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
 
@@ -41,18 +43,18 @@ class UtilisateursResourceTest {
 
     @BeforeAll
     static void init() {
-        QuarkusMock.installMockForType(Mockito.mock(UtilisateursService.class), UtilisateursService.class);
-        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
+        QuarkusMock.installMockForType(mock(UtilisateursService.class), UtilisateursService.class);
+        QuarkusMock.installMockForType(mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
 
     }
 
     @BeforeEach
     void setup() {
-        Mockito.when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().item(jwksAuthKey()));
+        when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().item(jwksAuthKey()));
     }
     @Test
     void testInfoEndpoint() {
-        Mockito.when(utilisateurService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
+        when(utilisateurService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
         given()
                 .when().get(UtilisateursAPIEnum.USERS_BASE + "/_info")
                 .then()
@@ -64,7 +66,7 @@ class UtilisateursResourceTest {
     void testGetLastAccessDate() {
         // Init des données
         Utilisateur utilisateurExpected = MockDataUtilisateur.getTestUtilisateurWithDate();
-        Mockito.when(utilisateurService.getLastAccessDate(Mockito.anyString()))
+        when(utilisateurService.getLastAccessDate(anyString()))
                 .thenReturn(Uni.createFrom().item(utilisateurExpected.getDernierAcces()));
 
         // Test
@@ -82,7 +84,7 @@ class UtilisateursResourceTest {
     void testGetPreferences() {
         // Init des données
         Utilisateur utilisateurExpected = MockDataUtilisateur.getTestUtilisateurWithDate();
-        Mockito.when(utilisateurService.getUtilisateur(Mockito.anyString()))
+        when(utilisateurService.getUtilisateur(anyString()))
                 .thenReturn(Uni.createFrom().item(utilisateurExpected));
         // Test
         given()
@@ -98,7 +100,7 @@ class UtilisateursResourceTest {
     @Test
     void testForUtilisateurUnkown() {
         // Init des données
-        Mockito.when(utilisateurService.getLastAccessDate(Mockito.anyString()))
+        when(utilisateurService.getLastAccessDate(anyString()))
                 .thenReturn(Uni.createFrom().nullItem());
 
         // Test
@@ -114,7 +116,7 @@ class UtilisateursResourceTest {
     @Test
     void testGetPreferencesUtilisateurVide() {
         // Utilisateur sans préférences ni droits
-        Mockito.when(utilisateurService.getUtilisateur(Mockito.anyString()))
+        when(utilisateurService.getUtilisateur(anyString()))
                 .thenReturn(Uni.createFrom().nullItem());
         given()
                 .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())

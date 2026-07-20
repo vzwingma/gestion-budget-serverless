@@ -15,8 +15,12 @@ import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.Budg
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperationTypeEnum;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Month;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -25,6 +29,14 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BudgetDataUtilsTest {
+
+    /**
+     * Horloge fixe (ADR-004) pour rendre déterministe le clonage des opérations (dateMaj) — vigilance
+     * particulière {@code cloneOperationToMoisSuivant}/{@code cloneOperationPeriodiqueToMoisSuivant}
+     * (voir .claude/CLAUDE.md) : la migration Clock ne doit pas changer le comportement métier du clonage.
+     */
+    private static final Instant INSTANT_FIXE = Instant.parse("2026-07-10T10:15:30Z");
+    private final Clock clockFixe = Clock.fixed(INSTANT_FIXE, ZoneOffset.UTC);
 
     @Test
     void testDoubleFromString() {
@@ -186,6 +198,48 @@ class BudgetDataUtilsTest {
     }
 
 
+    /**
+     * Vérifie que le clonage horodate le clone avec l'horloge applicative (ADR-004) — comportement
+     * identique avant/après migration Clock : seule la source du "maintenant" change, pas la logique.
+     */
+    @Test
+    void testCloneLigneOperationAvecClockFixeDeterministe() {
+        LigneOperation source = MockDataOperations.getOperationPrelevement();
+
+        LigneOperation clone = BudgetDataUtils.cloneOperationToMoisSuivant(source, clockFixe);
+
+        assertNotNull(clone);
+        assertNotNull(clone.getAutresInfos());
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), clone.getAutresInfos().getDateMaj());
+    }
+
+
+    /**
+     * Preuve explicite (au-delà des tests à horloge fixe unique ci-dessus) que la date de clonage
+     * dépend réellement de l'horloge injectée, et non d'une valeur système figée en dur : deux
+     * {@code Clock.fixed} distincts, à des dates très éloignées l'une de l'autre, doivent produire
+     * deux {@code dateMaj} distinctes correspondant chacune à leur propre horloge. Sans cette preuve,
+     * un bug qui ignorerait le paramètre {@code clock} (ex. retour accidentel à {@code Clock.systemUTC()}
+     * en dur) resterait indétectable par les tests à instant fixe unique déjà présents.
+     */
+    @Test
+    void testCloneLigneOperationDateMajDependDuClockInjecteEtNonDuneValeurFigee() {
+        LigneOperation source = MockDataOperations.getOperationPrelevement();
+
+        Instant instantA = Instant.parse("2024-01-01T00:00:00Z");
+        Instant instantB = Instant.parse("2030-12-31T23:59:59Z");
+        Clock clockA = Clock.fixed(instantA, ZoneOffset.UTC);
+        Clock clockB = Clock.fixed(instantB, ZoneOffset.UTC);
+
+        LigneOperation cloneA = BudgetDataUtils.cloneOperationToMoisSuivant(source, clockA);
+        LigneOperation cloneB = BudgetDataUtils.cloneOperationToMoisSuivant(source, clockB);
+
+        assertEquals(LocalDateTime.ofInstant(instantA, ZoneOffset.UTC), cloneA.getAutresInfos().getDateMaj());
+        assertEquals(LocalDateTime.ofInstant(instantB, ZoneOffset.UTC), cloneB.getAutresInfos().getDateMaj());
+        assertNotEquals(cloneA.getAutresInfos().getDateMaj(), cloneB.getAutresInfos().getDateMaj());
+    }
+
+
     @Test
     void testClonePeriodiqueLigneOperationNonPeriodique() {
         LigneOperation source = MockDataOperations.getOperationPrelevement();
@@ -205,6 +259,30 @@ class BudgetDataUtilsTest {
     }
 
 
+    /**
+     * Vérifie que le clonage périodique horodate le clone avec l'horloge applicative (ADR-004) — comportement
+     * de clonage inchangé (mêmes assertions métier que {@code testClonePeriodiqueLigneOperationNonPeriodique}),
+     * seule la source du "maintenant" est déterministe ici.
+     */
+    @Test
+    void testClonePeriodiqueLigneOperationAvecClockFixeDeterministe() {
+        LigneOperation source = MockDataOperations.getOperationPrelevement();
+        source.getSsCategorie().setType(CategorieOperationTypeEnum.ECONOMIES);
+
+        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(source, Month.JANUARY, 2010, clockFixe);
+        assertNotNull(clones);
+        assertEquals(1, clones.size());
+
+        LigneOperation clone = clones.getFirst();
+        assertNotNull(clone);
+        assertNotNull(clone.getAutresInfos());
+        assertNull(clone.getMensualite());
+        assertNotNull(clone.getSsCategorie());
+        assertEquals(CategorieOperationTypeEnum.ECONOMIES, clone.getSsCategorie().getType());
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), clone.getAutresInfos().getDateMaj());
+    }
+
+
     @Test
     void testClonePeriodiqueLigneOperationPeriodiqueReportee() {
 
@@ -212,7 +290,7 @@ class BudgetDataUtilsTest {
         operationMensuelle.getMensualite().setProchaineEcheance(1);
         operationMensuelle.setEtat(OperationEtatEnum.REPORTEE);
 
-        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(operationMensuelle, Month.JANUARY, 2010);
+        List<LigneOperation> clones = BudgetDataUtils.cloneOperationPeriodiqueToMoisSuivant(operationMensuelle, Month.JANUARY, 2010, clockFixe);
         assertNotNull(clones);
         assertEquals(2, clones.size());
 
@@ -223,12 +301,16 @@ class BudgetDataUtilsTest {
         assertEquals(OperationPeriodiciteEnum.PONCTUELLE, opPrec.getMensualite().getPeriode());
         assertEquals(-1, opPrec.getMensualite().getProchaineEcheance());
         assertNull(opPrec.getMensualite().getDateFin());
+        // Horodatage déterministe (ADR-004) : chemin cloneOperationAEcheanceReportee (clone en retard)
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), opPrec.getAutresInfos().getDateMaj());
 
         LigneOperation clone = clones.get(1);
         assertNotNull(clone);
         assertEquals(OperationEtatEnum.PREVUE, clone.getEtat());
         assertNotNull(clone.getAutresInfos());
         assertNotNull(clone.getMensualite());
+        // Horodatage déterministe (ADR-004) : clone périodique principal
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), clone.getAutresInfos().getDateMaj());
     }
 
 

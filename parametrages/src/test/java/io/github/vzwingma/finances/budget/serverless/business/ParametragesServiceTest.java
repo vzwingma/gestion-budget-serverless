@@ -16,12 +16,17 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
@@ -34,13 +39,13 @@ class ParametragesServiceTest {
 
     @BeforeEach
     void setup() {
-        parametrageServiceProvider = Mockito.mock(IParametragesRepository.class);
-        IJwtSigningKeyWriteRepository signingKeyRepository = Mockito.mock(IJwtSigningKeyWriteRepository.class);
-        signingKeyRRepository = Mockito.mock(IJwtSigningKeyReadRepository.class);
-        parametragesService = Mockito.spy(new ParametragesService(parametrageServiceProvider, signingKeyRepository, signingKeyRRepository));
+        parametrageServiceProvider = mock(IParametragesRepository.class);
+        IJwtSigningKeyWriteRepository signingKeyRepository = mock(IJwtSigningKeyWriteRepository.class);
+        signingKeyRRepository = mock(IJwtSigningKeyReadRepository.class);
+        parametragesService = spy(new ParametragesService(parametrageServiceProvider, signingKeyRepository, signingKeyRRepository));
         parametrageAppProvider = parametragesService;
 
-        Mockito.when(parametrageServiceProvider.chargeCategories()).thenReturn(Multi.createFrom().items(MockDataCategoriesOperations.getListeTestCategories().stream()));
+        when(parametrageServiceProvider.chargeCategories()).thenReturn(Multi.createFrom().items(MockDataCategoriesOperations.getListeTestCategories().stream()));
     }
 
     @Test
@@ -51,7 +56,7 @@ class ParametragesServiceTest {
         assertNotNull(listeCat);
         assertEquals(1, listeCat.size());
         // 1 seul appel à la BDD
-        Mockito.verify(parametrageServiceProvider, Mockito.times(1)).chargeCategories();
+        verify(parametrageServiceProvider, times(1)).chargeCategories();
         assertEquals(1, listeCat.getFirst().getListeSSCategories().size());
     }
 
@@ -66,7 +71,7 @@ class ParametragesServiceTest {
         CategorieOperations catOp = (CategorieOperations) cat;
         assertEquals("Alimentation", catOp.getLibelle());
         // 1 seul appel à la BDD
-        Mockito.verify(parametrageServiceProvider, Mockito.times(1)).chargeCategories();
+        verify(parametrageServiceProvider, times(1)).chargeCategories();
         assertEquals(1, catOp.getListeSSCategories().size());
     }
 
@@ -82,7 +87,7 @@ class ParametragesServiceTest {
         assertEquals("Courses", ssCat.getLibelle());
         assertNotNull(ssCat.getCategorieParente());
         // 1 seul appel à la BDD
-        Mockito.verify(parametrageServiceProvider, Mockito.times(1)).chargeCategories();
+        verify(parametrageServiceProvider, times(1)).chargeCategories();
     }
 
 
@@ -95,7 +100,7 @@ class ParametragesServiceTest {
         assertNotNull(exception);
         assertEquals("io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException", exception.getMessage());
         // 1 seul appel à la BDD
-        Mockito.verify(parametrageServiceProvider, Mockito.times(1)).chargeCategories();
+        verify(parametrageServiceProvider, times(1)).chargeCategories();
     }
 
     @Test
@@ -112,7 +117,7 @@ class ParametragesServiceTest {
         catInactive.setListeSSCategories(new HashSet<>());
         catInactive.getListeSSCategories().add(ssCat);
 
-        Mockito.when(parametrageServiceProvider.chargeCategories())
+        when(parametrageServiceProvider.chargeCategories())
                 .thenReturn(Multi.createFrom().item(catInactive));
         List<CategorieOperations> liste = parametrageAppProvider.getCategories().await().indefinitely();
         assertTrue(liste.isEmpty());
@@ -127,7 +132,7 @@ class ParametragesServiceTest {
         catSansSsCat.setLibelle("SansSsCat");
         catSansSsCat.setListeSSCategories(new HashSet<>());
 
-        Mockito.when(parametrageServiceProvider.chargeCategories())
+        when(parametrageServiceProvider.chargeCategories())
                 .thenReturn(Multi.createFrom().item(catSansSsCat));
         List<CategorieOperations> liste = parametrageAppProvider.getCategories().await().indefinitely();
         assertTrue(liste.isEmpty());
@@ -141,16 +146,16 @@ class ParametragesServiceTest {
 
     @Test
     void testRefreshJwksSigningKeys() throws Exception {
-        IJwtAuthSigningKeyServiceProvider jwtProvider = Mockito.mock(IJwtAuthSigningKeyServiceProvider.class);
-        IJwtSigningKeyWriteRepository writeRepo = Mockito.mock(IJwtSigningKeyWriteRepository.class);
+        IJwtAuthSigningKeyServiceProvider jwtProvider = mock(IJwtAuthSigningKeyServiceProvider.class);
+        IJwtSigningKeyWriteRepository writeRepo = mock(IJwtSigningKeyWriteRepository.class);
 
         JwksAuthKeys keys = new JwksAuthKeys();
         keys.setKeys(new io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey[0]);
 
-        Mockito.when(jwtProvider.getJwksAuthKeys()).thenReturn(Uni.createFrom().item(keys));
-        Mockito.when(writeRepo.saveJwksAuthKeys(Mockito.anyList())).thenReturn(Uni.createFrom().voidItem());
+        when(jwtProvider.getJwksAuthKeys()).thenReturn(Uni.createFrom().item(keys));
+        when(writeRepo.saveJwksAuthKeys(anyList())).thenReturn(Uni.createFrom().voidItem());
 
-        ParametragesService service2 = Mockito.spy(new ParametragesService(parametrageServiceProvider, writeRepo, signingKeyRRepository));
+        ParametragesService service2 = spy(new ParametragesService(parametrageServiceProvider, writeRepo, signingKeyRRepository));
         // Injection par réflexion du champ @RestClient
         java.lang.reflect.Field field = ParametragesService.class.getDeclaredField("jwtAuthSigningKeyServiceProvider");
         field.setAccessible(true);

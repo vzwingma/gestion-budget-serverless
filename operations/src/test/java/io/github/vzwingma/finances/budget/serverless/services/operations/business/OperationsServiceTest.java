@@ -20,14 +20,22 @@ import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
@@ -36,15 +44,22 @@ class OperationsServiceTest {
     private OperationsService operationsAppProvider;
     private IOperationsRepository mockOperationDataProvider;
 
+    /**
+     * Horloge fixe (ADR-004) pour rendre déterministes les assertions sur les dates de mise à jour d'opération.
+     */
+    private static final Instant INSTANT_FIXE = Instant.parse("2026-07-10T10:15:30Z");
+    private final Clock clockFixe = Clock.fixed(INSTANT_FIXE, ZoneOffset.UTC);
+
     @BeforeEach
     void setup() {
-        mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
-        operationsAppProvider = Mockito.spy(new OperationsService());
-        IBudgetAppProvider budgetAppProvider = Mockito.mock(BudgetService.class);
+        mockOperationDataProvider = mock(IOperationsRepository.class);
+        operationsAppProvider = spy(new OperationsService());
+        IBudgetAppProvider budgetAppProvider = mock(BudgetService.class);
         operationsAppProvider.setDataOperationsProvider(mockOperationDataProvider);
         operationsAppProvider.setBudgetService(budgetAppProvider);
-        IParametragesServiceProvider mockParam = Mockito.mock(IParametragesServiceProvider.class);
+        IParametragesServiceProvider mockParam = mock(IParametragesServiceProvider.class);
         operationsAppProvider.setParametragesService(mockParam);
+        operationsAppProvider.setClock(clockFixe);
     }
 
     @Test
@@ -57,6 +72,8 @@ class OperationsServiceTest {
         assertEquals(1, listeOperations.size());
         assertEquals(OperationEtatEnum.REALISEE, listeOperations.getFirst().getEtat());
         assertNotNull(listeOperations.getFirst().getAutresInfos().getDateOperation());
+        // Horodatage déterministe (ADR-004, Clock.fixed injecté dans setup())
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), listeOperations.getFirst().getAutresInfos().getDateMaj());
     }
 
     @Test
@@ -156,7 +173,7 @@ class OperationsServiceTest {
     void testAddOperationRemboursementCatFailure() {
         Assertions.assertThrows(DataNotFoundException.class,
                 () -> operationsAppProvider.addOrReplaceOperation(new ArrayList<>(), MockDataOperations.getOperationRemboursement(), "userTest", null));
-        Mockito.verify(mockOperationDataProvider, Mockito.never()).sauvegardeBudgetMensuel(Mockito.any());
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any());
     }
 
     @Test
@@ -199,7 +216,7 @@ class OperationsServiceTest {
     @Test
     void testGetIntervalleBudgets() {
         Instant[] intervalle = {Instant.now().minusSeconds(3600), Instant.now()};
-        Mockito.when(mockOperationDataProvider.chargeIntervalleBudgets("C1"))
+        when(mockOperationDataProvider.chargeIntervalleBudgets("C1"))
                 .thenReturn(Uni.createFrom().item(intervalle));
         Instant[] result = operationsAppProvider.getIntervalleBudgets("C1").await().indefinitely();
         assertNotNull(result);

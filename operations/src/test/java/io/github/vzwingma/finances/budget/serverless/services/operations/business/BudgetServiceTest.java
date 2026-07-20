@@ -21,13 +21,21 @@ import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.Month;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 
@@ -41,21 +49,29 @@ class BudgetServiceTest {
     private IComptesServiceProvider mockCompteServiceProvider;
     private IParametragesServiceProvider mockParametragesServiceProvider;
 
+    /**
+     * Horloge fixe (ADR-004) pour rendre déterministes les assertions sur les dates de mise à jour de budget.
+     */
+    private static final Instant INSTANT_FIXE = Instant.parse("2026-07-10T10:15:30Z");
+    private final Clock clockFixe = Clock.fixed(INSTANT_FIXE, ZoneOffset.UTC);
+
     @BeforeEach
     void setup() {
-        mockOperationDataProvider = Mockito.mock(IOperationsRepository.class);
-        mockCompteServiceProvider = Mockito.mock(IComptesServiceProvider.class);
-        mockParametragesServiceProvider = Mockito.mock(IParametragesServiceProvider.class);
+        mockOperationDataProvider = mock(IOperationsRepository.class);
+        mockCompteServiceProvider = mock(IComptesServiceProvider.class);
+        mockParametragesServiceProvider = mock(IParametragesServiceProvider.class);
 
-        OperationsService operationsService = Mockito.spy(new OperationsService());
+        OperationsService operationsService = spy(new OperationsService());
         operationsService.setDataOperationsProvider(mockOperationDataProvider);
+        operationsService.setClock(clockFixe);
         operationsAppProvider = operationsService;
 
-        budgetAppProvider = Mockito.spy(new BudgetService());
+        budgetAppProvider = spy(new BudgetService());
         budgetAppProvider.setDataOperationsProvider(mockOperationDataProvider);
         budgetAppProvider.setComptesService(mockCompteServiceProvider);
         budgetAppProvider.setOperationsAppProvider(operationsAppProvider);
         budgetAppProvider.setParametragesService(mockParametragesServiceProvider);
+        budgetAppProvider.setClock(clockFixe);
 
     }
 
@@ -66,7 +82,7 @@ class BudgetServiceTest {
     void testGetBudgetWithNoCompte() {
 
         // Initialisation
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Compte introuvable")));
 
         // Test
@@ -87,12 +103,12 @@ class BudgetServiceTest {
     void testGetBudgetInactifSurCompteActif() {
 
         // Initialisation
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
 
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.JANUARY), eq(2022)))
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.JANUARY), eq(2022)))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetInactifCompteC1()));
-        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
+        when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
         // Test
         BudgetMensuel budgetCharge = budgetAppProvider.getBudgetMensuel("C1", Month.JANUARY, 2022)
                 .await().indefinitely();
@@ -100,7 +116,7 @@ class BudgetServiceTest {
         // Assertion
         assertNotNull(budgetCharge);
         assertEquals("C1_2022_1", budgetCharge.getId());
-        Mockito.verify(budgetAppProvider, Mockito.times(1)).getBudgetMensuel(eq("C1"), any(Month.class), anyInt());
+        verify(budgetAppProvider, times(1)).getBudgetMensuel(eq("C1"), any(Month.class), anyInt());
     }
 
 
@@ -111,17 +127,17 @@ class BudgetServiceTest {
     void testGetBudgetActifSurCompteActif() {
 
         // Initialisation
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
 
         BudgetMensuel b1 = MockDataBudgets.getBudgetActifCompteC1et1operationPrevue();
         BudgetMensuel b0 = MockDataBudgets.getBudgetPrecedentCompteC1();
 
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.JANUARY), eq(2022)))
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.JANUARY), eq(2022)))
                 .thenReturn(Uni.createFrom().item(b1));
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.DECEMBER), eq(2021)))
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.DECEMBER), eq(2021)))
                 .thenReturn(Uni.createFrom().item(b0));
-        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
+        when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
 
         // Test
         BudgetMensuel budgetCharge = budgetAppProvider.getBudgetMensuel("C1", Month.JANUARY, 2022)
@@ -136,8 +152,8 @@ class BudgetServiceTest {
         assertEquals(1000D, budgetCharge.getSoldes().getSoldeAtMaintenant());
         assertEquals(1123D, budgetCharge.getSoldes().getSoldeAtFinMoisCourant());
 
-        Mockito.verify(mockOperationDataProvider, Mockito.times(2)).chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt());
-        Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+        verify(mockOperationDataProvider, times(2)).chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt());
+        verify(mockOperationDataProvider, times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
     @SuppressWarnings("unchecked")
@@ -145,7 +161,7 @@ class BudgetServiceTest {
     void testInitNewBudgetOnCompteActif() {
 
         // Initialisation
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
 
         BudgetMensuel bcree = MockDataBudgets.getBudgetPrecedentCompteC1();
@@ -157,13 +173,13 @@ class BudgetServiceTest {
         bcree.getListeOperations().clear();
         BudgetDataUtils.razCalculs(bcree);
 
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt()))
                 .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Budget introuvable")), Uni.createFrom().item(bcree));
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(bcree));
 
 
-        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(bcree));
+        when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(bcree));
         // Test
         BudgetMensuel budgetCharge = budgetAppProvider.getBudgetMensuel("C1", Month.MAY, 2022)
                 .await().indefinitely();
@@ -171,9 +187,9 @@ class BudgetServiceTest {
         // Assertion
         assertNotNull(budgetCharge);
         assertEquals("C1_2022_05", budgetCharge.getId());
-        Mockito.verify(budgetAppProvider, Mockito.times(1)).getBudgetMensuel("C1", Month.MAY, 2022);
-        Mockito.verify(budgetAppProvider, Mockito.times(1)).getBudgetMensuel("C1_2022_04");
-        Mockito.verify(mockOperationDataProvider, Mockito.times(2)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+        verify(budgetAppProvider, times(1)).getBudgetMensuel("C1", Month.MAY, 2022);
+        verify(budgetAppProvider, times(1)).getBudgetMensuel("C1_2022_04");
+        verify(mockOperationDataProvider, times(2)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
 
@@ -182,9 +198,9 @@ class BudgetServiceTest {
     void testGetBudgetSurCompteInactif() {
 
         // Initialisation
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteInactif()));
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt()))
                 .thenReturn(
                         Uni.createFrom().nullItem(),
                         Uni.createFrom().item(MockDataBudgets.getBudgetInactifCompteC1()));
@@ -195,8 +211,8 @@ class BudgetServiceTest {
         // Assertion
         assertNotNull(budgetCharge);
         assertEquals("C1_2022_1", budgetCharge.getId());
-        Mockito.verify(mockOperationDataProvider, Mockito.times(1)).chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.JANUARY), eq(2022));
-        Mockito.verify(mockOperationDataProvider, Mockito.times(1)).chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.DECEMBER), eq(2021));
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.JANUARY), eq(2022));
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.DECEMBER), eq(2021));
     }
 
 
@@ -222,34 +238,36 @@ class BudgetServiceTest {
     @Test
     void testReinitBudget() {
         // When
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(
                         Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt()))
                 .thenReturn(
                         Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
 
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
-        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
+        when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
         //Test
         BudgetMensuel budgetReinit = budgetAppProvider.reinitialiserBudgetMensuel(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue().getId()).await().indefinitely();
         // Assertion
         assertNotNull(budgetReinit);
-        Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(budgetReinit);
+        // Horodatage déterministe (ADR-004, Clock.fixed injecté dans setup())
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), budgetReinit.getDateMiseAJour());
+        verify(mockOperationDataProvider, times(1)).sauvegardeBudgetMensuel(budgetReinit);
     }
 
 
     @Test
     void testReinitCompteClosed() {
         // When
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(
                         Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt()))
                 .thenReturn(
                         Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteInactif()));
         //Test
 
@@ -262,11 +280,11 @@ class BudgetServiceTest {
     @Test
     void testReinitCompteUnknown() {
         // When
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(
                         Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
 
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Compte introuvable")));
         //Test
 
@@ -279,7 +297,7 @@ class BudgetServiceTest {
     @Test
     void testIsBudgetActif() {
         // When
-        Mockito.when(mockOperationDataProvider.isBudgetActif(anyString())).thenReturn(Uni.createFrom().item(true));
+        when(mockOperationDataProvider.isBudgetActif(anyString())).thenReturn(Uni.createFrom().item(true));
 
         // Test
         assertTrue(budgetAppProvider.isBudgetMensuelActif(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue().getId()).await().indefinitely());
@@ -290,25 +308,27 @@ class BudgetServiceTest {
     void testSetBudgetInactif() {
         // When
         BudgetMensuel budgetADesactiver = MockDataBudgets.getBudgetActifCompteC1et1operationPrevue();
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString())).thenReturn(Uni.createFrom().item(budgetADesactiver));
-        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(budgetADesactiver));
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString())).thenReturn(Uni.createFrom().item(budgetADesactiver));
+        when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(budgetADesactiver));
         // Test
         BudgetMensuel budgetDesactive = budgetAppProvider.setBudgetActif(budgetADesactiver.getId(), false).await().indefinitely();
 
         assertFalse(budgetDesactive.isActif());
         assertEquals(OperationEtatEnum.REPORTEE, budgetDesactive.getListeOperations().getFirst().getEtat());
+        // Horodatage déterministe (ADR-004, Clock.fixed injecté dans setup())
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), budgetDesactive.getDateMiseAJour());
 
-        Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(budgetDesactive);
+        verify(mockOperationDataProvider, times(1)).sauvegardeBudgetMensuel(budgetDesactive);
     }
 
 
     @Test
     void testUpdateBudgetCompteClos() {
         // When
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetInactifCompteC1()));
 
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteInactif()));
 
         // Test
@@ -321,36 +341,36 @@ class BudgetServiceTest {
     @Test
     void testUpdateBudget() {
         // When
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
 
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
-        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
+        when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
         // Test
         LigneOperation ligneOperation = MockDataOperations.getOperationPrelevement();
         BudgetMensuel budgetMensuelAJour = budgetAppProvider.addOrUpdateOperationInBudget("C1_2022_01", ligneOperation, "userTest").await().indefinitely();
         assertEquals(1, budgetMensuelAJour.getListeOperations().size());
 
-        Mockito.verify(budgetAppProvider, Mockito.times(1)).recalculSoldes(any(BudgetMensuel.class));
-        Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+        verify(budgetAppProvider, times(1)).recalculSoldes(any(BudgetMensuel.class));
+        verify(mockOperationDataProvider, times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
 
     }
 
     @Test
     void testUpdateBudgetRemboursable() {
         // Préparation : budget actif avec 1 opération existante
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
-        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class)))
+        when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class)))
                 .thenReturn(Uni.createFrom().item(new BudgetMensuel()));
 
         // Mock de la sous-catégorie remboursement retournée par le service de parametrages
         SsCategorieOperations ssCatRemboursement = new SsCategorieOperations("remboursement-id");
         ssCatRemboursement.setLibelle("Remboursement");
-        Mockito.when(mockParametragesServiceProvider.getSsCategorieParId(anyString()))
+        when(mockParametragesServiceProvider.getSsCategorieParId(anyString()))
                 .thenReturn(Uni.createFrom().item(ssCatRemboursement));
 
         // Test : ajout d'une nouvelle opération remboursable
@@ -359,21 +379,21 @@ class BudgetServiceTest {
 
         // L'opération remboursable + son remboursement automatique = 2 nouvelles opérations (+ 1 existante = 3)
         assertEquals(3, budgetMensuelAJour.getListeOperations().size());
-        Mockito.verify(mockParametragesServiceProvider, Mockito.times(1)).getSsCategorieParId(anyString());
-        Mockito.verify(budgetAppProvider, Mockito.times(1)).recalculSoldes(any(BudgetMensuel.class));
-        Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+        verify(mockParametragesServiceProvider, times(1)).getSsCategorieParId(anyString());
+        verify(budgetAppProvider, times(1)).recalculSoldes(any(BudgetMensuel.class));
+        verify(mockOperationDataProvider, times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
     @Test
     void testUpdateBudgetRemboursableSansSsCategorie() {
         // Préparation : budget actif avec 1 opération existante
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
 
         // Le service de parametrages est indisponible pour la catégorie de remboursement
-        Mockito.when(mockParametragesServiceProvider.getSsCategorieParId(anyString()))
+        when(mockParametragesServiceProvider.getSsCategorieParId(anyString()))
                 .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Catégorie introuvable")));
 
         // Test : l'ajout d'une opération remboursable doit échouer avec DataNotFoundException
@@ -382,25 +402,25 @@ class BudgetServiceTest {
                 () -> budgetAppProvider.addOrUpdateOperationInBudget("C1_2022_01", ligneRemboursable, "userTest").await().indefinitely());
         assertEquals(DataNotFoundException.class, exception.getCause().getClass());
 
-        Mockito.verify(mockParametragesServiceProvider, Mockito.times(1)).getSsCategorieParId(anyString());
-        Mockito.verify(mockOperationDataProvider, Mockito.never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+        verify(mockParametragesServiceProvider, times(1)).getSsCategorieParId(anyString());
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
     @Test
     void testDeleteOperationInBudget() {
         // When
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
 
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
-        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
+        when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
         // Test
         BudgetMensuel budgetMensuelAJour = budgetAppProvider.deleteOperationInBudget("C1_2022_01", "TEST1").await().indefinitely();
         assertEquals(0, budgetMensuelAJour.getListeOperations().size());
 
-        Mockito.verify(budgetAppProvider, Mockito.times(1)).recalculSoldes(any(BudgetMensuel.class));
-        Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+        verify(budgetAppProvider, times(1)).recalculSoldes(any(BudgetMensuel.class));
+        verify(mockOperationDataProvider, times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
 
     }
 
@@ -408,23 +428,23 @@ class BudgetServiceTest {
     @Test
     void testDeleteOperationUnkownInBudget() {
         // When
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
 
-        Mockito.when(mockCompteServiceProvider.getCompteById(anyString()))
+        when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
-        Mockito.when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
+        when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
         // Test
         BudgetMensuel budgetMensuelAJour = budgetAppProvider.deleteOperationInBudget("C1_2022_01", "noId").await().indefinitely();
         assertEquals(1, budgetMensuelAJour.getListeOperations().size());
 
-        Mockito.verify(budgetAppProvider, Mockito.times(1)).recalculSoldes(any(BudgetMensuel.class));
-        Mockito.verify(mockOperationDataProvider, Mockito.times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+        verify(budgetAppProvider, times(1)).recalculSoldes(any(BudgetMensuel.class));
+        verify(mockOperationDataProvider, times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
     @Test
     void testGetBudgetMensuelById() {
-        Mockito.when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
 
         BudgetMensuel budget = budgetAppProvider.getBudgetMensuel("C1_2022_01").await().indefinitely();
@@ -439,7 +459,7 @@ class BudgetServiceTest {
         projection.setAnnee(2022);
         projection.setMois(Month.JANUARY);
         projection.getSoldes().setSoldeAtFinMoisCourant(123.45D);
-        Mockito.when(mockOperationDataProvider.chargeSoldesBudgetMensuel(anyString(), any(), any()))
+        when(mockOperationDataProvider.chargeSoldesBudgetMensuel(anyString(), any(), any()))
                 .thenReturn(Multi.createFrom().item(projection));
 
         List<ProjectionBudgetSoldes> result = budgetAppProvider
@@ -456,7 +476,7 @@ class BudgetServiceTest {
     @Test
     void testGetiIntervalleBudgets() {
         Instant[] intervalle = {Instant.now().minusSeconds(3600), Instant.now()};
-        Mockito.when(mockOperationDataProvider.chargeIntervalleBudgets(anyString()))
+        when(mockOperationDataProvider.chargeIntervalleBudgets(anyString()))
                 .thenReturn(Uni.createFrom().item(intervalle));
 
         Instant[] result = budgetAppProvider.getiIntervalleBudgets("C1").await().indefinitely();

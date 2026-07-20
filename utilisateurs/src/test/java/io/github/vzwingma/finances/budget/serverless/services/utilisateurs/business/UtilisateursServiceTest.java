@@ -15,12 +15,24 @@ import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.mockito.ArgumentCaptor;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.EnumMap;
 import java.util.concurrent.CompletionException;
 
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -32,15 +44,21 @@ class UtilisateursServiceTest {
     private IUtilisateursRepository serviceDataProvider;
     private UtilisateursService utilisateursService;
 
+    /**
+     * Horloge fixe (ADR-004) pour rendre déterministe la date de dernier accès.
+     */
+    private static final Instant INSTANT_FIXE = Instant.parse("2026-07-10T10:15:30Z");
+    private final Clock clockFixe = Clock.fixed(INSTANT_FIXE, ZoneOffset.UTC);
+
     @BeforeEach
     void setup() {
-        serviceDataProvider = Mockito.mock(IUtilisateursRepository.class);
-        utilisateursService = Mockito.spy(new UtilisateursService(serviceDataProvider));
+        serviceDataProvider = mock(IUtilisateursRepository.class);
+        utilisateursService = spy(new UtilisateursService(serviceDataProvider, clockFixe));
         appProvider = utilisateursService;
 
-        Mockito.when(serviceDataProvider.chargeUtilisateur("Test")).thenReturn(Uni.createFrom().item(MockDataUtilisateur.getTestUtilisateur()));
-        Mockito.when(serviceDataProvider.chargeUtilisateur("Test2")).thenReturn(Uni.createFrom().failure(new DataNotFoundException("Utilisateur non trouvé")));
-        Mockito.doNothing().when(serviceDataProvider).majUtilisateur(Mockito.any());
+        when(serviceDataProvider.chargeUtilisateur("Test")).thenReturn(Uni.createFrom().item(MockDataUtilisateur.getTestUtilisateur()));
+        when(serviceDataProvider.chargeUtilisateur("Test2")).thenReturn(Uni.createFrom().failure(new DataNotFoundException("Utilisateur non trouvé")));
+        doNothing().when(serviceDataProvider).majUtilisateur(any());
     }
 
     @Test
@@ -49,25 +67,26 @@ class UtilisateursServiceTest {
         assertNotNull(utilisateur);
         assertEquals("54aa7db30bc460e1aeb95596", utilisateur.getId().toString());
         assertNotNull(utilisateur.getDernierAcces());
-        Mockito.verify(serviceDataProvider, Mockito.times(1)).chargeUtilisateur(Mockito.anyString());
+        verify(serviceDataProvider, times(1)).chargeUtilisateur(anyString());
     }
 
     @Test
     void testGetUtilisateurKO() {
-        Assertions.assertThrows(CompletionException.class, () -> {
-            var uni = appProvider.getUtilisateur("Test2");
-            uni.await().indefinitely();
-        });
-        Mockito.verify(serviceDataProvider, Mockito.times(1)).chargeUtilisateur(Mockito.anyString());
-        Mockito.verify(serviceDataProvider, Mockito.never()).majUtilisateur(Mockito.any());
+        Assertions.assertThrows(CompletionException.class, () -> appProvider.getUtilisateur("Test2").await().indefinitely());
+        verify(serviceDataProvider, times(1)).chargeUtilisateur(anyString());
+        verify(serviceDataProvider, never()).majUtilisateur(any());
     }
 
     @Test
     void testGetLastAccessUtilisateur() throws UserAccessForbiddenException {
         LocalDateTime lastAccess = appProvider.getLastAccessDate("Test").await().indefinitely();
         assertNotNull(lastAccess);
-        Mockito.verify(serviceDataProvider, Mockito.times(1)).chargeUtilisateur(Mockito.anyString());
-        Mockito.verify(serviceDataProvider, Mockito.times(1)).majUtilisateur(Mockito.any());
+        verify(serviceDataProvider, times(1)).chargeUtilisateur(anyString());
+        // Horodatage déterministe (ADR-004, Clock.fixed injecté dans setup()) : le clone persisté
+        // (majUtilisateur) porte la date de dernier accès calculée via l'horloge applicative
+        ArgumentCaptor<Utilisateur> cloneCaptor = ArgumentCaptor.forClass(Utilisateur.class);
+        verify(serviceDataProvider, times(1)).majUtilisateur(cloneCaptor.capture());
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), cloneCaptor.getValue().getDernierAcces());
     }
 
     @Test
@@ -76,8 +95,8 @@ class UtilisateursServiceTest {
             var uni = appProvider.getLastAccessDate("Test2");
             uni.await().indefinitely();
         });
-        Mockito.verify(serviceDataProvider, Mockito.times(1)).chargeUtilisateur(Mockito.anyString());
-        Mockito.verify(serviceDataProvider, Mockito.never()).majUtilisateur(Mockito.any());
+        verify(serviceDataProvider, times(1)).chargeUtilisateur(anyString());
+        verify(serviceDataProvider, never()).majUtilisateur(any());
     }
 
     @Test

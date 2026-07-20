@@ -7,6 +7,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -52,25 +53,49 @@ public class JWTAuthToken {
     }
 
     /**
-     * Calcule la date et l'heure de délivrance du token à partir de la charge utile.
+     * Calcule la date et l'heure de délivrance du token à partir de la charge utile, en utilisant
+     * l'horloge applicative UTC par défaut ({@link Clock#systemUTC()}). Voir {@link #issuedAt(Clock)}
+     * pour la variante testable avec horloge injectée.
      * @return La date et l'heure de délivrance du token, ou null si non applicable.
      */
     @JsonIgnore
     public LocalDateTime issuedAt() {
+        return issuedAt(Clock.systemUTC());
+    }
+
+    /**
+     * Calcule la date et l'heure de délivrance du token à partir de la charge utile.
+     * @param clock horloge applicative (ADR-004) utilisée pour résoudre le décalage Europe/Berlin en vigueur.
+     * @return La date et l'heure de délivrance du token, ou null si non applicable.
+     */
+    @JsonIgnore
+    public LocalDateTime issuedAt(Clock clock) {
         if (this.payload != null && this.payload.getIat() != 0) {
-            return LocalDateTime.ofEpochSecond(this.getPayload().getIat(), 0, ZoneId.of("Europe/Berlin").getRules().getOffset(LocalDateTime.now()));
+            return LocalDateTime.ofEpochSecond(this.getPayload().getIat(), 0, ZoneId.of("Europe/Berlin").getRules().getOffset(LocalDateTime.now(clock)));
         }
         return null;
     }
 
     /**
-     * Calcule la date et l'heure d'expiration du token à partir de la charge utile.
+     * Calcule la date et l'heure d'expiration du token à partir de la charge utile, en utilisant
+     * l'horloge applicative UTC par défaut ({@link Clock#systemUTC()}). Voir {@link #expiredAt(Clock)}
+     * pour la variante testable avec horloge injectée.
      * @return La date et l'heure d'expiration du token, ou null si non applicable.
      */
     @JsonIgnore
     public LocalDateTime expiredAt() {
+        return expiredAt(Clock.systemUTC());
+    }
+
+    /**
+     * Calcule la date et l'heure d'expiration du token à partir de la charge utile.
+     * @param clock horloge applicative (ADR-004) utilisée pour résoudre le décalage Europe/Berlin en vigueur.
+     * @return La date et l'heure d'expiration du token, ou null si non applicable.
+     */
+    @JsonIgnore
+    public LocalDateTime expiredAt(Clock clock) {
         if (this.payload != null && this.payload.getExp() != 0) {
-            return LocalDateTime.ofEpochSecond(this.getPayload().getExp(), 0, ZoneId.of("Europe/Berlin").getRules().getOffset(LocalDateTime.now()));
+            return LocalDateTime.ofEpochSecond(this.getPayload().getExp(), 0, ZoneId.of("Europe/Berlin").getRules().getOffset(LocalDateTime.now(clock)));
         }
         return null;
     }

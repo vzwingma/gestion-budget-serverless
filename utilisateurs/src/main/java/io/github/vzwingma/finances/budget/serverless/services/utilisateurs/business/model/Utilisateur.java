@@ -12,6 +12,7 @@ import org.bson.types.ObjectId;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.EnumMap;
 import java.util.Map;
@@ -47,11 +48,21 @@ public class Utilisateur implements Serializable {
 
 
     /**
-     * clone d'utilisateur
+     * clone d'utilisateur (horloge système UTC)
      */
     public Utilisateur(Utilisateur source) {
+        this(source, Clock.systemUTC());
+    }
+
+    /**
+     * clone d'utilisateur
+     *
+     * @param source utilisateur source à cloner
+     * @param clock  horloge applicative (ADR-004) utilisée pour dater le dernier accès
+     */
+    public Utilisateur(Utilisateur source, Clock clock) {
         setId(source.getId());
-        setDernierAcces(LocalDateTime.now());
+        setDernierAcces(LocalDateTime.now(clock));
         setLogin(source.getLogin());
         setDroits(source.getDroits());
         setPrefsUtilisateur(source.getPrefsUtilisateur());

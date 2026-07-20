@@ -22,12 +22,15 @@ import jakarta.ws.rs.core.HttpHeaders;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
 
@@ -43,8 +46,8 @@ class ComptesResourceTest {
 
     @BeforeAll
     static void init() {
-        QuarkusMock.installMockForType(Mockito.mock(ComptesService.class), ComptesService.class);
-        QuarkusMock.installMockForType(Mockito.mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
+        QuarkusMock.installMockForType(mock(ComptesService.class), ComptesService.class);
+        QuarkusMock.installMockForType(mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
     @BeforeEach
@@ -52,13 +55,13 @@ class ComptesResourceTest {
         // Peupler le repository JWKS avec une clé de test (sans signature RSA réelle),
         // ce qui déclenche le chargement dans la map jwksAuthKeyList via loadJwksSigningKeys().
         // Le token de test n'est pas signé (hasSignature=false) → hasValidSignature() retourne true.
-        Mockito.when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys())
+        when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys())
                 .thenReturn(Multi.createFrom().item(getJwksAuthKey()));
     }
 
     @Test
     void testInfoEndpoint() {
-        Mockito.when(comptesService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
+        when(comptesService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
         given()
                 .when().get(ComptesAPIEnum.COMPTES_BASE + "/_info")
                 .then()
@@ -68,7 +71,7 @@ class ComptesResourceTest {
 
     @Test
     void testGetComptesUtilisateur() {
-        Mockito.when(comptesService.getComptesUtilisateur(Mockito.anyString()))
+        when(comptesService.getComptesUtilisateur(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataComptes.getListeComptes()));
 
         given()
@@ -81,7 +84,7 @@ class ComptesResourceTest {
 
     @Test
     void testGetComptesUtilisateurVide() {
-        Mockito.when(comptesService.getComptesUtilisateur(Mockito.anyString()))
+        when(comptesService.getComptesUtilisateur(anyString()))
                 .thenReturn(Uni.createFrom().item(List.of()));
 
         given()
@@ -94,7 +97,7 @@ class ComptesResourceTest {
 
     @Test
     void testGetCompteUtilisateur() {
-        Mockito.when(comptesService.getCompteById(Mockito.eq("C1"), Mockito.anyString()))
+        when(comptesService.getCompteById(eq("C1"), anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataComptes.getCompte1()));
 
         given()
@@ -107,7 +110,7 @@ class ComptesResourceTest {
 
     @Test
     void testGetCompteUtilisateurIntrouvable() {
-        Mockito.when(comptesService.getCompteById(Mockito.eq("INCONNU"), Mockito.anyString()))
+        when(comptesService.getCompteById(eq("INCONNU"), anyString()))
                 .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Compte non trouvé")));
 
         given()

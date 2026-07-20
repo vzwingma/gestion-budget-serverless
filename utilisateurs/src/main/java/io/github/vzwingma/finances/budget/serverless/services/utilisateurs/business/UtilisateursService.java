@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 /**
@@ -34,13 +35,32 @@ public class UtilisateursService implements IUtilisateursAppProvider, IJwtSignin
     IUtilisateursRepository dataDBUsers;
     @Inject
     IJwtSigningKeyReadRepository iJwtSigningKeyReadRepository;
+
     /**
-     * Constructeur (pour les tests)
+     * Horloge applicative UTC (ADR-004). Valeur par défaut {@link Clock#systemUTC()}, écrasée par
+     * injection CDI (champ, cohérent avec le reste de la classe) pour les instances gérées par le conteneur.
+     */
+    @Inject
+    Clock clock = Clock.systemUTC();
+
+    /**
+     * Constructeur (pour les tests, horloge système UTC)
      *
      * @param spiUtilisateurs Service port Interface Utilisateurs
      */
     public UtilisateursService(IUtilisateursRepository spiUtilisateurs) {
+        this(spiUtilisateurs, Clock.systemUTC());
+    }
+
+    /**
+     * Constructeur (pour les tests)
+     *
+     * @param spiUtilisateurs Service port Interface Utilisateurs
+     * @param clock           horloge applicative (ADR-004) utilisée pour dater les accès
+     */
+    public UtilisateursService(IUtilisateursRepository spiUtilisateurs, Clock clock) {
         this.dataDBUsers = spiUtilisateurs;
+        this.clock = clock;
     }
 
     /**
@@ -76,8 +96,8 @@ public class UtilisateursService implements IUtilisateursAppProvider, IJwtSignin
      * @param utilisateurUni utilisateur connecté
      */
     private void updateUtilisateurLastConnection(Utilisateur utilisateurUni) {
-        Utilisateur clone = new Utilisateur(utilisateurUni);
-        clone.setDernierAcces(LocalDateTime.now());
+        Utilisateur clone = new Utilisateur(utilisateurUni, clock);
+        clone.setDernierAcces(LocalDateTime.now(clock));
         dataDBUsers.majUtilisateur(clone);
     }
 

@@ -5,7 +5,10 @@ import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDate
 import io.vertx.core.json.Json;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,6 +20,12 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests JWTUtils
  */
 class TestJWTUtils {
+
+    /**
+     * Horloge figée (ADR-004) utilisée pour les tests d'expiration : garantit un résultat
+     * déterministe, indépendant de l'heure réelle d'exécution des tests.
+     */
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-07-10T12:00:00Z"), ZoneOffset.UTC);
 
     private static final String JWKS_GOOGLE_KEYS = """
             {
@@ -52,18 +61,18 @@ class TestJWTUtils {
     @Test
     void testIsNotExpiredAvecTokenNonExpire() {
         JWTAuthPayload payload = new JWTAuthPayload();
-        payload.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
+        payload.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now(FIXED_CLOCK).plusHours(1)));
         payload.setIss("https://accounts.google.com");
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
-        assertTrue(JWTUtils.isNotExpired(token));
+        assertTrue(JWTUtils.isNotExpired(token, FIXED_CLOCK));
     }
 
     @Test
     void testIsNotExpiredAvecTokenExpire() {
         JWTAuthPayload payload = new JWTAuthPayload();
-        payload.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().minusHours(1)));
+        payload.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now(FIXED_CLOCK).minusHours(1)));
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
-        assertFalse(JWTUtils.isNotExpired(token));
+        assertFalse(JWTUtils.isNotExpired(token, FIXED_CLOCK));
     }
 
     @Test
@@ -72,7 +81,35 @@ class TestJWTUtils {
         JWTAuthPayload payload = new JWTAuthPayload();
         payload.setExp(0L);
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
-        assertFalse(JWTUtils.isNotExpired(token));
+        assertFalse(JWTUtils.isNotExpired(token, FIXED_CLOCK));
+    }
+
+    @Test
+    void testIsNotExpiredAvecTokenExpirantPileALaLimite() {
+        // exp == now (horloge injectée) exactement => isBefore(expAt) est faux => considéré expiré.
+        // Cas limite : démontre le comportement "égalité stricte = expiré" (pas de marge de tolérance).
+        JWTAuthPayload payload = new JWTAuthPayload();
+        payload.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now(FIXED_CLOCK)));
+        JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
+        assertFalse(JWTUtils.isNotExpired(token, FIXED_CLOCK));
+    }
+
+    @Test
+    void testIsNotExpiredResultatDependDeLhorlogeInjectee() {
+        // Prouve que isNotExpired(token, Clock) utilise réellement l'horloge passée en paramètre pour
+        // déterminer "now" (ADR-004), et non une horloge implicite figée par ailleurs : même token,
+        // deux horloges différentes => deux résultats différents.
+        Clock horlogeAvantExpiration = Clock.fixed(Instant.parse("2026-07-10T11:00:00Z"), ZoneOffset.UTC);
+        Clock horlogeApresExpiration = Clock.fixed(Instant.parse("2026-07-10T13:00:00Z"), ZoneOffset.UTC);
+
+        JWTAuthPayload payload = new JWTAuthPayload();
+        payload.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now(FIXED_CLOCK)));
+        JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
+
+        assertTrue(JWTUtils.isNotExpired(token, horlogeAvantExpiration),
+                "Avant l'échéance (horloge injectée), le token doit être considéré valide");
+        assertFalse(JWTUtils.isNotExpired(token, horlogeApresExpiration),
+                "Après l'échéance (horloge injectée), le même token doit être considéré expiré");
     }
 
     // ====== hasValidSignature ======

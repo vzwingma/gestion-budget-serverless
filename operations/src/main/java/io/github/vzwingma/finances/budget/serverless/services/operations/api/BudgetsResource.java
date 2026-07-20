@@ -84,7 +84,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
                 String idBudget = BudgetMensuel.getBudgetId(idCompte, Month.of(mois), annee);
                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
                 return budgetService.getBudgetMensuel(idCompte, Month.of(mois), annee);
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException _) {
                 return Uni.createFrom().failure(new BadParametersException("mois et année doivent être des paramètres entiers"));
             }
         }
@@ -131,7 +131,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
                 String idBudget = BudgetMensuel.getBudgetId(idCompte, Month.of(mois), annee);
                 BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
                 return budgetService.getSoldesBudgetMensuel(idCompte, Month.of(mois), annee);
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException _) {
                 return Multi.createFrom().failure(new BadParametersException("les paramètres mois et année doivent être des entiers"));
             }
         } else if (annee != null) {

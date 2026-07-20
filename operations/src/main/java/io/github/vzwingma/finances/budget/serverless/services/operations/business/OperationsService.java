@@ -29,6 +29,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -61,6 +62,14 @@ public class OperationsService implements IOperationsAppProvider {
     @SuppressWarnings("unused") // Used in tests
     @Inject
     IBudgetAppProvider budgetService;
+
+    /**
+     * Horloge applicative UTC (ADR-004). Valeur par défaut {@link Clock#systemUTC()} pour les instances
+     * non gérées par le conteneur CDI (tests directs via {@code new OperationsService()}), écrasée par
+     * injection CDI (champ, cohérent avec le reste de la classe) pour les instances gérées par le conteneur.
+     */
+    @Inject
+    Clock clock = Clock.systemUTC();
     /**
      * Calcul des soldes
      *
@@ -246,13 +255,13 @@ public class OperationsService implements IOperationsAppProvider {
         if (ligneOperation.getAutresInfos() == null) {
             ligneOperation.setAutresInfos(new LigneOperation.AddInfos());
         }
-        ligneOperation.getAutresInfos().setDateMaj(LocalDateTime.now());
+        ligneOperation.getAutresInfos().setDateMaj(LocalDateTime.now(clock));
         ligneOperation.getAutresInfos().setAuteur(auteur);
 
         // Date opération suivant Etat
         if (OperationEtatEnum.REALISEE.equals(ligneOperation.getEtat())
                 && ligneOperation.getAutresInfos().getDateOperation() == null) {
-            ligneOperation.getAutresInfos().setDateOperation(LocalDate.now());
+            ligneOperation.getAutresInfos().setDateOperation(LocalDate.now(clock));
         } else if (OperationEtatEnum.REPORTEE.equals(ligneOperation.getEtat())) {
             ligneOperation.getAutresInfos().setDateOperation(null);
         }

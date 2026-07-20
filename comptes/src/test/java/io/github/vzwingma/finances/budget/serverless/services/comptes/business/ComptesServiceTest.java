@@ -13,10 +13,14 @@ import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.List;
 
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
@@ -28,14 +32,14 @@ class ComptesServiceTest {
 
     @BeforeEach
     void setup() {
-        comptesRepository = Mockito.mock(IComptesRepository.class);
-        signingKeyReadRepository = Mockito.mock(IJwtSigningKeyReadRepository.class);
-        comptesAppProvider = Mockito.spy(new ComptesService(comptesRepository, signingKeyReadRepository));
+        comptesRepository = mock(IComptesRepository.class);
+        signingKeyReadRepository = mock(IJwtSigningKeyReadRepository.class);
+        comptesAppProvider = spy(new ComptesService(comptesRepository, signingKeyReadRepository));
     }
 
     @Test
     void testGetComptes() {
-        Mockito.when(comptesRepository.chargeComptes("test")).thenReturn(Multi.createFrom().items(MockDataComptes.getListeComptes().stream()));
+        when(comptesRepository.chargeComptes("test")).thenReturn(Multi.createFrom().items(MockDataComptes.getListeComptes().stream()));
 
         List<CompteBancaire> comptes = comptesAppProvider.getComptesUtilisateur("test").await().indefinitely();
         Assertions.assertNotNull(comptes);
@@ -46,7 +50,7 @@ class ComptesServiceTest {
 
     @Test
     void testGetComptesTriParOrdre() {
-        Mockito.when(comptesRepository.chargeComptes("test")).thenReturn(Multi.createFrom().items(MockDataComptes.getListeComptes().stream()));
+        when(comptesRepository.chargeComptes("test")).thenReturn(Multi.createFrom().items(MockDataComptes.getListeComptes().stream()));
 
         List<CompteBancaire> comptes = comptesAppProvider.getComptesUtilisateur("test").await().indefinitely();
         Assertions.assertNotNull(comptes);
@@ -59,7 +63,7 @@ class ComptesServiceTest {
 
     @Test
     void testGetComptesListeVide() {
-        Mockito.when(comptesRepository.chargeComptes("test")).thenReturn(Multi.createFrom().empty());
+        when(comptesRepository.chargeComptes("test")).thenReturn(Multi.createFrom().empty());
 
         List<CompteBancaire> comptes = comptesAppProvider.getComptesUtilisateur("test").await().indefinitely();
         Assertions.assertNotNull(comptes);
@@ -68,7 +72,7 @@ class ComptesServiceTest {
 
     @Test
     void testGetComptesErreurRepository() {
-        Mockito.when(comptesRepository.chargeComptes("test"))
+        when(comptesRepository.chargeComptes("test"))
                 .thenReturn(Multi.createFrom().failure(new DataNotFoundException("Erreur BDD")));
 
         Assertions.assertThrows(Exception.class,
@@ -77,7 +81,7 @@ class ComptesServiceTest {
 
     @Test
     void testGetCompteById() {
-        Mockito.when(comptesRepository.chargeCompteParId(Mockito.eq("A3"), Mockito.anyString())).thenReturn(Uni.createFrom().item(MockDataComptes.getCompte1()));
+        when(comptesRepository.chargeCompteParId(eq("A3"), anyString())).thenReturn(Uni.createFrom().item(MockDataComptes.getCompte1()));
 
         CompteBancaire compte = comptesAppProvider.getCompteById("A3", "test").await().indefinitely();
         Assertions.assertNotNull(compte);
@@ -86,7 +90,7 @@ class ComptesServiceTest {
 
     @Test
     void testGetCompteByIdIntrouvable() {
-        Mockito.when(comptesRepository.chargeCompteParId(Mockito.eq("INCONNU"), Mockito.anyString()))
+        when(comptesRepository.chargeCompteParId(eq("INCONNU"), anyString()))
                 .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Compte non trouvé")));
 
         Assertions.assertThrows(Exception.class,
@@ -95,21 +99,21 @@ class ComptesServiceTest {
 
     @Test
     void testGetCompteActif() {
-        Mockito.when(comptesRepository.isCompteActif("A3")).thenReturn(Uni.createFrom().item(Boolean.TRUE));
+        when(comptesRepository.isCompteActif("A3")).thenReturn(Uni.createFrom().item(Boolean.TRUE));
 
         Assertions.assertTrue(comptesAppProvider.isCompteActif("A3").await().indefinitely());
     }
 
     @Test
     void testGetCompteInactif() {
-        Mockito.when(comptesRepository.isCompteActif("INACTIF")).thenReturn(Uni.createFrom().item(Boolean.FALSE));
+        when(comptesRepository.isCompteActif("INACTIF")).thenReturn(Uni.createFrom().item(Boolean.FALSE));
 
         Assertions.assertFalse(comptesAppProvider.isCompteActif("INACTIF").await().indefinitely());
     }
 
     @Test
     void testGetCompteActifErreurRepository() {
-        Mockito.when(comptesRepository.isCompteActif("ERREUR"))
+        when(comptesRepository.isCompteActif("ERREUR"))
                 .thenReturn(Uni.createFrom().failure(new DataNotFoundException("Compte non trouvé")));
 
         Assertions.assertThrows(Exception.class,
@@ -118,7 +122,7 @@ class ComptesServiceTest {
 
     @Test
     void testLoadJwksSigningKeys() {
-        Mockito.when(signingKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().empty());
+        when(signingKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().empty());
 
         ComptesService service = (ComptesService) comptesAppProvider;
         var keys = service.loadJwksSigningKeys().await().indefinitely();
@@ -131,7 +135,7 @@ class ComptesServiceTest {
         JwksAuthKey key = new JwksAuthKey();
         key.setKid("kid-test");
         key.setAlg("RS256");
-        Mockito.when(signingKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().item(key));
+        when(signingKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().item(key));
 
         ComptesService service = (ComptesService) comptesAppProvider;
         var keys = service.loadJwksSigningKeys().await().indefinitely();
