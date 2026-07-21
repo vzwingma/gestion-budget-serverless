@@ -1,7 +1,7 @@
 # Plan d'Action 003 — Remédiation Sonar (314 issues ouvertes)
 
 **Date création :** 2026-07-10
-**Statut :** 🔵 En cours (Phase A complétée ; Phase B complétée ; Phase C complétée ; Phase D en attente sollicitation explicite)
+**Statut :** 🔵 En cours (Phases A/B/C/D complétées, mergées master PR#202 ; Phase E — reliquats post-merge scan, 2 issues réelles, en cours)
 **Porteur :** ⚫ MAINa
 
 ---
@@ -244,6 +244,48 @@ Dernière phase Plan 003 — ~17 issues restantes, 4 sous-lots indépendants, ri
 ### QA Phase D
 
 QALvin : confirme absence de régression sur les 4 sous-lots + module concernés (`comptes`? à vérifier via AbstractAPISecurityFilter, `communs`, `operations`, `utilisateurs`). Ajoute test ciblé si trou de couverture identifié (attention particulière T D.4 S8700, comme fait en Phase B pour Clock).
+
+---
+
+## Phase E — Reliquats post-merge (scan SonarCloud master post PR#202 : 314→13)
+
+### Contexte
+
+Après merge PR#202 sur `master` (Phases A-D), nouveau scan SonarCloud : 314→13 issues. Analyse (hors session agent, faite directement) classe les 13 restantes :
+
+**Hors scope Plan 003 (pré-existants, non liés à la remédiation)** : S2259 x2 (bugs NPE potentiels, `BudgetMensuel.java:117`, `JwtSecurityContext.java:81`), S101 (`V001_InitMigrationsCollection.java`, convention nommage), S2143 (`UtilisateurPanacheCodec.java`). Non traités Phase E — à suivre séparément si besoin.
+
+**Dette acceptée (conséquence directe ADR-004, Won't Fix à flaguer dans Sonar par l'utilisateur)** : S6813 x3 (`BudgetService.java:85`, `OperationsService.java:71`, `UtilisateursService.java:43` — field injection `Clock`, écart ADR-004 T B.2 déjà documenté et validé) + S107 x2 (`LigneOperation.java:144,159` — 8 paramètres constructeur dû à l'ajout `Clock`, conséquence directe overloads T B.2). Non traités Phase E — acceptés comme dette assumée de la décision Clock UTC.
+
+**Scope Phase E — 2 issues réelles à corriger :**
+
+### Tâches
+
+#### T E.1 - S5778 régression : lambda bloc non convertie (`UtilisateursServiceTest`)
+- **Agent :** DEVon
+- **Fichier(s) :** `utilisateurs/src/test/java/.../UtilisateursServiceTest.java`, méthode `testGetLastAccessUtilisateurInconnu` (~ligne 94)
+- **Couvrir :** le fix Phase D (T D.3) visait la ligne ~75 mais cette occurrence (lambda bloc 2 statements : `var uni = appProvider.getLastAccessDate("Test2"); uni.await().indefinitely();`) a été manquée. Convertir en lambda expression unique : `() -> appProvider.getLastAccessDate("Test2").await().indefinitely()`.
+- **Acceptation :** 1 issue S5778 résolue, comportement test inchangé, `mvn clean test -f utilisateurs/pom.xml` vert.
+
+#### T E.2 - S7467 + bugfix logique réel : `BudgetService.java:485` catch `DataNotFoundException dne`
+- **Agent :** DEVon
+- **Fichier(s) :** `operations/src/main/java/.../business/BudgetService.java:485`
+- **Couvrir :** `dne` utilisé dans `tuple.mapItem1(u -> Uni.createFrom().failure(dne))` mais le résultat de `mapItem1(...)` est jeté (jamais assigné/retourné) — bug logique pré-existant, Sonar ne compte donc pas `dne` comme "vraiment" utilisé (S7467). Traiter comme un **vrai bugfix**, pas un simple lint fix :
+  1. D'abord COMPRENDRE l'intention : le catch semble censé propager l'échec `DataNotFoundException` dans la chaîne réactive (nom `mapItem1`→`failure` suggère ça).
+  2. Si propagation intentionnelle : proposer le vrai fix (probablement `tuple = tuple.mapItem1(...)` + adapter la suite du chaînage, ex. `.onItem().transform(Tuple2::getItem1)`).
+  3. Si trop risqué de toucher au comportement de la chaîne réactive sans couverture existante suffisante : fix minimal cosmétique (garder le bug logique intact), mais documenter explicitement pourquoi cette option est plus sûre.
+  4. Dans tous les cas, vérifier avec un **test ciblé** que le comportement d'échec `DataNotFoundException` remonte bien dans la chaîne quand `addOrReplaceOperation` throw (ou documenter que ce n'était/n'est toujours pas le cas si option cosmétique retenue).
+- **Acceptation :** 1 issue S7467 résolue, comportement reactive chain clarifié et testé (nouveau test si comportement changé), `mvn clean test -f operations/pom.xml` vert.
+
+**Effort :** XS-S. **Risque :** T E.1 LOW, T E.2 MEDIUM (touche chaîne réactive, bug logique potentiel). **Dépendances :** aucune, indépendant A/B/C/D.
+
+### QA Phase E
+
+QALvin : valider T E.1 (régression simple) + T E.2 avec test dédié si comportement changé (vérifier propagation `DataNotFoundException` dans le flux réactif).
+
+### Clôture Plan 003 (après Phase E)
+
+Une fois Phase E clôturée (Gates #2/#3), DOCly clôture le Plan 003 **définitivement** : statut → clôturé, section finale listant : les 4 issues hors-scope (S2259 x2, S101, S2143, à traiter séparément si besoin), les 5 issues de dette acceptée ADR-004 (S6813 x3 + S107 x2, Won't Fix), et rappel de l'action différée sur les 4 échecs `TestMigrationRepository`/`TestMigrationRepositoryPersistence` (Mongo réel, cf. section "Action de clôture différée" ci-dessous — à lever avant Gate #4 final si pas déjà fait via CI `master`).
 
 ---
 

@@ -84,6 +84,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      */
     @Inject
     Clock clock = Clock.systemUTC();
+
     /**
      * Chargement du budget du mois courant
      *
@@ -301,7 +302,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
 
         budgetInitVide.setNewBudget(true);
         budgetInitVide.setId();
-
+        Clock clock = Clock.systemUTC();
         budgetInitVide.setDateMiseAJour(LocalDateTime.now(clock));
 
         // MAJ Calculs à partir du mois précédent
@@ -339,6 +340,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
             budgetInitVide.setIdCompteBancaire(budgetPrecedent.getIdCompteBancaire());
             // #116 : Le résultat du moins précédent est le compte réel, pas le compte avancé
             budgetInitVide.getSoldes().setSoldeAtFinMoisPrecedent(budgetPrecedent.getSoldes().getSoldeAtFinMoisCourant());
+            Clock clock = Clock.systemUTC();
             budgetInitVide.setDateMiseAJour(LocalDateTime.now(clock));
             if (budgetPrecedent.getListeOperations() != null) {
 
@@ -479,11 +481,12 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                         BudgetDataUtils.isSsCategorieRemboursable(ligneOperation.getSsCategorie()) ? this.parametragesService.getSsCategorieParId(IdsCategoriesEnum.SS_CAT_REMBOURSEMENT.getId()) : Uni.createFrom().item((SsCategorieOperations) null))
                 .asTuple()
                 // Ajout des opérations standard et remboursement (si non nulle)
-                .invoke(tuple -> {
+                .onItem().transformToUni(tuple -> {
                     try {
                         this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, tuple.getItem3());
-                    } catch (DataNotFoundException dne) {
-                        tuple.mapItem1(u -> Uni.createFrom().failure(dne));
+                        return Uni.createFrom().item(tuple);
+                    } catch (DataNotFoundException e) {
+                        return Uni.createFrom().failure(e);
                     }
                 })
                 .onItem().transform(Tuple2::getItem1)

@@ -91,10 +91,8 @@ class UtilisateursServiceTest {
 
     @Test
     void testGetLastAccessUtilisateurInconnu() {
-        Assertions.assertThrows(CompletionException.class, () -> {
-            var uni = appProvider.getLastAccessDate("Test2");
-            uni.await().indefinitely();
-        });
+        Assertions.assertThrows(CompletionException.class,
+                () -> appProvider.getLastAccessDate("Test2").await().indefinitely());
         verify(serviceDataProvider, times(1)).chargeUtilisateur(anyString());
         verify(serviceDataProvider, never()).majUtilisateur(any());
     }
