@@ -73,18 +73,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
     private AddInfos autresInfos;
 
     private List<OperationStatutEnum> statuts;
-    /**
-     * Constructeur
-     *
-     * @param ssCategorie Catégorie
-     * @param libelle     libellé
-     * @param typeDepense type d'opération
-     * @param absValeur   valeur montant en valeur absolue
-     * @param etat        état
-     */
-    public LigneOperation(SsCategorieOperations ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat) {
-        this(ssCategorie, libelle, typeDepense, absValeur, etat, Clock.systemUTC());
-    }
+
 
     /**
      * Constructeur
@@ -96,7 +85,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
      * @param etat        état
      * @param clock       horloge applicative (ADR-004) utilisée pour dater la création
      */
-    public LigneOperation(SsCategorieOperations ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Clock clock) {
+    public LigneOperation(SsCategorieOperations ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat) {
         Categorie c = null;
         SsCategorie ssc = null;
         if (ssCategorie != null && ssCategorie.getCategorieParente() != null) {
@@ -112,7 +101,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
             ssc.setType(ssCategorie.getType());
             setSsCategorie(ssc);
         }
-        buildLigneOperation(c, ssc, libelle, typeDepense, absValeur, etat, null, clock);
+        buildLigneOperation(c, ssc, libelle, typeDepense, absValeur, etat, null);
     }
 
 
@@ -125,9 +114,10 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
      * @param typeDepense type d'opération
      * @param absValeur   valeur montant en valeur absolue
      * @param etat        état
+     * @param clock       horloge applicative (ADR-004) utilisée pour dater la création
      */
     public LigneOperation(Categorie categorie, SsCategorie ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Mensualite mensualite) {
-        this(categorie, ssCategorie, libelle, typeDepense, absValeur, etat, mensualite, Clock.systemUTC());
+        buildLigneOperation(categorie, ssCategorie, libelle, typeDepense, absValeur, etat, mensualite);
     }
 
     /**
@@ -141,22 +131,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
      * @param etat        état
      * @param clock       horloge applicative (ADR-004) utilisée pour dater la création
      */
-    public LigneOperation(Categorie categorie, SsCategorie ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Mensualite mensualite, Clock clock) {
-        buildLigneOperation(categorie, ssCategorie, libelle, typeDepense, absValeur, etat, mensualite, clock);
-    }
-
-    /**
-     * Constructeur
-     *
-     * @param categorie   Catégorie
-     * @param ssCategorie Sous Catégorie
-     * @param libelle     libellé
-     * @param typeDepense type d'opération
-     * @param absValeur   valeur montant en valeur absolue
-     * @param etat        état
-     * @param clock       horloge applicative (ADR-004) utilisée pour dater la création
-     */
-    private void buildLigneOperation(Categorie categorie, SsCategorie ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Mensualite mensualite, Clock clock) {
+    private void buildLigneOperation(Categorie categorie, SsCategorie ssCategorie, String libelle, OperationTypeEnum typeDepense, Double absValeur, OperationEtatEnum etat, Mensualite mensualite) {
         this.id = UUID.randomUUID().toString();
         this.libelle = libelle;
         this.typeOperation = typeDepense;
@@ -170,6 +145,7 @@ public class LigneOperation extends AbstractAPIObjectModel implements Comparable
         this.mensualite = mensualite;
 
         AddInfos addInfos = new AddInfos();
+        Clock clock = Clock.systemUTC();
         addInfos.setDateMaj(LocalDateTime.now(clock));
         addInfos.setDateOperation(LocalDate.now(clock));
         addInfos.setDateCreate(LocalDateTime.now(clock));
