@@ -114,7 +114,7 @@ public class BudgetMensuel extends AbstractAPIObjectModel {
      * @return id de budget
      */
     public static String getBudgetId(String idCompte, Month mois, int annee) {
-        return String.format("%s_%s_%s", idCompte, annee, String.format("%02d", mois.getValue()));
+        return String.format("%s_%s_%s", idCompte, annee, String.format("%02d", mois != null ? mois.getValue() : 0));
     }
 
 
