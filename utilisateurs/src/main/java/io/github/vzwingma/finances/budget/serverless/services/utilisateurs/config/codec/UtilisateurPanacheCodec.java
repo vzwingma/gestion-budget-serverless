@@ -14,8 +14,6 @@ import org.bson.codecs.DecoderContext;
 import org.bson.codecs.EncoderContext;
 import org.bson.types.ObjectId;
 
-import java.util.Date;
-
 /**
  * Panache Codec pour la classe Utilisateur
  */
@@ -76,8 +74,8 @@ public class UtilisateurPanacheCodec implements CollectibleCodec<Utilisateur> {
         Document docUtilisateur = new Document();
         docUtilisateur.put("_id", utilisateur.getId());
         docUtilisateur.put("login", utilisateur.getLogin());
-        docUtilisateur.put("dernierAcces", new Date(BudgetDateTimeUtils.getMillisecondsFromLocalDateTime(utilisateur.getDernierAcces())));
-
+        docUtilisateur.put("dernierAcces", BudgetDateTimeUtils.getMillisecondsFromLocalDateTime(utilisateur.getDernierAcces()));
+        
         Document docPrefs = new Document();
         utilisateur.getPrefsUtilisateur().forEach((k, v) -> docPrefs.put(k.toString(), v));
         docUtilisateur.put("prefsUtilisateur", docPrefs);
