@@ -77,14 +77,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     @Inject
     IJwtSigningKeyReadRepository iJwtSigningKeyReadRepository;
 
-    /**
-     * Horloge applicative UTC (ADR-004). Valeur par défaut {@link Clock#systemUTC()} pour les instances
-     * non gérées par le conteneur CDI (tests directs via {@code new BudgetService()}), écrasée par
-     * injection CDI (champ, cohérent avec le reste de la classe) pour les instances gérées par le conteneur.
-     */
-    @Inject
     Clock clock = Clock.systemUTC();
-
     /**
      * Chargement du budget du mois courant
      *
@@ -302,7 +295,6 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
 
         budgetInitVide.setNewBudget(true);
         budgetInitVide.setId();
-        Clock clock = Clock.systemUTC();
         budgetInitVide.setDateMiseAJour(LocalDateTime.now(clock));
 
         // MAJ Calculs à partir du mois précédent
@@ -340,7 +332,6 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
             budgetInitVide.setIdCompteBancaire(budgetPrecedent.getIdCompteBancaire());
             // #116 : Le résultat du moins précédent est le compte réel, pas le compte avancé
             budgetInitVide.getSoldes().setSoldeAtFinMoisPrecedent(budgetPrecedent.getSoldes().getSoldeAtFinMoisCourant());
-            Clock clock = Clock.systemUTC();
             budgetInitVide.setDateMiseAJour(LocalDateTime.now(clock));
             if (budgetPrecedent.getListeOperations() != null) {
 
@@ -412,6 +403,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     @Override
     public Uni<BudgetMensuel> setBudgetActif(String idBudgetMensuel, boolean budgetActif) {
         LOGGER.info("{} du budget", budgetActif ? "Réouverture" : "Fermeture");
+
         return dataOperationsProvider.chargeBudgetMensuel(idBudgetMensuel)
                 .map(budgetMensuel -> {
                     budgetMensuel.setActif(budgetActif);
@@ -422,8 +414,10 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                         budgetMensuel.getListeOperations()
                                 .stream()
                                 .filter(op -> OperationEtatEnum.PREVUE.equals(op.getEtat()))
-                                .peek(op -> LOGGER.info("[idOperation:{}] {} -> REPORTEE", op.getId(), op.getLibelle()))
-                                .forEach(op -> op.setEtat(OperationEtatEnum.REPORTEE));
+                                .forEach(op -> {
+                                    LOGGER.info("[idOperation:{}] {} -> REPORTEE", op.getId(), op.getLibelle());
+                                    op.setEtat(OperationEtatEnum.REPORTEE);
+                                });
                     }
                     return budgetMensuel;
                 })

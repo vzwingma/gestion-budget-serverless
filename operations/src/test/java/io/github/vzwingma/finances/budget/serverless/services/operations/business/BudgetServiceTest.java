@@ -373,13 +373,10 @@ class BudgetServiceTest {
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
 
         IOperationsAppProvider mockOperationsAppProvider = mock(IOperationsAppProvider.class);
-        try {
+        Assertions.assertDoesNotThrow(() ->
             doThrow(new DataNotFoundException("Catégorie introuvable"))
                     .when(mockOperationsAppProvider)
-                    .addOrReplaceOperation(anyList(), any(LigneOperation.class), anyString(), isNull());
-        } catch (DataNotFoundException e) {
-            fail("Ne doit pas être levée à la configuration du mock");
-        }
+                    .addOrReplaceOperation(anyList(), any(LigneOperation.class), anyString(), isNull()));
         budgetAppProvider.setOperationsAppProvider(mockOperationsAppProvider);
 
         // Test
