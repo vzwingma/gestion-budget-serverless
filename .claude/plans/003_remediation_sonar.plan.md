@@ -1,7 +1,7 @@
 # Plan d'Action 003 — Remédiation Sonar (314 issues ouvertes)
 
 **Date création :** 2026-07-10
-**Statut :** 🔵 En cours (Phases A/B/C/D complétées, mergées master PR#202 ; Phase E — reliquats post-merge scan, 2 issues réelles, en cours)
+**Statut :** 🏁 Clôturé (Phases A-E complétées)
 **Porteur :** ⚫ MAINa
 
 ---
@@ -247,7 +247,7 @@ QALvin : confirme absence de régression sur les 4 sous-lots + module concernés
 
 ---
 
-## Phase E — Reliquats post-merge (scan SonarCloud master post PR#202 : 314→13)
+## Phase E — Reliquats post-merge (scan SonarCloud master post PR#202 : 314→13) ✅ complétée
 
 ### Contexte
 
@@ -261,13 +261,14 @@ Après merge PR#202 sur `master` (Phases A-D), nouveau scan SonarCloud : 314→1
 
 ### Tâches
 
-#### T E.1 - S5778 régression : lambda bloc non convertie (`UtilisateursServiceTest`)
+#### T E.1 - S5778 régression : lambda bloc non convertie (`UtilisateursServiceTest`) ✅ complétée
 - **Agent :** DEVon
 - **Fichier(s) :** `utilisateurs/src/test/java/.../UtilisateursServiceTest.java`, méthode `testGetLastAccessUtilisateurInconnu` (~ligne 94)
 - **Couvrir :** le fix Phase D (T D.3) visait la ligne ~75 mais cette occurrence (lambda bloc 2 statements : `var uni = appProvider.getLastAccessDate("Test2"); uni.await().indefinitely();`) a été manquée. Convertir en lambda expression unique : `() -> appProvider.getLastAccessDate("Test2").await().indefinitely()`.
 - **Acceptation :** 1 issue S5778 résolue, comportement test inchangé, `mvn clean test -f utilisateurs/pom.xml` vert.
+- **Résultat (clôture) :** issue S5778 résolue conforme scope. Gate #2 (validation code) obtenue côté utilisateur. `mvn clean test -f utilisateurs/pom.xml` → 36/36 verts (confirmé après résolution conflit de merge Phase D/Phase E, voir T E.2). Gate #3 (validation tests) obtenue côté utilisateur.
 
-#### T E.2 - S7467 + bugfix logique réel : `BudgetService.java:485` catch `DataNotFoundException dne`
+#### T E.2 - S7467 + bugfix logique réel : `BudgetService.java:485` catch `DataNotFoundException dne` ✅ complétée
 - **Agent :** DEVon
 - **Fichier(s) :** `operations/src/main/java/.../business/BudgetService.java:485`
 - **Couvrir :** `dne` utilisé dans `tuple.mapItem1(u -> Uni.createFrom().failure(dne))` mais le résultat de `mapItem1(...)` est jeté (jamais assigné/retourné) — bug logique pré-existant, Sonar ne compte donc pas `dne` comme "vraiment" utilisé (S7467). Traiter comme un **vrai bugfix**, pas un simple lint fix :
@@ -276,16 +277,58 @@ Après merge PR#202 sur `master` (Phases A-D), nouveau scan SonarCloud : 314→1
   3. Si trop risqué de toucher au comportement de la chaîne réactive sans couverture existante suffisante : fix minimal cosmétique (garder le bug logique intact), mais documenter explicitement pourquoi cette option est plus sûre.
   4. Dans tous les cas, vérifier avec un **test ciblé** que le comportement d'échec `DataNotFoundException` remonte bien dans la chaîne quand `addOrReplaceOperation` throw (ou documenter que ce n'était/n'est toujours pas le cas si option cosmétique retenue).
 - **Acceptation :** 1 issue S7467 résolue, comportement reactive chain clarifié et testé (nouveau test si comportement changé), `mvn clean test -f operations/pom.xml` vert.
+- **Résultat (clôture) :** issue S7467 résolue + bugfix logique traité conforme scope (propagation `DataNotFoundException` clarifiée et testée). **Écart notable rencontré en cours de route :** conflit de merge sur `BudgetService.java` entre le fix Phase D (déjà mergé `master` via PR#202) et le fix Phase E (nouvelles modifs sur ce même fichier, branche `fix/sonar-phase-e`) — résolu manuellement, les deux jeux de changements (Phase D + Phase E) réconciliés sans perte. Gate #2 (validation code, résolution conflit incluse) obtenue côté utilisateur. `mvn clean test -f operations/pom.xml` → 92/92 verts (confirmé post-résolution conflit). Gate #3 (validation tests) obtenue côté utilisateur. Poussé sur branche `fix/sonar-phase-e`, commit `a3ecbe6` — PR restant à ouvrir/merger par l'utilisateur pour déclencher le scan Sonar final.
 
-**Effort :** XS-S. **Risque :** T E.1 LOW, T E.2 MEDIUM (touche chaîne réactive, bug logique potentiel). **Dépendances :** aucune, indépendant A/B/C/D.
+**Effort :** XS-S. **Risque :** T E.1 LOW, T E.2 MEDIUM (touche chaîne réactive, bug logique potentiel — matérialisé par le conflit de merge rencontré). **Dépendances :** aucune, indépendant A/B/C/D.
 
 ### QA Phase E
 
 QALvin : valider T E.1 (régression simple) + T E.2 avec test dédié si comportement changé (vérifier propagation `DataNotFoundException` dans le flux réactif).
 
+### Résultats Phase E (clôture)
+
+- T E.1 + T E.2 : 2/2 issues réelles résolues (S5778 régression, S7467 + bugfix logique réel propagation `DataNotFoundException`).
+- Conflit de merge `BudgetService.java` (Phase D master vs Phase E branche) rencontré et résolu manuellement en cours de tâche — changements Phase D et Phase E tous deux préservés.
+- Résultats Maven confirmés post-résolution conflit : `operations` 92/92 verts, `utilisateurs` 36/36 verts.
+- Gates #2 (validation code) et #3 (validation tests) obtenues côté utilisateur pour T E.1 et T E.2.
+- Poussé sur branche `fix/sonar-phase-e`, commit `a3ecbe6`. PR restant à ouvrir/merger par l'utilisateur (hors périmètre agents) pour déclencher le scan SonarCloud final post-Phase E.
+
 ### Clôture Plan 003 (après Phase E)
 
 Une fois Phase E clôturée (Gates #2/#3), DOCly clôture le Plan 003 **définitivement** : statut → clôturé, section finale listant : les 4 issues hors-scope (S2259 x2, S101, S2143, à traiter séparément si besoin), les 5 issues de dette acceptée ADR-004 (S6813 x3 + S107 x2, Won't Fix), et rappel de l'action différée sur les 4 échecs `TestMigrationRepository`/`TestMigrationRepositoryPersistence` (Mongo réel, cf. section "Action de clôture différée" ci-dessous — à lever avant Gate #4 final si pas déjà fait via CI `master`).
+
+---
+
+## 🏁 Clôture définitive du Plan 003
+
+**Statut global : 🏁 Clôturé.** Phases A à E toutes complétées, Gates #2/#3 obtenues sur chacune. Récapitulatif pour référence future :
+
+### Résumé phases A-E
+
+- **Phase A** (blocker + majeurs `MongoMigrationRunner.java`) ✅ — 8/9 issues corrigées (S2699, S6813 x2, S2629 x2, S6068 x3 ; S125 introuvable/non applicable), constructor injection + garde niveau log, assertion réelle migration.
+- **Phase B** (Clock UTC, ADR-004) ✅ — 18/18 issues S8688 résolues, `ClockConfig` producer CDI + injection constructeur (`communs`) et migration `operations`/`utilisateurs`, vigilance clonage mois suivant validée QALvin.
+- **Phase C** (267 imports statiques Mockito, mécanique) ✅ — 267/267 issues S8924 résolues en 4 lots séquentiels (`operations`, `communs` migrations, `parametrages`+`utilisateurs`, reste éparpillé dont `comptes`), 0 résidu qualifié.
+- **Phase D** (reliquats S7467/S6213/S5778/S8700) ✅ — ~17 issues résolues : catch unnamed pattern Java 22, renommage variable réservée, refactor lambda, conversion durée zone-aware.
+- **Phase E** (2 reliquats post-merge scan PR#202) ✅ — S5778 régression (lambda manquée Phase D) + S7467/bugfix logique réel propagation `DataNotFoundException` dans `BudgetService.java`, conflit de merge Phase D/Phase E résolu manuellement, `operations` 92/92 + `utilisateurs` 36/36 verts, poussé branche `fix/sonar-phase-e` commit `a3ecbe6` (PR à ouvrir/merger par l'utilisateur).
+
+### Issues hors-scope Plan 003 (non traitées, suivi séparé)
+
+4 issues identifiées lors du scan post-merge PR#202, pré-existantes et non liées à la remédiation de ce plan — spawnées en tâche séparée `task_c58e6b55` (non encore traitée à date 2026-07-21) :
+
+- S2259 x2 — bugs NPE potentiels : `BudgetMensuel.java:117`, `JwtSecurityContext.java:81`.
+- S101 — convention nommage : `V001_InitMigrationsCollection.java`.
+- S2143 — `UtilisateurPanacheCodec.java`.
+
+### Dette acceptée (conséquence directe ADR-004, à marquer "Won't Fix" dans SonarCloud par l'utilisateur)
+
+5 issues, conséquence assumée et documentée de la décision Clock UTC (ADR-004) — non traitées, dette acceptée :
+
+- S6813 x3 — field injection `Clock` (écart ADR-004 documenté T B.2) : `BudgetService.java:85`, `OperationsService.java:71`, `UtilisateursService.java:43`.
+- S107 x2 — 8 paramètres constructeur dû aux overloads `Clock` (T B.2) : `LigneOperation.java:144,159`.
+
+### Rappel action différée non résolue
+
+Les 4 échecs `TestMigrationRepository`/`TestMigrationRepositoryPersistence` (`MongoTimeoutException`, absence Mongo/Docker en environnement agents et poste utilisateur durant tout le plan) restent **non validés en environnement réel (Mongo/Docker/CI)** à la clôture de ce plan. Voir section "Action de clôture différée" ci-dessous (toujours ouverte, à lever via scan CI `master` post-merge PR ou poste local Docker actif).
 
 ---
 
