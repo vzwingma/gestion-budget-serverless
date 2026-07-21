@@ -77,12 +77,6 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     @Inject
     IJwtSigningKeyReadRepository iJwtSigningKeyReadRepository;
 
-    /**
-     * Horloge applicative UTC (ADR-004). Valeur par défaut {@link Clock#systemUTC()} pour les instances
-     * non gérées par le conteneur CDI (tests directs via {@code new BudgetService()}), écrasée par
-     * injection CDI (champ, cohérent avec le reste de la classe) pour les instances gérées par le conteneur.
-     */
-    @Inject
     Clock clock = Clock.systemUTC();
     /**
      * Chargement du budget du mois courant
@@ -301,7 +295,6 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
 
         budgetInitVide.setNewBudget(true);
         budgetInitVide.setId();
-
         budgetInitVide.setDateMiseAJour(LocalDateTime.now(clock));
 
         // MAJ Calculs à partir du mois précédent
@@ -410,6 +403,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     @Override
     public Uni<BudgetMensuel> setBudgetActif(String idBudgetMensuel, boolean budgetActif) {
         LOGGER.info("{} du budget", budgetActif ? "Réouverture" : "Fermeture");
+
         return dataOperationsProvider.chargeBudgetMensuel(idBudgetMensuel)
                 .map(budgetMensuel -> {
                     budgetMensuel.setActif(budgetActif);
@@ -420,8 +414,10 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                         budgetMensuel.getListeOperations()
                                 .stream()
                                 .filter(op -> OperationEtatEnum.PREVUE.equals(op.getEtat()))
-                                .peek(op -> LOGGER.info("[idOperation:{}] {} -> REPORTEE", op.getId(), op.getLibelle()))
-                                .forEach(op -> op.setEtat(OperationEtatEnum.REPORTEE));
+                                .forEach(op -> {
+                                    LOGGER.info("[idOperation:{}] {} -> REPORTEE", op.getId(), op.getLibelle());
+                                    op.setEtat(OperationEtatEnum.REPORTEE);
+                                });
                     }
                     return budgetMensuel;
                 })
@@ -479,11 +475,12 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                         BudgetDataUtils.isSsCategorieRemboursable(ligneOperation.getSsCategorie()) ? this.parametragesService.getSsCategorieParId(IdsCategoriesEnum.SS_CAT_REMBOURSEMENT.getId()) : Uni.createFrom().item((SsCategorieOperations) null))
                 .asTuple()
                 // Ajout des opérations standard et remboursement (si non nulle)
-                .invoke(tuple -> {
+                .onItem().transformToUni(tuple -> {
                     try {
                         this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), tuple.getItem2(), auteur, tuple.getItem3());
-                    } catch (DataNotFoundException dne) {
-                        tuple.mapItem1(u -> Uni.createFrom().failure(dne));
+                        return Uni.createFrom().item(tuple);
+                    } catch (DataNotFoundException e) {
+                        return Uni.createFrom().failure(e);
                     }
                 })
                 .onItem().transform(Tuple2::getItem1)

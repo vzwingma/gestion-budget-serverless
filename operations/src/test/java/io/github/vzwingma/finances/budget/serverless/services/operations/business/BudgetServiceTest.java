@@ -30,6 +30,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -355,6 +356,37 @@ class BudgetServiceTest {
         verify(budgetAppProvider, times(1)).recalculSoldes(any(BudgetMensuel.class));
         verify(mockOperationDataProvider, times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
 
+    }
+
+    /**
+     * T E.2 - Vérifie que DataNotFoundException levée par operationsAppProvider.addOrReplaceOperation
+     * (ex: catégorie inconnue) est bien propagée comme échec dans la chaîne réactive
+     * (et non silencieusement avalée), sans recalcul ni sauvegarde du budget.
+     */
+    @Test
+    void testUpdateBudgetOperationAddOrReplaceDataNotFound() {
+        // When
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
+
+        when(mockCompteServiceProvider.getCompteById(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+
+        IOperationsAppProvider mockOperationsAppProvider = mock(IOperationsAppProvider.class);
+        Assertions.assertDoesNotThrow(() ->
+            doThrow(new DataNotFoundException("Catégorie introuvable"))
+                    .when(mockOperationsAppProvider)
+                    .addOrReplaceOperation(anyList(), any(LigneOperation.class), anyString(), isNull()));
+        budgetAppProvider.setOperationsAppProvider(mockOperationsAppProvider);
+
+        // Test
+        LigneOperation ligneOperation = MockDataOperations.getOperationPrelevement();
+        CompletionException exception = Assertions.assertThrows(CompletionException.class,
+                () -> budgetAppProvider.addOrUpdateOperationInBudget("C1_2022_01", ligneOperation, "userTest").await().indefinitely());
+        assertEquals(DataNotFoundException.class, exception.getCause().getClass());
+
+        verify(budgetAppProvider, never()).recalculSoldes(any(BudgetMensuel.class));
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
     @Test
