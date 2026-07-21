@@ -7,15 +7,15 @@ import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.busin
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.model.UtilisateurPrefsEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import jakarta.enterprise.context.ApplicationScoped;
-
-import java.sql.Date;
-
 import org.bson.*;
 import org.bson.codecs.Codec;
 import org.bson.codecs.CollectibleCodec;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.EncoderContext;
 import org.bson.types.ObjectId;
+
+import java.time.Instant;
+import java.util.Date;
 
 /**
  * Panache Codec pour la classe Utilisateur
@@ -77,7 +77,7 @@ public class UtilisateurPanacheCodec implements CollectibleCodec<Utilisateur> {
         Document docUtilisateur = new Document();
         docUtilisateur.put("_id", utilisateur.getId());
         docUtilisateur.put("login", utilisateur.getLogin());
-        docUtilisateur.put("dernierAcces", new Date(BudgetDateTimeUtils.getMillisecondsFromLocalDateTime(utilisateur.getDernierAcces())));
+        docUtilisateur.put("dernierAcces", Date.from(Instant.ofEpochMilli(BudgetDateTimeUtils.getMillisecondsFromLocalDateTime(utilisateur.getDernierAcces()))));
 
         Document docPrefs = new Document();
         utilisateur.getPrefsUtilisateur().forEach((k, v) -> docPrefs.put(k.toString(), v));
