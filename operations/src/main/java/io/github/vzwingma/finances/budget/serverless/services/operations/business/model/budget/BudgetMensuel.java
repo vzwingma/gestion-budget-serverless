@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Budget du mois
@@ -114,7 +115,8 @@ public class BudgetMensuel extends AbstractAPIObjectModel {
      * @return id de budget
      */
     public static String getBudgetId(String idCompte, Month mois, int annee) {
-        return String.format("%s_%s_%s", idCompte, annee, String.format("%02d", mois != null ? mois.getValue() : 0));
+        Objects.requireNonNull(mois, "Le mois ne peut pas être null pour construire l'id du budget");
+        return String.format("%s_%s_%s", idCompte, annee, String.format("%02d", mois.getValue()));
     }
 
 
