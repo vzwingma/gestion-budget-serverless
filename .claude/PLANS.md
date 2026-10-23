@@ -22,7 +22,7 @@ Obligatoire pour toute initiative menant à une modification de code (règle MAI
 ## 📂 Structure
 
 ```
-docs/plans/
+.claude/plans/
 ├── README.md                    # Index : plans + statut global uniquement
 ├── <NO>_<slug>.plan.md          # Plan d'Action
 ├── <NO>_reports/
@@ -80,16 +80,16 @@ Phase(s) 🟣 DOCly                        → 👤 Gate #4 — validation doc +
 ### Lancer une phase (prompt type)
 
 ```
-Exécute la Phase N du plan : docs/plans/<NO>_<slug>.plan.md
+Exécute la Phase N du plan : .claude/plans/<NO>_<slug>.plan.md
 Tâches assignées : T<N>.1 à T<N>.M
-Rapport à remplir : docs/plans/<NO>_reports/PHASE_N_COMPLETION_REPORT.md
+Rapport à remplir : .claude/plans/<NO>_reports/PHASE_N_COMPLETION_REPORT.md
 Critères de réussite : [...]
 Questions ou blocages : section « ❓ Questions pour 👤 ».
 ```
 
 ### Index des plans
 
-`docs/plans/README.md` liste **uniquement** les plans et leur statut global. Toute création de plan ou
+`.claude/plans/README.md` liste **uniquement** les plans et leur statut global. Toute création de plan ou
 changement de statut global le met à jour **dans le même changement**.
 
 ---
@@ -101,7 +101,7 @@ changement de statut global le met à jour **dans le même changement**.
 - [ ] Chaque tâche : numéro, agent, fichiers, scope, critère d'acceptation
 - [ ] Critères de succès globaux (5-7)
 - [ ] Journal des gates initialisé
-- [ ] Index `docs/plans/README.md` mis à jour
+- [ ] Index `.claude/plans/README.md` mis à jour
 
 ## ✅ Checklist — bon rapport de phase
 
@@ -114,5 +114,5 @@ changement de statut global le met à jour **dans le même changement**.
 
 ## 📚 Exemples réels
 
-- **AP 004** — Analyse critique & remédiation infra agents : [`docs/plans/004_analyse-critique-infra-agents.plan.md`](../docs/plans/004_analyse-critique-infra-agents.plan.md) (✅ Complété)
-- **AP 005** — Refonte « Claude-first » : [`docs/plans/005_claude-first.plan.md`](../docs/plans/005_claude-first.plan.md) + [`docs/plans/005_reports/`](../docs/plans/005_reports/) (journal des gates, rapports avec preuves)
+- **AP 004** — Analyse critique & remédiation infra agents : [`.claude/plans/004_analyse-critique-infra-agents.plan.md`](../.claude/plans/004_analyse-critique-infra-agents.plan.md) (✅ Complété)
+- **AP 005** — Refonte « Claude-first » : [`.claude/plans/005_claude-first.plan.md`](../.claude/plans/005_claude-first.plan.md) + [`.claude/plans/005_reports/`](../.claude/plans/005_reports/) (journal des gates, rapports avec preuves)

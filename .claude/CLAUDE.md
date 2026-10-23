@@ -24,8 +24,8 @@ Toute initiative architecturale ou infrastructure (nouvelle fonctionnalité, mig
 Ces livrables sont créés dans le même lot que l'implémentation, pas après coup.
 
 > ⚠️ **Emplacement plans projet = `.claude/plans/`** (plans 001→003 existants). Prioritaire sur le défaut
-> `docs/plans/` des skills génériques (`plan-creation`, `gate-protocol`, `.claude/PLANS.md`) : partout où ils
-> citent `docs/plans/`, lire `.claude/plans/`.
+> `.claude/plans/` des skills génériques (`plan-creation`, `gate-protocol`, `.claude/PLANS.md`) : partout où ils
+> citent `.claude/plans/`, lire `.claude/plans/`.
 
 ---
 

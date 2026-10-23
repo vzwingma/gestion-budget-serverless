@@ -1,6 +1,6 @@
 # Plan d'Action <NO> — <Titre explicite>
 
-**Document :** `docs/plans/<NO>_<slug>.plan.md`
+**Document :** `.claude/plans/<NO>_<slug>.plan.md`
 **Date de création :** AAAA-MM-JJ
 **Statut :** ⏳ Planifié | 🔄 En cours | ✅ Complété | ❌ Bloqué
 **Objectif Prioritaire :** HIGH | MEDIUM | LOW

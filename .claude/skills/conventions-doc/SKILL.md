@@ -32,7 +32,7 @@ Mettre à jour si les procédures changent (cohérence avec `.claude/PLANS.md`) 
 - **Langue** : [LANGUE_DOC, ex. français] pour le texte, anglais pour les blocs de code.
 - **`docs/ARCHITECTURE.md` obligatoire** dans tout projet.
 - **ADR** : un fichier `docs/adr/NNN-titre.md` par décision majeure.
-- **Index des plans** `docs/plans/README.md` : plans + statut global uniquement.
+- **Index des plans** `.claude/plans/README.md` : plans + statut global uniquement.
 - [CONVENTION_PROJET_SUPPLÉMENTAIRE, ex. terminologie imposée]
 
 ## Ce que DOCly ne fait PAS

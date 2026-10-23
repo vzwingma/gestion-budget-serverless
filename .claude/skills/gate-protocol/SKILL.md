@@ -31,7 +31,7 @@ user-invocable: false
 6. **Agir** :
    - `GO` → phase suivante (relais prévu dans le handoff) ;
    - `AJUSTER` → relancer le **même** agent avec les retours<!-- claude-only --> (`SendMessage` si l'agent est encore joignable, sinon nouvel appel `Agent` avec résumé)<!-- /claude-only -->, puis refaire le gate ;
-   - `STOP` → statut du plan `❌ Bloqué` (raison en notes), index `docs/plans/README.md` mis à jour, ADR en `Rejetée`.
+   - `STOP` → statut du plan `❌ Bloqué` (raison en notes), index `.claude/plans/README.md` mis à jour, ADR en `Rejetée`.
 
 ---
 

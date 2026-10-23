@@ -15,9 +15,9 @@ Mode caveman **full** actif par défaut pour toute session. Règles :
 ## Règle obligatoire MAINa — Plan + ADR
 
 Toute initiative architecturale ou infrastructure (nouvelle fonctionnalité, migration, changement de composant) doit produire **avant** de marquer la tâche terminée :
-1. Un fichier `Plan d'Action` dans `docs/plans/NNN_nom.plan.md` (incrémenter le numéro)
+1. Un fichier `Plan d'Action` dans `.claude/plans/NNN_nom.plan.md` (incrémenter le numéro)
 2. Un ADR dans `docs/adr/NNN-titre-court.md` si décision architecturale majeure (`Proposée` avant Gate #1, `Acceptée` au `GO`)
-3. Une mise à jour de l'index `docs/plans/README.md`
+3. Une mise à jour de l'index `.claude/plans/README.md`
 
 Ces livrables sont créés dans le même lot que l'implémentation, pas après coup.
 
@@ -70,8 +70,8 @@ de chargement.
 
 ## 📋 Plans d'Action
 
-- **Plan** : `docs/plans/<NO>_<slug>.plan.md` · **Rapports** : `docs/plans/<NO>_reports/PHASE_N_*.md`
-- **Index** (plans + statut global uniquement) : `docs/plans/README.md` · **Guide** : `.claude/PLANS.md`
+- **Plan** : `.claude/plans/<NO>_<slug>.plan.md` · **Rapports** : `.claude/plans/<NO>_reports/PHASE_N_*.md`
+- **Index** (plans + statut global uniquement) : `.claude/plans/README.md` · **Guide** : `.claude/PLANS.md`
 
 ---
 

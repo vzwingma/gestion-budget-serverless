@@ -92,7 +92,7 @@ Nous avons décidé de [DÉCISION RETENUE, en une phrase directe].
 - Date d'effet : [ex: à partir de la Phase N du plan]
 
 ### Références
-- Plan d'Action associé : `docs/plans/NNN_nom.plan.md` (si applicable)
+- Plan d'Action associé : `.claude/plans/NNN_nom.plan.md` (si applicable)
 ```
 
 ---

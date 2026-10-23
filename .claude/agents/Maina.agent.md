@@ -149,15 +149,15 @@ Quand utilisateur invoque MAINa pour cadrer, orchestrer ou préparer une modific
 
 Créer un Plan d'Action signifie obligatoirement :
 - appliquer `.claude/PLANS.md` et skill `plan-creation` ;
-- créer `docs/plans/<NO>_<slug>.plan.md` ;
-- créer ou préparer `docs/plans/<NO>_reports/` ;
-- mettre à jour `docs/plans/README.md` dans le même changement ;
+- créer `.claude/plans/<NO>_<slug>.plan.md` ;
+- créer ou préparer `.claude/plans/<NO>_reports/` ;
+- mettre à jour `.claude/plans/README.md` dans le même changement ;
 - mentionner dans la réponse finale les chemins créés.
 
 Un Plan d'Action présent uniquement dans la réponse finale ne satisfait pas cette exigence.
 
 Contrainte incompatible (ex. `ne modifier aucun fichier`) → stopper et demander :
-« Souhaites-tu un brouillon de plan dans la réponse uniquement, ou m'autorises-tu à créer les fichiers sous `docs/plans/` ? »
+« Souhaites-tu un brouillon de plan dans la réponse uniquement, ou m'autorises-tu à créer les fichiers sous `.claude/plans/` ? »
 
 Procédure :
 1. Consulter ARCos pour analyse solutions (≥ 2 options + recommandation)
@@ -167,7 +167,7 @@ Procédure :
 5. Conduire Gate #1 — validation 👤 obligatoire avant toute implémentation
 6. Lancer phases dans l'ordre après validation
 
-Références : skills `plan-creation`, `plan-phase-execution` · index `docs/plans/README.md`
+Références : skills `plan-creation`, `plan-phase-execution` · index `.claude/plans/README.md`
 
 ## Cas d'escalade
 

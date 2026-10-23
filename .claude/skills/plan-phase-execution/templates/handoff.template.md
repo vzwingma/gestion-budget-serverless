@@ -5,12 +5,12 @@ Chaque agent (🟠 ARCos, 🔵 DEVon, 🟢 QALvin, 🟣 DOCly) termine sa répon
 
 ```yaml
 handoff:
-  plan: docs/plans/<NO>_<slug>.plan.md
+  plan: .claude/plans/<NO>_<slug>.plan.md
   phase: <N>
   agent: <ARCos | DEVon | QALvin | DOCly>
   tasks: [T<N>.1, T<N>.2]
   status: done            # done | partial | blocked
-  report: docs/plans/<NO>_reports/PHASE_<N>_COMPLETION_REPORT.md
+  report: .claude/plans/<NO>_reports/PHASE_<N>_COMPLETION_REPORT.md
   files:                  # créés / modifiés
     - path: src/feature/service.ts
       change: "ajout méthode fetchItems + gestion 404"

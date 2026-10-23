@@ -1,6 +1,6 @@
 # 📚 Claude Code Agents & Templates — Dépôt Transverse
 
-Ce sous-arbre `.claude/` contient les **artefacts Claude réutilisables** du dépôt : agents, skills (procédures, conventions projet, commandes), hooks et settings. Les Plans d'Action vivent dans `docs/plans/` (hors du chemin protégé `.claude/`, ADR 004).
+Ce sous-arbre `.claude/` contient les **artefacts Claude réutilisables** du dépôt : agents, skills (procédures, conventions projet, commandes), hooks et settings. Les Plans d'Action vivent dans `.claude/plans/` (hors du chemin protégé `.claude/`, ADR 004).
 
 Il sert de point d'entree pour comprendre **qui fait quoi**, **comment les agents se coordonnent** et **quels fichiers copier ou maintenir** sans surcharger chaque `*.agent.md`.
 
@@ -129,7 +129,7 @@ Un fichier par rôle (`orchestrator`, `architect`, `dev`, `qa`, `doc`) : `<rôle
 | Fichier | Role |
 |---|---|
 | `PLANS.md` | Guide complet de creation / execution des Plans d'Action |
-| `docs/plans/README.md` | Index des plans et statut global |
+| `.claude/plans/README.md` | Index des plans et statut global |
 | `CHANGELOG.md` | Historique de version des 5 agents |
 
 ---
@@ -198,7 +198,7 @@ Pour les details de phases, de rapports et de dependances, voir `PLANS.md`.
 
 - Modifier un agent → incrémenter sa ligne `> **Version**` (corps de l'agent) + entrée `CHANGELOG.md`
 - Version reportée uniquement dans `docs/ARCHITECTURE.md` (table des agents) — vérifiée par `scripts/check-harness.ps1`
-- Mettre à jour `docs/plans/README.md` à chaque nouveau Plan d'Action
+- Mettre à jour `.claude/plans/README.md` à chaque nouveau Plan d'Action
 <!-- claude-only -->
 - Régénérer Copilot : `scripts/sync-claude-to-github.ps1`, puis `scripts/check-harness.ps1` (doit sortir en 0)
 <!-- /claude-only -->

@@ -13,11 +13,11 @@ user-invocable: false
 
 ## Avant de démarrer
 
-1. **Lire le plan complet** : `docs/plans/<NO>_<slug>.plan.md`
+1. **Lire le plan complet** : `.claude/plans/<NO>_<slug>.plan.md`
 2. **Identifier tes tâches** : ton identifiant agent dans la phase (`🔵 DEVon`, `🟢 QALvin`…)
 3. **Lister tes tâches** (T<N>.X, T<N>.Y…) et leur séquence
 4. **Vérifier les dépendances** : phases précédentes ✅ et gate précédent `GO` dans le journal des gates
-5. **Rapport** : `docs/plans/<NO>_reports/PHASE_N_COMPLETION_REPORT.md` (créer depuis le modèle si absent)
+5. **Rapport** : `.claude/plans/<NO>_reports/PHASE_N_COMPLETION_REPORT.md` (créer depuis le modèle si absent)
 
 Agent en lecture seule (🟠 ARCos) : ne pas écrire le rapport — rendre son contenu dans la réponse,
 ⚫ MAINa l'écrit.
@@ -58,7 +58,7 @@ Chaque résultat cite sa **preuve** : commande lancée et résultat obtenu (test
 
 ## Règle obligatoire — Synchronisation de l'index des plans
 
-- `docs/plans/README.md` = index **plans + statut global uniquement** (jamais de détail de phase).
+- `.claude/plans/README.md` = index **plans + statut global uniquement** (jamais de détail de phase).
 - Mise à jour entraînant un changement de **statut global** → mettre à jour l'index dans le **même changement**.
 
 ---
@@ -66,5 +66,5 @@ Chaque résultat cite sa **preuve** : commande lancée et résultat obtenu (test
 ## Références
 
 - 📋 Guide complet : `.claude/PLANS.md`
-- 📊 Rapports : `docs/plans/<NO>_reports/`
-- 📌 Index : `docs/plans/README.md`
+- 📊 Rapports : `.claude/plans/<NO>_reports/`
+- 📌 Index : `.claude/plans/README.md`

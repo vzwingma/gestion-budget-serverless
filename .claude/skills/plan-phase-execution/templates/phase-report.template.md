@@ -1,6 +1,6 @@
 # Phase <N> : <Titre de la phase>
 
-**Plan :** `docs/plans/<NO>_<slug>.plan.md`
+**Plan :** `.claude/plans/<NO>_<slug>.plan.md`
 **Responsable Agent :** 🔵 DEVon | 🟢 QALvin | 🟣 DOCly | 🟠 ARCos
 **Date Début :** AAAA-MM-JJ
 **Date Fin :** AAAA-MM-JJ (ou TBD)

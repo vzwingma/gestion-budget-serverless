@@ -109,7 +109,7 @@ succès inconnus · priorité incertaine (vite vs parfait) · contexte métier n
 MAINa crée et orchestre les Plans d'Action ; ARCos exécute les tâches `T*.*` assignées.
 
 - **Procédure exécution phase :** skill `plan-phase-execution` (préchargé) — lecture seule : rendre le
-  contenu du rapport de phase dans ta réponse, MAINa l'écrit dans `docs/plans/<NO>_reports/`
+  contenu du rapport de phase dans ta réponse, MAINa l'écrit dans `.claude/plans/<NO>_reports/`
 - **Contenu ADR :** skill `adr-writing` (préchargé) après chaque décision validée
 - **Ton identifiant dans les plans :** `🟠 ARCos` ou `Agent: ARCos`
 

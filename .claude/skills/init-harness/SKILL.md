@@ -22,7 +22,7 @@ Consignes de l'utilisateur (optionnel) : $ARGUMENTS
 - **Ancien format** : fichiers `.claude/instructions/*.instructions.md` présents → reprendre leurs valeurs
   dans les conventions par rôle (étape 4), puis signaler à 👤 que ces fichiers peuvent être retirés.
 - **Plans dans `.claude/plans/`** (ancien emplacement, chemin protégé : chaque écriture demande confirmation) →
-  proposer `git mv .claude/plans docs/plans` et mettre à jour les liens (ADR 004 du dépôt transverse).
+  proposer `git mv .claude/plans .claude/plans` et mettre à jour les liens (ADR 004 du dépôt transverse).
 
 ## 2. Analyser le projet
 
@@ -91,7 +91,7 @@ Prérequis : `.claude/hooks/` (`guard.sh`, `role-boundaries.conf`) et `.claude/s
 
 - `docs/ARCHITECTURE.md` absent → le créer depuis `docs/ARCHITECTURE.template.md` et le remplir.
 - `docs/adr/` absent → le créer avec `ADR-TEMPLATE.md`.
-- `docs/plans/README.md` absent → créer l'index des plans (vide).
+- `.claude/plans/README.md` absent → créer l'index des plans (vide).
 
 ## 7. Livrer
 
