@@ -1,18 +1,18 @@
 ---
-name: "arcos"
-description: "Skill — Active agent ARCos (architecte) sur prompt utilisateur. Déclenché par `/arcos`, `/ARCos`, `/ARCos : [prompt]`."
-applyTo: "**"
+name: arcos
+description: "Lance 🟠 ARCos (architecte, lecture seule) en sous-agent sur la demande passée en argument. Usage : /arcos <problème ou décision architecturale>."
+argument-hint: "<problème ou décision architecturale>"
+disable-model-invocation: true
+context: fork
+agent: ARCos
+background: false
 ---
 
-# Skill : Activation ARCos
+Demande transmise par 👤 via `/arcos` :
 
-Déclenché par `/arcos`, `/ARCos` ou `/ARCos : [prompt]`.
+$ARGUMENTS
 
-## Action
-
-1. Extraire `[prompt]` : texte après `:` (ou après nom skill si pas de `:`). Vide → demander quel problème/décision architecturale traiter.
-2. Invoquer agent **ARCos** (Agent tool, `subagent_type: "ARCos"`) avec ce prompt tel quel.
-3. Pas d'analyse perso — ARCos fournit ≥2 options comparées + recommandation motivée.
-4. Relayer analyse à utilisateur pour décision (Gate #0 si dans workflow MAINa).
-
-Référence rôle complet : [`.claude/agents/Arcos.agent.md`](../../agents/Arcos.agent.md)
+- Ignorer un éventuel `:` initial dans la demande.
+- Demande vide → répondre uniquement : « Quel problème ou quelle décision architecturale traiter ? »
+- Attendu : ≥ 2 options comparées + recommandation motivée, terminer par le point de décision 👤.
+- Questions ou blocages → section finale `❓ Questions pour 👤`.

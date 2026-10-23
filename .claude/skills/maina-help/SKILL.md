@@ -1,82 +1,77 @@
 ---
-name: "maina-help"
-description: "Skill — Aide MAINa orchestration multi-agents. Explique workflow strict + gates humains. Déclenché par `/maina-help` ou `@MAINa /maina-help`."
-applyTo: "**"
+name: maina-help
+description: "Aide du système multi-agents : rôle de MAINa, 5 agents, workflow strict avec gates humains #0→#4, commandes et format d'entrée attendu. Usage : /maina-help."
+disable-model-invocation: true
 ---
 
 # Skill : Aide Orchestration MAINa
 
-> Déclenché par `/maina-help` ou `@MAINa /maina-help` — explique rôle MAINa, workflow strict, transition entre phases.
+Répondre à `/maina-help` avec les sections ci-dessous, sans lancer de travail.
 
----
+## 1. Rôle de MAINa
 
-## Réponse à `/maina-help`
+- Point d'entrée principal du système multi-agents
+- Orchestre le workflow strict de bout en bout et crée le Plan d'Action
+- Impose une validation humaine 👤 entre chaque phase (gates #0 → #4)
+- Ne code, ne teste et ne documente pas lui-même : il délègue
 
-Utilisateur demande `/maina-help`, `@MAINa /maina-help`, ou `@maina /maina-help`:
+<!-- claude-only -->
+**Lancer MAINa** (gates interactifs) :
+- `claude --agent MAINa` — MAINa devient l'agent principal de la session ;
+- ou `/maina <besoin>` — la session courante adopte le protocole MAINa.
 
-1. **Rôle MAINa**
-   - Point d'entrée principal système multi-agents
-   - Orchestre workflow strict bout en bout
-   - Impose validations humaines entre phases
-   - Ne code pas (délègue expertise)
+En sous-agent, MAINa ne peut pas interroger 👤 : ne pas le déléguer via l'outil `Agent`.
+<!-- /claude-only -->
+<!-- copilot-only
+**Lancer MAINa** : sélectionner l'agent MAINa dans le chat, ou `/maina <besoin>`.
+-->
 
-2. **5 agents**
-   ```
-   🟠 ARCos — Architecte (consulté par MAINa)
-   Analyse les options, compare les solutions, fournit une recommandation
-   
-   🔵 DEVon — Développeur
-   Implémente code selon architecture
-   
-   🟢 QALvin — QA & Tests
-   Écrit tests unitaires, valide fonctionnalité
-   
-   🟣 DOCly — Documentation
-   Garde docs, README et ADRs en sync avec code
-   
-   ⚫ MAINa — Maître Orchestrateur
-   Cadre demande, crée le Plan d'Action, orchestre workflow, impose gates humains
-   ```
+## 2. Les 5 agents
 
-3. **Expliquer workflow strict**
-   ```
-   1. Intake MAINa — clarifier besoin + critères acceptation
-   2. Analyse solutions (ARCos) — ≥2 options + recommandation → 👤 choisit (Gate #0)
-   3. Plan d'Action (MAINa) — créer le plan complet → 👤 validation (Gate #1)
-   4. Implémentation (DEVon) — 👤 validation (Gate #2)
-   5. QA (QALvin) — 👤 validation (Gate #3)
-   6. Documentation (DOCly) — 👤 validation (Gate #4)
-   7. Initiative close
-   ```
+```
+⚫ MAINa  — Maître orchestrateur : cadre, crée le Plan d'Action, délègue, tient les gates
+🟠 ARCos  — Architecte (lecture seule) : ≥ 2 options comparées + recommandation
+🔵 DEVon  — Développeur : implémente selon le plan validé
+🟢 QALvin — QA & tests : nominal + erreurs + limites, couverture
+🟣 DOCly  — Documentation : README, docs/, ADR en sync avec le code
+```
 
-4. **Exemples commandes**
-   - "Conçois architecture pour..." → lance ARCos
-   - "Implémente cette fonctionnalité" → après plan approuvé
-   - "Écris tests unitaires pour..." → après implémentation approuvée
-   - "Mets à jour documentation" → après tests approuvés
-   - "Organise ce workflow" → MAINa cadre + orchestre
+Les sous-agents n'échangent pas directement avec 👤 : leurs questions arrivent dans une section
+`❓ Questions pour 👤`, que MAINa pose au gate suivant.
 
-5. **Format minimal input attendu**
-   - Besoin fonctionnel clair
-   - Critères d'acceptation explicites
-   - Périmètre défini (fichiers, modules, scope)
-   - Contraintes non-fonctionnelles si pertinentes
+## 3. Workflow strict
 
----
+```
+1. Intake MAINa      — besoin + critères d'acceptation
+2. ARCos             — ≥ 2 options + recommandation     → 👤 Gate #0 (choix solution)
+3. MAINa             — Plan d'Action persisté           → 👤 Gate #1 (validation plan)
+4. DEVon             — implémentation + preuves         → 👤 Gate #2 (validation code)
+5. QALvin            — tests + couverture               → 👤 Gate #3 (validation tests)
+6. DOCly             — documentation                    → 👤 Gate #4 (clôture)
+```
 
-## Règles Obligatoires
+Chaque gate est consigné dans le « Journal des gates » du plan. Pas de parallélisation entre phases
+séparées par un gate.
 
-- ✅ Pas saut d'étape
-- ✅ Pas délégation hors ordre sans accord explicite 👤
-- ✅ Validation humaine requise avant transition
-- ✅ Blocage/ambiguïté : MAINa revient vers 👤, question précise
+## 4. Commandes
 
----
+| Commande | Effet |
+|---|---|
+| `/maina <besoin>` | Orchestration complète |
+| `/arcos <problème>` | Analyse d'options (lecture seule) |
+| `/devon <tâche>` | Implémentation |
+| `/qalvin <cible>` | Tests |
+| `/docly <changements>` | Documentation |
+| `/maina-help` | Cette aide |
+
+## 5. Format minimal d'entrée
+
+- Besoin fonctionnel clair
+- Critères d'acceptation explicites
+- Périmètre (fichiers, modules)
+- Contraintes non-fonctionnelles si pertinentes
 
 ## Cas d'escalade
 
-Stop + demande clarification si:
-- Objectifs contradictoires
-- Périmètre flou
-- Demande contourne gate humain
-- Dépendance externe bloque exécution
+MAINa s'arrête et demande clarification si : objectifs contradictoires · périmètre flou · demande qui
+contourne un gate humain · dépendance externe bloquante.

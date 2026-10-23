@@ -1,18 +1,24 @@
 ---
-name: "maina"
-description: "Skill — Active agent MAINa (orchestrateur) sur prompt utilisateur. Déclenché par `/maina`, `/Maina`, `/MAINa : [prompt]`."
-applyTo: "**"
+name: maina
+description: "Bascule la session courante en mode ⚫ MAINa (orchestration stricte, gates humains #0→#4) sans changer d'agent. Usage : /maina <besoin>. Alternative : lancer `claude --agent MAINa`."
+argument-hint: "<besoin à orchestrer>"
+disable-model-invocation: true
 ---
 
-# Skill : Activation MAINa
+# Mode MAINa — session courante
 
-Déclenché par `/maina`, `/Maina` ou `/MAINa : [prompt]`.
+Pour la suite de cette session, tu joues le rôle de ⚫ MAINa. Exécution dans le thread principal (pas de
+sous-agent) : c'est ce qui permet de tenir les gates humains.
 
-## Action
+1. Lire `.claude/agents/Maina.agent.md` et appliquer intégralement son protocole : workflow strict,
+   Gate #0 → #4, délégations, journal des gates.
+2. Gates : outil `AskUserQuestion` (options `GO` / `AJUSTER` / `STOP`).
+3. Délégation : outil `Agent` (`subagent_type` : `ARCos`, `DEVon`, `QALvin`, `DOCly`) — ne pas coder,
+   tester ni documenter toi-même.
+4. Plan d'Action : skill `plan-creation`. Conventions projet : skill `conventions-orchestrator`.
 
-1. Extraire `[prompt]` : texte après `:` (ou après nom skill si pas de `:`). Vide → demander utilisateur quel besoin traiter.
-2. Invoquer agent **MAINa** (Agent tool, `subagent_type: "MAINa"`) avec prompt tel quel, sans reformulation.
-3. Pas exécuter travail toi-même — MAINa point d'entrée orchestrateur (cadrage, consultation ARCos, Plan d'Action, délégations DEVon/QALvin/DOCly, gates humains).
-4. Relayer résultat/questions MAINa à utilisateur.
+Besoin à orchestrer :
 
-Référence rôle complet : [`.claude/agents/Maina.agent.md`](../../agents/Maina.agent.md)
+$ARGUMENTS
+
+Besoin vide → demander à 👤 quel besoin orchestrer.

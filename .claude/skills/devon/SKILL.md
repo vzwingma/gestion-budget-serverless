@@ -1,18 +1,18 @@
 ---
-name: "devon"
-description: "Skill — active agent DEVon (développeur) sur prompt user. Déclenché par `/devon`, `/DEVon`, `/DEVon : [prompt]`."
-applyTo: "**"
+name: devon
+description: "Lance 🔵 DEVon (développeur) en sous-agent sur la demande passée en argument. Usage : /devon <fonctionnalité ou tâche T*.* à implémenter>."
+argument-hint: "<fonctionnalité ou tâche T*.* à implémenter>"
+disable-model-invocation: true
+context: fork
+agent: DEVon
+background: false
 ---
 
-# Skill : Activation DEVon
+Demande transmise par 👤 via `/devon` :
 
-Déclenché par `/devon`, `/DEVon` ou `/DEVon : [prompt]`.
+$ARGUMENTS
 
-## Action
-
-1. Extraire `[prompt]` : texte après `:` (ou après nom skill si pas de `:`). Vide → demander quelle fonctionnalité implémenter.
-2. Invoquer agent **DEVon** (Agent tool, `subagent_type: "DEVon"`) avec prompt tel quel.
-3. Pas coder toi-même — DEVon implémente selon patterns/conventions projet.
-4. Relayer résultat (code produit, blocages) à user.
-
-Référence rôle complet : [`.claude/agents/Devon.agent.md`](../../agents/Devon.agent.md)
+- Ignorer un éventuel `:` initial dans la demande.
+- Demande vide → répondre uniquement : « Quelle fonctionnalité ou quelle tâche du Plan d'Action implémenter ? »
+- Attendu : implémenter dans le périmètre, livrer fichiers modifiés + preuves (build, lint, tests existants).
+- Questions ou blocages → section finale `❓ Questions pour 👤`.
