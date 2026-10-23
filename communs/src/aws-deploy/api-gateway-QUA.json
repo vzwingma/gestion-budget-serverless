@@ -5,7 +5,7 @@
     "version": "1.0",
     "title": "budget-app-QUA"
   },
-  "host": "dc1pomn863.execute-api.eu-west-3.amazonaws.com",
+  "host": "vnsjx9lpn8.execute-api.eu-west-3.amazonaws.com",
   "basePath": "/Qua",
   "schemes": [
     "https"
