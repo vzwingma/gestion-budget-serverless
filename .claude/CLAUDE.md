@@ -83,13 +83,13 @@ de chargement.
 
 ## 📐 Conventions par rôle
 
-Conventions détaillées projet (stack, commandes, nommage, tests, doc) : **`.claude/instructions/<rôle>.instructions.md`**
-(`orchestrator`, `architect`, `dev`, `qa`, `doc`) — remplis pour `gestion-budget-serverless`, **source de vérité actuelle**.
+Conventions détaillées projet (stack, commandes, nommage, tests, doc) : skills **`conventions-<rôle>`**
+(`.claude/skills/conventions-{orchestrator,architect,dev,qa,doc}/SKILL.md`), préchargés par chaque agent,
+remplis depuis `.claude/instructions/<rôle>.instructions.md` (`/init-harness`) — **source de vérité actuelle**.
 
 <!-- claude-only -->
-Skills `conventions-<rôle>` (`.claude/skills/conventions-{orchestrator,architect,dev,qa,doc}/SKILL.md`), préchargés
-par chaque agent, encore à l'état **template** (placeholders `[...]`) → à remplir via `/init-harness` à partir des
-fichiers `instructions/`. Tant que placeholder subsiste : appliquer `instructions/<rôle>.instructions.md`.
+Anciens fichiers `.claude/instructions/*.instructions.md` (ancien format) : contenu repris dans les skills,
+retrait possible (décision 👤).
 <!-- /claude-only -->
 
 Ce fichier ne garde que le contexte global.
@@ -272,8 +272,8 @@ En cas de doute → demander confirmation au 👤 Développeur humain. Opératio
 - `.claude/settings.json` → `permissions.deny` (commandes destructives Bash/PowerShell, fichiers sensibles, chemins `.copilotignore` en `Read()`/`Edit()`) ; `ask` pour `git rm`.
 - Hook `PreToolUse` `.claude/hooks/guard.sh` → bloque les formes que les règles ne voient pas (`sh -c "rm …"`, `/bin/rm`, `git -C . reset --hard`, SQL), les écritures dans `.copilotignore`, et les **frontières de rôle** (`.claude/hooks/role-boundaries.conf`).
 
-> ⚠️ État actuel : `.claude/hooks/` présent mais **`.claude/settings.json` absent** (seul `settings.local.json`, MCP sonarqube)
-> → deny + hook non câblés tant que `settings.json` non créé (`/init-harness`).
+> État : `.claude/settings.json` câblé (`deny`/`ask` + hook `PreToolUse` → `guard.sh`, Git Bash requis) ;
+> `settings.local.json` conservé (MCP sonarqube). Pas de `.copilotignore` dans ce dépôt. `.gitattributes` force `*.sh` en LF.
 <!-- /claude-only -->
 
 ---
