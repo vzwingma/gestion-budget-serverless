@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -52,11 +53,6 @@ class ComptesResourceTest {
 
     @BeforeEach
     void setupMocks() {
-        // Peupler le repository JWKS avec une clé de test (sans signature RSA réelle),
-        // ce qui déclenche le chargement dans la map jwksAuthKeyList via loadJwksSigningKeys().
-        // Le token de test n'est pas signé (hasSignature=false) → hasValidSignature() retourne true.
-        when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys())
-                .thenReturn(Multi.createFrom().item(getJwksAuthKey()));
     }
 
     @Test
@@ -130,11 +126,11 @@ class ComptesResourceTest {
         p.setEmail("toto.toto@world.com");
         p.setFamily_name("Test");
         p.setGiven_name("Test");
-        p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
-        p.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
+        p.setIat(JwtTestSupport.epochSecondsIn(java.time.Duration.ZERO));
+        p.setExp(JwtTestSupport.epochSecondsIn(java.time.Duration.ofHours(1)));
         p.setIss("https://accounts.google.com");
         p.setAud("test.apps.googleusercontent.com");
-        return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p));
+        return JwtTestSupport.signedBearer(new JWTAuthToken(h, p));
     }
 
     private static JwksAuthKey getJwksAuthKey() {

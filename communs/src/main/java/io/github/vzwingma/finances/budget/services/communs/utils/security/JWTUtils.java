@@ -13,9 +13,10 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Classe utilitaire pour le décodage et l'encodage des tokens JWT ID_TOKEN de Google.
@@ -26,6 +27,9 @@ public class JWTUtils {
     private static final Logger LOG = LoggerFactory.getLogger(JWTUtils.class);
 
     public static final String SHA_256_WITH_RSA = "SHA256withRSA";
+
+    /** Issuers Google acceptés (égalité stricte, cf. https://developers.google.com/identity/openid-connect/openid-connect). */
+    private static final Set<String> GOOGLE_ISSUERS = Set.of("accounts.google.com", "https://accounts.google.com");
 
 
     /**
@@ -41,7 +45,7 @@ public class JWTUtils {
      * @throws DecodeException Si le token n'est pas bien formé ou si une erreur de décodage survient.
      */
     public static JWTAuthToken decodeJWT(String base64JWT) throws DecodeException {
-        LOG.trace("Décodage du Token JWT : {}", base64JWT);
+        LOG.trace("Décodage du Token JWT");
 
         Base64.Decoder decoder = Base64.getUrlDecoder();
         try {
@@ -53,7 +57,7 @@ public class JWTUtils {
                                     chunks.length > 2,
                                     base64JWT);
         } catch (Exception e) {
-            LOG.error("Erreur lors du décodage du token [{}]", base64JWT, e);
+            LOG.error("Erreur lors du décodage du token JWT : {}", e.getClass().getSimpleName());
             throw new DecodeException("Erreur lors du décodage du token");
         }
     }
@@ -66,17 +70,17 @@ public class JWTUtils {
      * @throws EncodeException Si une erreur d'encodage survient.
      */
     public static String encodeJWT(JWTAuthToken jwt) throws DecodeException {
-        LOG.trace("Encodage du Token JWT : {}", jwt);
+        LOG.trace("Encodage du Token JWT");
 
-        Base64.Encoder encoder = Base64.getUrlEncoder();
+        Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
         try {
             String headerJson = Json.encode(jwt.getHeader());
             String payloadJson = Json.encode(jwt.getPayload());
-            String chunks0 = encoder.encodeToString(headerJson.getBytes()).replace("==", "");
-            String chunks1 = encoder.encodeToString(payloadJson.getBytes()).replace("==", "");
+            String chunks0 = encoder.encodeToString(headerJson.getBytes());
+            String chunks1 = encoder.encodeToString(payloadJson.getBytes());
             return chunks0 + "." + chunks1;
         } catch (Exception _) {
-            LOG.error("Erreur lors de l'encodage du token [{}]", jwt);
+            LOG.error("Erreur lors de l'encodage du token JWT");
             throw new EncodeException("Erreur lors de l'encodage du token");
         }
     }
@@ -89,10 +93,14 @@ public class JWTUtils {
      * @return true si la signature est valide, false sinon.
      */
     public static boolean isTokenSignatureValid(String jwtRawContent, Map<String,JwksAuthKey> authKeys){
-        LOG.trace("Vérification de la signature du Token JWT : {}", jwtRawContent);
+        LOG.trace("Vérification de la signature du Token JWT");
         if(authKeys == null || authKeys.isEmpty()){
-            LOG.error("Aucune clé publique n'a été fournie pour vérifier la signature du token JWT");
-            return true;
+            LOG.error("Aucune clé publique n'a été fournie pour vérifier la signature du token JWT : token rejeté");
+            return false;
+        }
+        if(jwtRawContent == null || jwtRawContent.lastIndexOf('.') < 0){
+            LOG.error("Token JWT mal formé : signature absente");
+            return false;
         }
         for(JwksAuthKey key : authKeys.values()){
             try {
@@ -154,8 +162,8 @@ public class JWTUtils {
             return isTokenSignatureValid(token.getRawContent(), jwksAuthKeyList);  // Vérifie la signature du token JWT
         }
         else{
-            LOG.warn("Le token n'est pas signé");
-            return true;
+            LOG.warn("Le token n'est pas signé : token rejeté");
+            return false;
         }
     }
 
@@ -193,9 +201,9 @@ public class JWTUtils {
      */
     public static boolean isNotExpired(JWTAuthToken token, Clock clock) {
         boolean isExpired = true;
-        LocalDateTime expAt = token.expiredAt(clock);
+        Instant expAt = token.expiresAtInstant();
         if (expAt != null) {
-            isExpired = !LocalDateTime.now(clock).isBefore(expAt);
+            isExpired = !clock.instant().isBefore(expAt);
         }
         if(isExpired){
             LOG.warn("Le token est expiré depuis {}", expAt);
@@ -208,7 +216,8 @@ public class JWTUtils {
      * @return Vrai si le token provient de Google, faux sinon.
      */
     private static boolean isFromGoogle(JWTAuthToken token) {
-        boolean isIssGood =  token.getPayload() != null && token.getPayload().getIss() != null && token.getPayload().getIss().contains("accounts.google.com");
+        String iss = token.getPayload() != null ? token.getPayload().getIss() : null;
+        boolean isIssGood = iss != null && GOOGLE_ISSUERS.contains(iss);
         if(!isIssGood){
             LOG.warn("Le token n'est pas émis par le bon issuer (iss) : {}", token.getPayload() != null ? token.getPayload().getIss() : null);
         }

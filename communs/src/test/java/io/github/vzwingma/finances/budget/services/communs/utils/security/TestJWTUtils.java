@@ -61,7 +61,7 @@ class TestJWTUtils {
     @Test
     void testIsNotExpiredAvecTokenNonExpire() {
         JWTAuthPayload payload = new JWTAuthPayload();
-        payload.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now(FIXED_CLOCK).plusHours(1)));
+        payload.setExp(FIXED_CLOCK.instant().plusSeconds(3600).getEpochSecond());
         payload.setIss("https://accounts.google.com");
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
         assertTrue(JWTUtils.isNotExpired(token, FIXED_CLOCK));
@@ -70,7 +70,7 @@ class TestJWTUtils {
     @Test
     void testIsNotExpiredAvecTokenExpire() {
         JWTAuthPayload payload = new JWTAuthPayload();
-        payload.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now(FIXED_CLOCK).minusHours(1)));
+        payload.setExp(FIXED_CLOCK.instant().minusSeconds(3600).getEpochSecond());
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
         assertFalse(JWTUtils.isNotExpired(token, FIXED_CLOCK));
     }
@@ -89,7 +89,7 @@ class TestJWTUtils {
         // exp == now (horloge injectée) exactement => isBefore(expAt) est faux => considéré expiré.
         // Cas limite : démontre le comportement "égalité stricte = expiré" (pas de marge de tolérance).
         JWTAuthPayload payload = new JWTAuthPayload();
-        payload.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now(FIXED_CLOCK)));
+        payload.setExp(FIXED_CLOCK.instant().getEpochSecond());
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
         assertFalse(JWTUtils.isNotExpired(token, FIXED_CLOCK));
     }
@@ -103,7 +103,7 @@ class TestJWTUtils {
         Clock horlogeApresExpiration = Clock.fixed(Instant.parse("2026-07-10T13:00:00Z"), ZoneOffset.UTC);
 
         JWTAuthPayload payload = new JWTAuthPayload();
-        payload.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now(FIXED_CLOCK)));
+        payload.setExp(FIXED_CLOCK.instant().getEpochSecond());
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
 
         assertTrue(JWTUtils.isNotExpired(token, horlogeAvantExpiration),
@@ -116,29 +116,29 @@ class TestJWTUtils {
 
     @Test
     void testHasValidSignatureSansSignature() {
-        // hasSignature = false → retourne true (pas de vérification)
+        // hasSignature = false → rejeté (jeton non signé)
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), new JWTAuthPayload(), false, null);
-        assertTrue(JWTUtils.hasValidSignature(token, getValidSignaturesKeys()));
+        assertFalse(JWTUtils.hasValidSignature(token, getValidSignaturesKeys()));
     }
 
     @Test
     void testHasValidSignatureAvecClesVides() {
-        // authKeys vide → retourne true (aucune clé à vérifier)
+        // authKeys vide → rejeté (fail-closed)
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), new JWTAuthPayload(), true, "content.payload.signature");
-        assertTrue(JWTUtils.hasValidSignature(token, Collections.emptyMap()));
+        assertFalse(JWTUtils.hasValidSignature(token, Collections.emptyMap()));
     }
 
     @Test
     void testHasValidSignatureAvecClesNull() {
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), new JWTAuthPayload(), true, "content.payload.signature");
-        assertTrue(JWTUtils.hasValidSignature(token, null));
+        assertFalse(JWTUtils.hasValidSignature(token, null));
     }
 
     @Test
     void testHasValidSignatureRawContentNull() {
-        // rawContent null → pas de contenu brut → retourne true (non signé)
+        // rawContent null → pas de contenu brut → rejeté (non signé)
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), new JWTAuthPayload(), true, null);
-        assertTrue(JWTUtils.hasValidSignature(token, getValidSignaturesKeys()));
+        assertFalse(JWTUtils.hasValidSignature(token, getValidSignaturesKeys()));
     }
 
     // ====== isValid : branche idAppUserContent null ======
@@ -148,7 +148,7 @@ class TestJWTUtils {
         JWTAuthPayload payload = new JWTAuthPayload();
         payload.setIss("https://accounts.google.com");
         payload.setAud("550431928138-edestj28rk5a0emk546p7ii28dl5boc5.apps.googleusercontent.com");
-        payload.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
+        payload.setExp(FIXED_CLOCK.instant().plusSeconds(3600).getEpochSecond());
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
 
         // idAppUserContent est null → isFromUserAppContent retourne false
@@ -184,7 +184,7 @@ class TestJWTUtils {
         JWTAuthPayload payload = new JWTAuthPayload();
         payload.setIss("https://accounts.google.com");
         payload.setAud("wrong-aud.apps.googleusercontent.com");
-        payload.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
+        payload.setExp(FIXED_CLOCK.instant().plusSeconds(3600).getEpochSecond());
         JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), payload);
 
         assertFalse(JWTUtils.isValid(token, "550431928138-edestj28rk5a0emk546p7ii28dl5boc5", getValidSignaturesKeys()));

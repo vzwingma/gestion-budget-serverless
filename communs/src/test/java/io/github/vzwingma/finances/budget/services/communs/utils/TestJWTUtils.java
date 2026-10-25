@@ -11,7 +11,16 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.Signature;
+import java.security.interfaces.RSAPublicKey;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Base64;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
@@ -26,6 +35,17 @@ import static org.junit.jupiter.api.Assertions.*;
 class TestJWTUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestJWTUtils.class);
+    private static final KeyPair TEST_KEY_PAIR = generateTestKeyPair();
+
+    private static KeyPair generateTestKeyPair() {
+        try {
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+            generator.initialize(2048);
+            return generator.generateKeyPair();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
     private static final String ID_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjhlMGFjZjg5MWUwOTAwOTFlZjFhNWU3ZTY0YmFiMjgwZmQxNDQ3ZmEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDAxMDI1MjcyMjA5NTAwNzY2ODgiLCJlbWFpbCI6InZpbmNlbnQuendpbmdtYW5uQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiSzZBNjRfUlJyMm5KbVk1YWNBanVjdyIsIm5hbWUiOiJWaW5jZW50IFp3aW5nbWFubiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BRWRGVHA0VjVITGx1dktDNWdJYW9GRFU4a1Q0emJmSk94dE5lRmNYTjM4NnA1bz1zOTYtYyIsImdpdmVuX25hbWUiOiJWaW5jZW50IiwiZmFtaWx5X25hbWUiOiJad2luZ21hbm4iLCJsb2NhbGUiOiJmciIsImlhdCI6MTY3MjY2MDAwMiwiZXhwIjoxNjcyNjYzNjAyfQ.afhBX1myxxHsqqhAB8aksbBQo0Si6v141rAIC-RGNE6zjoJXIkJsN9dPpHLjP9VXJzFNIZLa8O01qwLBZj6qF4vFOqHgrVKVIwGL0UNpbvdf8yfHd401EexFpxn1UwUccC2DnDANxA3s4DZXNAVKIraMBPC5AtKDmbguGdh5Gh1s4mQtPNPy_f9hxhAumOiHAwrAzxdFsrsQR003WNbnWNCknvu87vp3ZUWO5yMvPVtAo0_Eyyg4HoZMX6XeRs6vKf6OY4NLAOkH0z8BgCqgQ2yV68RROPQ2Ic3icbAQANa3GxD5cqQ5YTJQ_hcsIt1y2XD9r9rGETBk3nzEH9tnCQ";
 
     private static final String ID_TOKEN_2 = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjhlMGFjZjg5MWUwOTAwOTFlZjFhNWU3ZTY0YmFiMjgwZmQxNDQ3ZmEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI1NTA0MzE5MjgxMzgtZWRlc3RqMjhyazVhMGVtazU0NnA3aWkyOGRsNWJvYzUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDAxMDI1MjcyMjA5NTAwNzY2ODgiLCJlbWFpbCI6InZpbmNlbnQuendpbmdtYW5uQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiZDUtbUJGU1RUaUNEaS1lYlFpZ3pyUSIsIm5hbWUiOiJWaW5jZW50IFp3aW5nbWFubiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BRWRGVHA0VjVITGx1dktDNWdJYW9GRFU4a1Q0emJmSk94dE5lRmNYTjM4NnA1bz1zOTYtYyIsImdpdmVuX25hbWUiOiJWaW5jZW50IiwiZmFtaWx5X25hbWUiOiJad2luZ21hbm4iLCJsb2NhbGUiOiJmciIsImlhdCI6MTY3Mjk1NzE1MSwiZXhwIjoxNjcyOTYwNzUxfQ.qEVb34k3vQsKG0cJ7rYxEC8tlm_T4oOpu3hav4jTNK4R1Sp1yNljlpIgjP34PhaJf2Zzxn9Om1pn2la1gzpTqdEQpT-f9xHKOhEKf2J9GK72LeLYXdAVS-MfyigY1Vq91oUiCVNg58w4oqRC2kiobKaxrYakMhLdgte4iWTo1qP0PnaqiT_x9rh7pPu7qs_gq1ervT-qQpG504mO31CaMV8NxldBWOyRbFIy5_zUiKH0mcZ2GfCPKSeP3UpN_YBxzkBwd9CmhTawg3dBXgMwOpogtfeL7cn9DHevMNEsfX59ZdFN4rGkMcDAYNve7pGjDr3QPa0TobzFKd7HpKql7w";
@@ -67,9 +87,19 @@ class TestJWTUtils {
     static String generateValidToken() {
         JWTAuthToken token = JWTUtils.decodeJWT(ID_TOKEN);
 
-        token.getPayload().setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
-        token.getPayload().setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
-        return JWTUtils.encodeJWT(token);
+        Instant now = Clock.systemUTC().instant();
+        token.getPayload().setIat(now.getEpochSecond());
+        token.getPayload().setExp(now.plusSeconds(3600).getEpochSecond());
+        // Jeton signé par une clé RSA de test (les jetons non signés sont rejetés)
+        String unsigned = JWTUtils.encodeJWT(token);
+        try {
+            Signature signature = Signature.getInstance(JWTUtils.SHA_256_WITH_RSA);
+            signature.initSign(TEST_KEY_PAIR.getPrivate());
+            signature.update(unsigned.getBytes());
+            return unsigned + "." + Base64.getUrlEncoder().withoutPadding().encodeToString(signature.sign());
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
@@ -83,6 +113,12 @@ class TestJWTUtils {
     static Map<String , JwksAuthKey> getValidSignaturesKeys(){
         Map<String , JwksAuthKey>  jwksAuthKeyList = new HashMap<>();
         Arrays.stream(Json.decodeValue(JWKS_GOOGLE_KEYS, JwksAuthKeys.class).getKeys()).forEach(jwksAuthKey -> jwksAuthKeyList.put(jwksAuthKey.getKid(), jwksAuthKey));
+        RSAPublicKey publicKey = (RSAPublicKey) TEST_KEY_PAIR.getPublic();
+        JwksAuthKey testKey = new JwksAuthKey();
+        testKey.setKid("test-key");
+        testKey.setN(Base64.getUrlEncoder().withoutPadding().encodeToString(publicKey.getModulus().toByteArray()));
+        testKey.setE(Base64.getUrlEncoder().withoutPadding().encodeToString(publicKey.getPublicExponent().toByteArray()));
+        jwksAuthKeyList.put(testKey.getKid(), testKey);
         return jwksAuthKeyList;
     }
 

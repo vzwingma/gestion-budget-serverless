@@ -27,6 +27,8 @@ public interface IParametrageAppProvider {
      * Recharge les clés de signature JWT.
      *
      * @return opération asynchrone de rechargement
+     * @deprecated AP004 T0.6 — à supprimer Phase 4 (rotation JWKS gérée par quarkus-oidc)
      */
+    @Deprecated // AP004 T0.6 — à supprimer Phase 4
     Uni<Void> refreshJwksSigningKeys();
 }
