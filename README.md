@@ -8,6 +8,8 @@ forme de fonctions AWS Lambda natives.
 | [IHM](https://github.com/vzwingma/gestion-budget-ihm)             | [![GitHub version](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-ihm.svg)](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-ihm)               |
 | [Services](https://github.com/vzwingma/gestion-budget-serverless) | [![GitHub version](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-serverless.svg)](https://badge.fury.io/gh/vzwingma%2Fgestion-budget-serverless) |
 
+[![Architecture diagram](https://gitdiagram.com/diagram-badge.svg)](https://gitdiagram.com/vzwingma/gestion-budget-serverless?utm_source=readme&utm_medium=badge)
+
 ### Statut
 
 [![Build Status](https://github.com/vzwingma/gestion-budget-serverless/actions/workflows/build-on-master.yml/badge.svg)](https://github.com/vzwingma/gestion-budget-serverless/actions/workflows/build-on-master.yml)
