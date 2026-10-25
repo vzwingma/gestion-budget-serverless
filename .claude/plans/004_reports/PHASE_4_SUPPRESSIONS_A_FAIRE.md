@@ -53,7 +53,9 @@ Ces fichiers restent, mais ils référencent du code à supprimer :
 |---|---|
 | `communs/src/test/java/…/communs/utils/TestJWTUtils.java` | Teste `JWTUtils` |
 | `communs/src/test/java/…/communs/utils/security/TestJWTUtils.java` | Idem |
-| Tests éventuellement marqués `@Disabled("Obsolète AP004 T0.6 — à supprimer Phase 4")` par QALvin en T0.5 | Liste à compléter au Gate #3 |
+| Tests marqués `@Disabled("Obsolète AP004 T0.6 — à supprimer Phase 4")` par QALvin en T0.5 | **Aucun** : les tests des classes maison (`TestJWTUtils` ×2, `TestJwtSecurityContext`, `TestJwtModels`, tests `JwksKeyCache`/`JwtSecurityContext`) restent verts (QALvin T0.5, 2026-10-25). Seuls les 2 `TestJWTUtils` seront à supprimer avec `JWTUtils` (section B). |
+| `*/…/api/JwtTestSupport.java` (×4, tests) | Dépendent encore de `JWTUtils.encodeJWT` / `JWTUtils.SHA_256_WITH_RSA` (section A). Les nouveaux tests T0.5 (`OidcTokenForge` ×2, comptes + parametrages) dépendent de `JwtTestSupport.privateKey()` et `epochSecondsIn` : à reprendre lors de la mutualisation. |
+| Tests T0.5 `@Disabled("BUG AP004 T0.5 …")` (3 dans `TestJwtRolesAugmentorJsonValue`, 1 dans `OidcSecurityTest`) | **Pas des suppressions** : bugs documentés à traiter par DEVon (voir `PHASE_0_TESTS_REPORT.md`), `@Disabled` à retirer une fois corrigés. |
 
 ## D. Configuration et données
 
