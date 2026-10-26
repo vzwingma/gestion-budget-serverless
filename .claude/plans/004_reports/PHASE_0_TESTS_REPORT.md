@@ -56,13 +56,13 @@ Commandes (depuis `gestion-budget-serverless`) :
 
 | Module | Tests | Échecs | Erreurs | Ignorés |
 |---|---|---|---|---|
-| communs | 170 | 0 | 4 (Mongo sans Docker, préexistantes : `TestMigrationRepository` ×1, `TestMigrationRepositoryPersistence` ×3) | 3 (`@Disabled` BUG, bug 3) |
+| communs | 182 | 0 | 4 (Mongo sans Docker, préexistantes : `TestMigrationRepository` ×1, `TestMigrationRepositoryPersistence` ×3) | 0 |
 | parametrages | 35 | 0 | 0 | 0 |
 | utilisateurs | 36 | 0 | 0 | 0 |
-| comptes | 109 | 0 | 0 | 1 (`@Disabled` BUG, bug 1) |
+| comptes | 112 | 0 | 0 | 0 |
 | operations | 97 | 0 | 0 | 0 |
 
-Avant T0.5 : communs 157, parametrages 26, comptes 52, operations 92. Ajoutés : 13 + 9 + 57 + 5 = 84 tests (dont 4 `@Disabled`).
+Résultats finaux après « Ajustement Gate #3 » (0 échec, 0 ignoré ; les 4 `@Disabled` BUG de la 1re passe ont été réactivés). Avant T0.5 : communs 157, parametrages 26, comptes 52, operations 92 ; 1re passe T0.5 : communs 170, comptes 109 (4 `@Disabled`).
 
 ### Couverture (JaCoCo, `target/jacoco-report/jacoco.xml`, seuil 80 %)
 | Classe | Lignes | Branches |

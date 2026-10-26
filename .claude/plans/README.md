@@ -10,7 +10,7 @@ Cet index est **synthétique** : liste des plans + statut global uniquement (pas
 
 ## 📂 Plans Actifs / En Cours
 
-- [`004_revue_architecture_backend.plan.md`](./004_revue_architecture_backend.plan.md) — 🔵 **En cours** (Gate #1 GO 2026-10-25). Revue architecture ARCos (note ≈ 2,5/5) → trajectoire A puis B sans changement de contrat, C exclue. Phase 0 (hotfix sécurité JWT, bascule `quarkus-oidc`, Lot 6 avancé) : code validé (Gate #2 GO), tests T0.5 en cours. ADR-005 `Acceptée` (principe). Prérequis PROD : plan IHM 008 (gestion du 401).
+- [`004_revue_architecture_backend.plan.md`](./004_revue_architecture_backend.plan.md) — 🔵 **En cours** (Gate #1 GO 2026-10-25). Revue architecture ARCos (note ≈ 2,5/5) → trajectoire A puis B sans changement de contrat, C exclue. Phase 0 (hotfix sécurité JWT, bascule `quarkus-oidc`, Lot 6 avancé) : code et tests validés (Gates #2 et #3 GO), documentation en cours, Gate #4 en attente. ADR-005 `Acceptée`. Prérequis PROD : plan IHM 008 (gestion du 401) et validation QUA.
 - [`002_fix_desync_quarkus_renovate.plan.md`](./002_fix_desync_quarkus_renovate.plan.md) — 🔵 **En cours**. Fix désync version Quarkus (`pom.xml` vs README/ARCHITECTURE.md/instructions) sur PR Renovate — check CI "Check Quarkus version sync" cassait car Renovate ne suivait pas les fichiers doc. Phase 1 ✅ (`customManager` Renovate ajouté dans `renovate.json`) ; Phase 2 (vérification + déblocage PR en cours) et Phase 3 (doc) restantes.
 
 ---
@@ -90,5 +90,5 @@ Pour contribuer ou modifier un plan existant :
 
 ---
 
-**Dernière mise à jour :** 2026-10-25 (Plan 004 créé — revue architecture backend, en attente Gate #1)
+**Dernière mise à jour :** 2026-10-26 (Plan 004 — Phase 0 : Gates #2 et #3 GO, documentation en cours)
 **Gestionnaire des Plans :** ⚫ MAINa & 👤 Développeur humain
