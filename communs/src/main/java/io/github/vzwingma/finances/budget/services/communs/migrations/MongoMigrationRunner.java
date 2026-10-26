@@ -76,10 +76,12 @@ public class MongoMigrationRunner {
     }
 
     /**
-     * Enchaîne l'exécution des migrations non encore appliquées, dans l'ordre.
+     * Enchaîne l'exécution des migrations non encore appliquées, dans l'ordre. La chaîne s'arrête pour ce démarrage
+     * dès qu'une version n'a pas pu être réservée (tenue par un autre runner) : les versions suivantes ne sont pas
+     * tentées, pour ne jamais exécuter la version N+1 avant la fin de la version N.
      */
     private Uni<Void> executerSequentiellement(List<IMongoMigration> migrationsTriees, List<String> versionsAppliquees) {
-        Uni<Void> chaine = Uni.createFrom().voidItem();
+        Uni<Boolean> chaine = Uni.createFrom().item(Boolean.TRUE);
         for (IMongoMigration migration : migrationsTriees) {
             if (versionsAppliquees.contains(migration.version())) {
                 if (LOG.isDebugEnabled()) {
@@ -87,34 +89,55 @@ public class MongoMigrationRunner {
                 }
                 continue;
             }
-            chaine = chaine.chain(() -> executerMigration(migration));
+            chaine = chaine.chain(poursuivre -> Boolean.TRUE.equals(poursuivre)
+                    ? executerMigration(migration)
+                    : Uni.createFrom().item(Boolean.FALSE));
         }
-        return chaine;
+        return chaine.replaceWithVoid();
     }
 
     /**
      * Réserve atomiquement la version puis exécute la migration et finalise son statut dans la collection
-     * {@code _migrations}. Si la version est déjà prise (SUCCES, ou EN_COURS non périmé chez un autre runner),
-     * on passe à la version suivante sans l'exécuter. Un échec de migration est tracé en {@code ECHEC}
-     * (rejouable au prochain démarrage, y compris vers {@code SUCCES}).
+     * {@code _migrations}. Si la version est déjà prise (EN_COURS non périmé chez un autre runner), la chaîne est
+     * arrêtée pour ce démarrage. Un échec de migration est tracé en {@code ECHEC} (rejouable au prochain démarrage,
+     * y compris vers {@code SUCCES}). Un échec de la seule finalisation {@code SUCCES} n'est <strong>pas</strong> un
+     * échec de migration : il est loggé en ERROR, la version reste {@code EN_COURS} jusqu'à expiration du bail.
+     *
+     * @return {@code true} si la chaîne peut se poursuivre, {@code false} si la version est tenue par un autre runner
      */
-    private Uni<Void> executerMigration(IMongoMigration migration) {
+    private Uni<Boolean> executerMigration(IMongoMigration migration) {
         return migrationRepository.reserver(migration.version(), migration.description(), owner)
                 .chain(reservee -> {
-                    if (Boolean.FALSE.equals(reservee)) {
-                        LOG.info("[MIGRATIONS] Migration {} déjà prise par un autre runner ou déjà appliquée, ignorée", migration.version());
-                        return Uni.createFrom().voidItem();
+                    if (!Boolean.TRUE.equals(reservee)) {
+                        LOG.info("[MIGRATIONS] Migration {} déjà prise par un autre runner ou déjà appliquée : arrêt de la chaîne pour ce démarrage", migration.version());
+                        return Uni.createFrom().item(Boolean.FALSE);
                     }
                     if (LOG.isInfoEnabled()) {
                         LOG.info("[MIGRATIONS] Exécution migration {} : {}", migration.version(), migration.description());
                     }
+                    // La reprise en ECHEC est attachée à migrate() uniquement
                     return migration.migrate()
-                            .chain(() -> migrationRepository.finaliserSucces(migration.version(), owner))
-                            .invoke(() -> LOG.info("[MIGRATIONS] Migration {} appliquée avec succès", migration.version()))
+                            .replaceWith(Boolean.TRUE)
                             .onFailure().recoverWithUni(erreur -> {
                                 LOG.error("[MIGRATIONS] ECHEC migration {} ({}) : {}", migration.version(), migration.description(), erreur.getMessage(), erreur);
-                                return migrationRepository.finaliserEchec(migration.version(), owner);
-                            });
+                                return migrationRepository.finaliserEchec(migration.version(), owner).replaceWith(Boolean.FALSE);
+                            })
+                            .chain(migrationReussie -> Boolean.TRUE.equals(migrationReussie) ? finaliserSucces(migration) : Uni.createFrom().voidItem())
+                            .replaceWith(Boolean.TRUE);
+                });
+    }
+
+    /**
+     * Finalise la migration en {@code SUCCES}. Un échec d'écriture est loggé en ERROR sans marquer {@code ECHEC} :
+     * la migration a bien été exécutée, la version reste {@code EN_COURS} jusqu'à expiration du bail.
+     */
+    private Uni<Void> finaliserSucces(IMongoMigration migration) {
+        return migrationRepository.finaliserSucces(migration.version(), owner)
+                .invoke(() -> LOG.info("[MIGRATIONS] Migration {} appliquée avec succès", migration.version()))
+                .onFailure().recoverWithUni(erreur -> {
+                    LOG.error("[MIGRATIONS] Migration {} exécutée mais finalisation SUCCES impossible : la version reste EN_COURS jusqu'à expiration du bail ({})",
+                            migration.version(), MigrationRepository.BAIL, erreur);
+                    return Uni.createFrom().voidItem();
                 });
     }
 }

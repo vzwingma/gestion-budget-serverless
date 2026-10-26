@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.services.communs.migrations.scripts;
 
+import com.mongodb.MongoSocketReadTimeoutException;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
 import io.github.vzwingma.finances.budget.services.communs.migrations.IMongoMigration;
@@ -29,6 +30,14 @@ import java.util.Map;
  * La migration est défensive : les index existants sont listés d'abord et la création est ignorée si un index de
  * même clé existe déjà, quel que soit son nom (index créé manuellement, ex. sur Atlas). Elle est donc rejouable
  * sans erreur.
+ * <p>
+ * <b>Timeout de lecture</b> : l'attente de la réponse de {@code createIndexes} est bornée par
+ * {@code quarkus.mongodb.read-timeout} (8 s). L'option {@code background} est ignorée depuis MongoDB 4.2 et
+ * {@code maxTime} ferait <em>avorter</em> la construction côté serveur (pire qu'un timeout client) : aucun des deux
+ * n'est utilisé. En cas de {@link MongoSocketReadTimeoutException}, la construction se poursuit côté serveur (MongoDB
+ * &ge; 4.4 : elle n'est pas interrompue par la déconnexion du client). La migration échoue alors explicitement (ECHEC,
+ * message dédié) et sera rejouée au prochain démarrage : l'index présent est détecté (création ignorée), sinon la
+ * création est relancée et rattache la construction en cours.
  *
  * @author vzwingma
  */
@@ -83,8 +92,32 @@ public class V002_AjoutIndexBudgetsUtilisateurs implements IMongoMigration {
                         return Uni.createFrom().voidItem();
                     }
                     LOG.info("[MIGRATIONS] V002 : création de l'index {} sur {}", cleAttendue, nomCollection);
-                    return collection.createIndex(cleIndex, new IndexOptions()).replaceWithVoid();
+                    return collection.createIndex(cleIndex, new IndexOptions())
+                            .replaceWithVoid()
+                            .onFailure(V002_AjoutIndexBudgetsUtilisateurs::estTimeoutLecture)
+                            .transform(erreur -> {
+                                LOG.warn("[MIGRATIONS] V002 : timeout de lecture pendant la création de l'index {} sur {} : la construction se poursuit côté serveur, migration marquée ECHEC et rejouée au prochain démarrage",
+                                        cleAttendue, nomCollection);
+                                return new IllegalStateException("Timeout de lecture pendant la création de l'index " + cleAttendue + " sur " + nomCollection
+                                        + " (construction possiblement en cours côté serveur)", erreur);
+                            });
                 });
+    }
+
+    /**
+     * @param erreur erreur reçue de MongoDB
+     * @return {@code true} si l'erreur (ou une de ses causes) est un timeout de lecture socket
+     */
+    static boolean estTimeoutLecture(Throwable erreur) {
+        for (Throwable courante = erreur; courante != null; courante = courante.getCause()) {
+            if (courante instanceof MongoSocketReadTimeoutException) {
+                return true;
+            }
+            if (courante.getCause() == courante) {
+                break;
+            }
+        }
+        return false;
     }
 
     /**

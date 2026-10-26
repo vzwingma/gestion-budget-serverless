@@ -100,10 +100,10 @@ Cadrage détaillé ARCos (2026-10-26) sur le code de `master` (e08db1f). Options
 **F4 sur comptes actifs neufs** (récursion jusqu'au timeout Lambda) et **F6b** (une version `ECHEC` ne peut jamais passer `SUCCES` : clé dupliquée, migration rejouée à chaque cold start).
 
 - **Branche :** `feat/ap004-phase1-fiabilite-mongo`, créée depuis `origin/master`, sans le Lot 0. Push uniquement avec accord 👤 (`git push -u origin feat/ap004-phase1-fiabilite-mongo`, car l'upstream par défaut est `origin/master`).
-- **Ce plan détaillé** vit sur `fix/securite-jwt-lot0` (PR #220) ; il sera repris dans la branche de Phase 1 après merge de #220 et rebase.
-- **Ordre de merge (décision 👤) :** #220 d'abord → rebase de la Phase 1 → CI → QUA Phase 1. **Pas de QUA Phase 1 avant le merge du Lot 0.**
+- **Mise à jour 2026-10-26 :** la PR #220 (Lot 0) est **mergée** dans `master` (7a50e5d). La branche de Phase 1 est repartie de `master` (7a843cb, Lot 0 inclus) et le plan détaillé y a été repris (cherry-pick de d4524cb → eb51127). Le commit d4524cb n'avait pas été poussé sur #220.
+- **Ordre de merge (décision 👤) :** #220 d'abord (✅ fait) → Phase 1 → CI → QUA Phase 1, après validation QUA du Lot 0.
 
-### Règles anti-conflit avec la PR #220 (impératives)
+### Règles de périmètre (rédigées avant le merge de #220, maintenues pour garder la sécurité hors Phase 1)
 - Ne pas toucher : `communs/.../api/security/*`, `utils/security/*`, `*JwtSecurityFilter`, `RequestJWTHeaderFactory`, `AbstractAPIResource`, `RootAPIResource`, `JwsSigningKeysDatabaseAdaptor`, `IJwtSigningKey*`, `JWTAuthToken`, ni les lignes JWT de `BudgetService.java` (17-18, 53, 77-78, 616-622) et `UtilisateursService.java` (6-7, 25, 36-37, 104-110).
 - `*/src/main/resources/{dev,prod}/application.properties` : insertion **uniquement dans le bloc Mongo** (après `quarkus.mongodb.database` / `metrics`), **jamais en fin de fichier**.
 - Interdit de modifier : `*/src/test/resources/application.properties`, le `pom.xml` racine, les `*ResourceTest` existants. Configuration de test via `QuarkusTestProfile` ; dépendance éventuelle dans le pom du module.

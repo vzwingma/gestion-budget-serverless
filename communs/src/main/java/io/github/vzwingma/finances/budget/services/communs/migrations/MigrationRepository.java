@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.services.communs.migrations;
 
+import com.mongodb.ErrorCategory;
 import com.mongodb.MongoException;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
@@ -46,11 +47,6 @@ public class MigrationRepository implements ReactivePanacheMongoRepositoryBase<M
      * (le runner précédent est considéré comme mort, ex. Lambda gelée ou interrompue).
      */
     static final Duration BAIL = Duration.ofMinutes(5);
-
-    /**
-     * Code d'erreur MongoDB d'une violation de clé unique (E11000).
-     */
-    private static final int CODE_ERREUR_CLE_DUPLIQUEE = 11000;
 
     private static final String ATTRIBUT_ID = "_id";
     private static final String ATTRIBUT_STATUT = "statut";
@@ -160,7 +156,7 @@ public class MigrationRepository implements ReactivePanacheMongoRepositoryBase<M
      */
     private static boolean estCleDupliquee(Throwable erreur) {
         for (Throwable courante = erreur; courante != null; courante = courante.getCause()) {
-            if (courante instanceof MongoException mongoException && mongoException.getCode() == CODE_ERREUR_CLE_DUPLIQUEE) {
+            if (courante instanceof MongoException mongoException && ErrorCategory.fromErrorCode(mongoException.getCode()) == ErrorCategory.DUPLICATE_KEY) {
                 return true;
             }
             if (courante.getCause() == courante) {

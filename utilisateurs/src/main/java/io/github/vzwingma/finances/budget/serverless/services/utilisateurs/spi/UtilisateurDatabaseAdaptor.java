@@ -47,6 +47,13 @@ public class UtilisateurDatabaseAdaptor implements IUtilisateursRepository {
 
     /**
      * Met à jour uniquement la date de dernier accès ({@code $set} ciblé sur {@code dernierAcces}).
+     * <p>
+     * <b>Encodage de la date</b> : identique à {@code UtilisateurPanacheCodec#encode} (ancien chemin {@code update(entity)}) et
+     * symétrique de son {@code decode}, qui relit la date via {@link BudgetDateTimeUtils#getLocalDateTimeFromMillisecond}
+     * (fuseau Europe/Paris). Conserver cette conversion garantit l'aller-retour (la valeur relue est égale à celle écrite)
+     * et la cohérence avec les documents déjà en base ; un encodage {@code ZoneOffset.UTC} décalerait de +1/+2 h la valeur
+     * relue par le codec. La date reçue est l'heure de l'horloge applicative UTC (ADR-004) : le décalage de l'instant
+     * stocké par rapport à l'instant réel est un comportement hérité du codec, inchangé ici.
      *
      * @param login login utilisateur
      * @param date  date de dernier accès
@@ -58,7 +65,13 @@ public class UtilisateurDatabaseAdaptor implements IUtilisateursRepository {
         Date dateMongo = Date.from(Instant.ofEpochMilli(BudgetDateTimeUtils.getMillisecondsFromLocalDateTime(date)));
         return mongoCollection()
                 .updateOne(Filters.eq("login", login), Updates.set("dernierAcces", dateMongo))
-                .invoke(result -> LOGGER.info("Utilisateur [{}] : dernier accès mis à jour ({} document modifié)", login, result.getModifiedCount()))
+                .invoke(result -> {
+                    if (result.getMatchedCount() == 0) {
+                        LOGGER.warn("Utilisateur [{}] : aucun document trouvé, dernier accès non mis à jour", login);
+                    } else {
+                        LOGGER.info("Utilisateur [{}] : dernier accès mis à jour ({} document modifié)", login, result.getModifiedCount());
+                    }
+                })
                 .replaceWithVoid();
     }
 }
