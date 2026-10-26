@@ -83,7 +83,7 @@ class OidcSecurityTest {
         assertEquals(200, statusWith(bearerOf(OidcTokenForge.validClaims())),
                 "chaîne réelle OIDC -> augmentor -> @RolesAllowed doit accepter un jeton valide");
         // L'email (principal-claim) doit arriver jusqu'au service métier
-        verify(comptesServiceMock).getComptesUtilisateur(eq(OidcTokenForge.VALID_EMAIL));
+        verify(comptesServiceMock).getComptesUtilisateur(OidcTokenForge.VALID_EMAIL);
     }
 
     @ParameterizedTest

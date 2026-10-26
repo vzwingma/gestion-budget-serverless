@@ -6,9 +6,7 @@ import io.github.vzwingma.finances.budget.serverless.services.parametrages.busin
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
-import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
-import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
@@ -18,11 +16,6 @@ import jakarta.ws.rs.core.HttpHeaders;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.never;

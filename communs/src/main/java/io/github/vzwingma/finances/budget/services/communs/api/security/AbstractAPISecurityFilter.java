@@ -43,7 +43,6 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
         String apiKey = requestContext.getHeaders().getFirst(HTTP_HEADER_API_KEY);
 
         if (identity != null && !identity.isAnonymous()) {
-            // Jeton déjà validé par quarkus-oidc : simple exposition au contexte applicatif (propagation inter-services)
             AccessTokenCredential credential = identity.getCredential(AccessTokenCredential.class);
             JWTAuthPayload payload = new JWTAuthPayload();
             payload.setEmail(identity.getPrincipal().getName());
