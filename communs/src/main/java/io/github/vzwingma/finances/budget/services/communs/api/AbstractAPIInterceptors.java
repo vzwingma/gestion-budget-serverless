@@ -31,9 +31,10 @@ public abstract class AbstractAPIInterceptors {
         // Replace pattern-breaking characters
         String path = requestContext.getUriInfo().getPath().replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
         String apiKey = requestContext.getHeaderString(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY);
-        String jwt = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
         LOG.debug("[HTTP] > [uri:{} {}]", requestContext.getMethod(), path);
-        LOG.debug("[HTTP] > [api-key:{}][jwt:{}]", apiKey, jwt);
+        // Ni la clé API ni le jeton JWT ne doivent être tracés : seule leur présence est journalisée
+        LOG.debug("[HTTP] > [api-key:{}][jwt:{}]", apiKey != null && !apiKey.isEmpty() ? "présente" : "absente",
+                requestContext.getHeaderString(HttpHeaders.AUTHORIZATION) != null ? "présent" : "absent");
     }
 
     /**

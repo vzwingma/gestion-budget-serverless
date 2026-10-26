@@ -56,7 +56,6 @@ class BudgetsResourceTest {
 
     @BeforeEach
     void setup() {
-        when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().item(jwksAuthKey()));
     }
 
     @Test
@@ -233,11 +232,11 @@ class BudgetsResourceTest {
         p.setEmail("toto.toto@world.com");
         p.setFamily_name("Test");
         p.setGiven_name("Test");
-        p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
-        p.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
+        p.setIat(JwtTestSupport.epochSecondsIn(java.time.Duration.ZERO));
+        p.setExp(JwtTestSupport.epochSecondsIn(java.time.Duration.ofHours(1)));
         p.setIss("https://accounts.google.com");
         p.setAud("test.apps.googleusercontent.com");
-        return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p));
+        return JwtTestSupport.signedBearer(new JWTAuthToken(h, p));
     }
 
 

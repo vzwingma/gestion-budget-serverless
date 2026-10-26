@@ -1,21 +1,21 @@
 package io.github.vzwingma.finances.budget.services.communs.api.security;
 
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
-import io.vertx.core.json.DecodeException;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
+import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
-import jakarta.ws.rs.core.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
 
 
 /**
- * Filtre HTTP de sécurité des API, vérification du token JWT et des rôles
+ * Filtre HTTP des API : expose au contexte applicatif l'identité validée par {@code quarkus-oidc} (ADR-005) et la clé API.
+ * La validation du jeton (signature, iss, aud, exp, rotation JWKS) est entièrement déléguée à l'extension.
  */
 public abstract class AbstractAPISecurityFilter implements ContainerRequestFilter {
 
@@ -27,9 +27,11 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
     JwtSecurityContext securityContext;
 
 
-    @SuppressWarnings("CdiInjectionPointsInspection")
+    /**
+     * Identité authentifiée par {@code quarkus-oidc} (signature, iss, aud, exp validés par l'extension).
+     */
     @Inject
-    IJwtSigningKeyService jwtSigningKeyService;
+    SecurityIdentity identity;
 
     /**
      * Filtre de sécurité sur JWT
@@ -39,23 +41,16 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
     @Override
     public void filter(ContainerRequestContext requestContext) {
         String apiKey = requestContext.getHeaders().getFirst(HTTP_HEADER_API_KEY);
-        String rawJWTToken = getAuthBearerFromHeaders(requestContext.getHeaders().getFirst(HttpHeaders.AUTHORIZATION.toLowerCase(Locale.ROOT)));
 
-        if (rawJWTToken != null && !rawJWTToken.isEmpty() && !"null".equals(rawJWTToken)) {
-            try {
-                JWTAuthToken jwToken = JWTUtils.decodeJWT(rawJWTToken);
-                if(JWTUtils.isValid(jwToken, securityContext.getIdAppUserContent().get(), jwtSigningKeyService.getJwksAuthKeyList())){
-                    securityContext.setJwtValidatedToken(jwToken);
-                }
-                else {
-                    logger.error("Token JWT invalide");
-                }
-            } catch (DecodeException _) {
-                logger.error("Erreur lors du décodage du token JWT : {}", rawJWTToken);
-            }
+        if (identity != null && !identity.isAnonymous()) {
+            // Jeton déjà validé par quarkus-oidc : simple exposition au contexte applicatif (propagation inter-services)
+            AccessTokenCredential credential = identity.getCredential(AccessTokenCredential.class);
+            JWTAuthPayload payload = new JWTAuthPayload();
+            payload.setEmail(identity.getPrincipal().getName());
+            securityContext.setJwtValidatedToken(new JWTAuthToken(new JwtAuthHeader(), payload, true, credential != null ? credential.getToken() : null));
         }
         else {
-            logger.warn("Token JWT non trouvé [{}]. Accès anonyme.", rawJWTToken);
+            logger.warn("Aucune identité authentifiée. Accès anonyme.");
         }
         if(apiKey == null || apiKey.isEmpty()){
             logger.warn("Clé API non trouvée");
@@ -63,22 +58,6 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
         else {
             securityContext.setApiKey(apiKey);
         }
-        requestContext.setSecurityContext(securityContext);
-    }
-
-
-    /**
-     * Récupération de l'Auth Bearer à partir des entêtes
-     *
-     * @param authBearer liste des entêtes
-     * @return l'auth Bearer si elle existe
-     */
-    private String getAuthBearerFromHeaders(String authBearer) {
-        if (authBearer != null && !authBearer.isEmpty()) {
-            return authBearer.replace("Bearer ", "");
-        } else {
-            logger.trace("Auth is null");
-            return null;
-        }
+        // Le SecurityContext JAX-RS reste celui de Quarkus (SecurityIdentity, @RolesAllowed) : ne pas le surcharger
     }
 }

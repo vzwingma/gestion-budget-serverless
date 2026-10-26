@@ -11,9 +11,9 @@ microservices sont compiles en binaires natifs GraalVM et deployes sous forme de
 | Propriété | Valeur |
 |---|---|
 | **Type** | Backend – API REST serverless |
-| **Stack principale** | Java 25 (Mandrel 25 natif) + Quarkus 3.37.1 + Mutiny + MongoDB Panache |
+| **Stack principale** | Java 25 (Mandrel 25 natif) + Quarkus 3.40.1.1 + Mutiny + MongoDB Panache |
 | **Plateforme cible** | AWS Lambda (natif GraalVM/Mandrel) |
-| **Version applicative** | 24.0.0-SNAPSHOT |
+| **Version applicative** | 26.0.0-SNAPSHOT |
 | **Statut** | En développement actif |
 
 ---
@@ -37,7 +37,8 @@ gestion-budget-serverless/
 Client (IHM React)
     → API Gateway AWS (HTTPS + X-Api-Key)
     → AWS Lambda (Quarkus natif)
-        → Filtre JWT (AbstractAPISecurityFilter)
+        → Authentification quarkus-oidc (signature, iss, aud, exp) + JwtRolesAugmentor
+        → Filtre AbstractAPISecurityFilter (identité validée + X-Api-Key)
         → Ressource REST (JAX-RS)
         → Service métier (Mutiny Uni<T>)
         → Repository MongoDB Panache
@@ -57,8 +58,8 @@ Chaque microservice respecte strictement l'architecture hexagonale. **Règle abs
 api/
   ├── XxxResource.java          ← Contrôleur JAX-RS (@Path, @GET, @RolesAllowed)
   ├── override/
-  │   ├── RootAPIResource.java  ← Endpoint /info + refresh JWKS
-  │   ├── JwtSecurityFilter.java← Filtre JWT (surcharge AbstractAPISecurityFilter)
+  │   ├── RootAPIResource.java  ← Endpoint /_info
+  │   ├── JwtSecurityFilter.java← Filtre sécurité (surcharge AbstractAPISecurityFilter)
   │   └── APIExceptionsHandler.java ← Mapper d'exceptions HTTP
   ├── enums/
   │   └── XxxAPIEnum.java       ← Constantes de routes et rôles (source de vérité)
@@ -108,7 +109,8 @@ gestion-budget-serverless/
 │   │   │   ├── AbstractAPIInterceptors.java       # Logs requête/réponse
 │   │   │   ├── AbstractAPIExceptionsHandler.java  # Mapper exceptions → HTTP
 │   │   │   ├── security/
-│   │   │   │   ├── AbstractAPISecurityFilter.java # Validation JWT
+│   │   │   │   ├── AbstractAPISecurityFilter.java # Identité validée + propagation du jeton
+│   │   │   │   ├── JwtRolesAugmentor.java         # Contrôle issuer, email, rôles applicatifs
 │   │   │   │   └── IJwtSecurityContext.java
 │   │   │   └── spi/codecs/
 │   │   │       └── ComptePanacheCodec.java
@@ -125,7 +127,7 @@ gestion-budget-serverless/
 │   │   │   └── AbstractBDDExceptionsHandler.java
 │   │   └── utils/
 │   │       ├── security/
-│   │       │   ├── JWTUtils.java                 # Parsing JWT
+│   │       │   ├── JWTUtils.java                 # Parsing JWT maison (hors chemin d'authentification, suppression Phase 4)
 │   │       │   └── SecurityUtils.java            # Sanitisation des inputs
 │   │       ├── exceptions/                       # Exceptions typées
 │   │       └── data/
@@ -178,7 +180,8 @@ gestion-budget-serverless/
 
 | Catégorie | Librairie | Version | Rôle |
 |---|---|---|---|
-| Framework | Quarkus | **3.37.1** | Runtime Lambda natif |
+| Framework | Quarkus | **3.40.1.1** | Runtime Lambda natif |
+| Sécurité | Quarkus OIDC (`quarkus-oidc`) | (via Quarkus BOM) | Validation des `id_token` Google, mode `service` ([ADR-005](./adr/005-authentification-jwt-extension-quarkus.md)) |
 | Langage | Java | **25** (Mandrel 25 en natif) | LTS, Records, Pattern Matching |
 | Réactif | SmallRye Mutiny | (via Quarkus BOM) | `Uni<T>` / `Multi<T>` |
 | Persistence | MongoDB Panache | (via Quarkus BOM) | Repository pattern |
@@ -271,7 +274,7 @@ gestion-budget-serverless/
 | MongoDB Atlas / DocumentDB | NoSQL | Persistence des données (budgets, opérations, comptes) |
 | AWS Lambda | FaaS | Exécution des microservices (binaires natifs) |
 | AWS API Gateway | HTTP | Point d'entrée, routage, X-Api-Key |
-| Google OAuth2 / JWKS | JWT | Authentification utilisateurs |
+| Google OIDC (discovery + JWKS) | JWT | Authentification utilisateurs, gérée par `quarkus-oidc` |
 | µService `comptes` | REST interne | Appelé par `operations` via `IComptesServiceProvider` |
 | µService `parametrages` | REST interne | Appelé par `operations` via `IParametragesServiceProvider` |
 | GitHub Packages | Maven registry | Distribution du module `communs` |
@@ -280,10 +283,57 @@ gestion-budget-serverless/
 
 ## 🔐 Sécurité
 
-- **Authentification** : Token JWT Google OAuth2 passé dans le header `Authorization: Bearer <token>`.
+- **Authentification** : `id_token` Google OIDC passé dans le header `Authorization: Bearer <token>`, validé par l'extension `quarkus-oidc` en mode `service` ([ADR-005](./adr/005-authentification-jwt-extension-quarkus.md), plan 004 Phase 0).
 - **Autorisation** : `@RolesAllowed` avec les constantes de `*APIEnum` (ex: `USER_COMPTES`, `USER_OPERATIONS`).
-- **Validation JWT** : `AbstractAPISecurityFilter` vérifie la signature via les clés JWKS stockées en MongoDB (cache) et récupérées depuis Google.
-- **Clé d'API** : `X-Api-Key` header validé par API Gateway AWS.
+- **Clé d'API** : `X-Api-Key` header validé par API Gateway AWS. `ApiKeyRequired` et l'Usage Plan sont configurés **manuellement dans la console AWS** (et non dans le template SAM).
+
+### Validation du jeton (`quarkus-oidc`)
+
+Configuration dans `{comptes,operations,parametrages,utilisateurs}/src/main/resources/{dev,prod}/application.properties` :
+
+| Propriété | Valeur | Rôle |
+|---|---|---|
+| `quarkus.oidc.application-type` | `service` | Mode API (Bearer uniquement) |
+| `quarkus.oidc.auth-server-url` | `https://accounts.google.com` | Discovery OIDC activée ; clés JWKS mises en cache et rotation gérées par l'extension |
+| `quarkus.oidc.client-id` / `token.audience` | `${oidc.jwt.id.appusercontent}.apps.googleusercontent.com` | Audience attendue |
+| `quarkus.oidc.token.issuer` | `any` | Google émet `accounts.google.com` **ou** `https://accounts.google.com`, alors que la discovery n'annonce que la seconde |
+| `quarkus.oidc.token.principal-claim` | `email` | Identité exposée |
+| `quarkus.oidc.connection-timeout` | `3S` | Durée max d'une requête discovery / JWKS |
+| `quarkus.oidc.connection-delay` | `4S` | Fenêtre de retry de la connexion initiale (pire cas ~7 s < budget d'init Lambda ~10 s) |
+
+Les propriétés `auth-server-url` et timeouts sont limitées aux profils `%dev`/`%prod` : le profil de test utilise une clé publique locale (`quarkus.oidc.public-key`) et n'appelle pas Google.
+
+`JwtRolesAugmentor` (`communs/.../api/security/`) complète la validation de l'extension. Comme `issuer=any`, il est la **seule barrière sur l'issuer** :
+- contrôle **strict** des 2 formes d'issuer (`accounts.google.com`, `https://accounts.google.com`) ; toute autre valeur est refusée (dont `evilaccounts.google.com`, `accounts.google.com.evil.com`) ;
+- claim `email` requis (non vide) et `email_verified` = `true` (booléen ou chaîne `"true"`, les deux formes étant émises par Google) ;
+- rôles applicatifs (`app.security.roles`, défaut `USER_COMPTES,USER_OPERATIONS,USER_UTILISATEURS`) attribués à **tout utilisateur authentifié** (pas de contrôle de propriété ni de rôle admin : hors périmètre, second temps).
+
+`AbstractAPISecurityFilter` ne décode plus le jeton : il expose l'identité validée (email, jeton brut pour la propagation inter-µServices par `RequestJWTHeaderFactory`) et l'`X-Api-Key`.
+
+### Retiré du chemin d'authentification
+
+`JWTUtils`, le cache et la collection Mongo `jwks_auth_signing_keys`, le refresh des clés JWKS via `/_info` (`parametrages`) et `IJwtSigningKeyService` ne sont plus utilisés pour authentifier. Le code est **conservé jusqu'à la Phase 4** (suppression par le 👤) : inventaire dans [`PHASE_4_SUPPRESSIONS_A_FAIRE.md`](../.claude/plans/004_reports/PHASE_4_SUPPRESSIONS_A_FAIRE.md). `/_info` garde le même contrat (JSON, 200).
+
+### Codes HTTP d'authentification
+
+| Situation | Code |
+|---|---|
+| Jeton absent, invalide, expiré, mal signé, issuer/audience/email refusé (endpoints `@RolesAllowed`) | **401** (auparavant 403) |
+| Endpoint `@PermitAll` **sans** jeton | 200 |
+| Endpoint `@PermitAll` **avec** jeton invalide (authentification proactive) | **401** |
+| JWKS / discovery Google injoignable | **500** (limite connue, voir ci-dessous) |
+
+> ⚠️ Le passage 403 → 401 impacte l'IHM (déconnexion sur 401) : plan IHM `008_gestion_401_auth_oidc_backend`, **prérequis bloquant avant la PROD**.
+
+### Limites connues
+
+- **JWKS / discovery Google injoignable → HTTP 500** et non 401 (refus appliqué, sans blocage ~2 s). L'IHM ne se déconnecte pas sur ce code. Conservé (décision 👤), à observer en QUA et réévaluer en Phase 4.
+- **`kid` inconnu** : non testable avec `public-key` en test, à vérifier en QUA avec le JWKS réel. Démarrage à froid, appel réel à Google et build natif : validation QUA requise.
+
+### Logs : masquage du jeton
+
+`quarkus-oidc` (`io.quarkus.oidc.runtime.OidcProvider`) loggue le jeton complet en WARN sur signature invalide. Masquage par configuration : `quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".level=ERROR` (présente dans les `application.properties` des modules ; tests de fuite dans `comptes`). Effet de bord : les WARN légitimes d'`OidcProvider` (jeton expiré…) ne sont plus visibles. **À revérifier à chaque montée de version de `quarkus-oidc`** (la protection repose sur la configuration seule). Résiduel : `OidcUtils` WARN `Failed to decrypt a token` (JWE uniquement, non utilisé par Google).
+
 - **Sanitisation des entrées** : tous les path params sont sanitisés via `SecurityUtils.ESCAPE_INPUT_REGEX` avant tout traitement.
 - **Données sensibles** : aucun secret dans le code source ; tout via variables d'environnement injectées par SAM/GitHub Secrets.
 - **Réseau** : les µServices ne sont accessibles qu'au travers d'API Gateway (pas d'exposition directe).
@@ -309,7 +359,7 @@ gestion-budget-serverless/
 | `operations` | `operations` | Lignes d'opérations budgétaires |
 | `categories` | `parametrages` | Catégories et sous-catégories d'opérations |
 | `utilisateurs` | `utilisateurs` | Profils et préférences utilisateurs |
-| `jwkskeys` | `communs` (tous) | Clés JWKS Google (cache) |
+| `jwks_auth_signing_keys` | `communs` (tous) | Obsolète : clés JWKS Google, plus utilisée pour l'authentification (`quarkus-oidc`) ; drop par le 👤 en Phase 4 |
 | `_migrations` | `communs` (tous) | Suivi d'exécution des migrations MongoDB (voir section [Migrations MongoDB](#-migrations-mongodb)) |
 
 ---
@@ -474,6 +524,9 @@ mvn clean package -Pnative -Dquarkus.native.container-build=true
 |---|---|---|
 | [001](./adr/001-strategie-modernisation-stack.md) | Stratégie de modernisation du stack backend (paliers Quarkus 3.x→4.x, tuning infra Lambda, migrations Mongo maison) | Acceptée |
 | [002](./adr/002-migrations-mongodb-maison.md) | Mécanisme de migrations MongoDB maison (CDI, rejet de Mongock) | Acceptée |
+| [003](./adr/003-upgrade-java25-mandrel25.md) | Upgrade Java 25 + Mandrel 25 | Acceptée |
+| [004](./adr/004-clock-injection-convention.md) | Convention d'injection de `Clock` (remplace `.now()` direct) | Acceptée |
+| [005](./adr/005-authentification-jwt-extension-quarkus.md) | Authentification JWT via `quarkus-oidc` (remplace la validation maison) | Acceptée |
 
 > 💡 Toute nouvelle décision architecturale majeure (nouveau framework, changement de pattern, décision de sécurité) doit faire l'objet d'un ADR délégué à l'agent 🟣 DOCly.
 

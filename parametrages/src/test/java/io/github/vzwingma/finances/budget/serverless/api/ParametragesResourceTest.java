@@ -21,10 +21,11 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static io.restassured.RestAssured.given;
@@ -49,14 +50,12 @@ class ParametragesResourceTest {
     @Test
     void testInfoEndpoint() {
 
-        doReturn(Uni.createFrom().voidItem()).when(parametragesServiceMock).refreshJwksSigningKeys();
-        doReturn(Uni.createFrom().item(new HashMap<>())).when(parametragesServiceMock).loadJwksSigningKeys();
         given()
                 .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
                 .then()
                 .statusCode(200)
                 .body(containsStringIgnoringCase("param"));
-        verify(parametragesServiceMock, times(1)).refreshJwksSigningKeys();
+        verify(parametragesServiceMock, never()).refreshJwksSigningKeys();
     }
 
     @Test
@@ -102,8 +101,6 @@ class ParametragesResourceTest {
 
     @Test
     void testRefreshJwksSigningKeys() {
-        doReturn(Uni.createFrom().voidItem()).when(parametragesServiceMock).refreshJwksSigningKeys();
-        doReturn(Uni.createFrom().item(new HashMap<>())).when(parametragesServiceMock).loadJwksSigningKeys();
         given()
                 .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
                 .then()
@@ -118,10 +115,10 @@ class ParametragesResourceTest {
         p.setEmail("Test.test@world.com");
         p.setFamily_name("Test");
         p.setGiven_name("Test");
-        p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
-        p.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
+        p.setIat(JwtTestSupport.epochSecondsIn(java.time.Duration.ZERO));
+        p.setExp(JwtTestSupport.epochSecondsIn(java.time.Duration.ofHours(1)));
         p.setIss("https://accounts.google.com");
         p.setAud("test.apps.googleusercontent.com");
-        return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p));
+        return JwtTestSupport.signedBearer(new JWTAuthToken(h, p));
     }
 }

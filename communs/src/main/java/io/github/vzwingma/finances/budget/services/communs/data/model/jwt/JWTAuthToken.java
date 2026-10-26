@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -91,7 +92,10 @@ public class JWTAuthToken {
      * Calcule la date et l'heure d'expiration du token à partir de la charge utile.
      * @param clock horloge applicative (ADR-004) utilisée pour résoudre le décalage Europe/Berlin en vigueur.
      * @return La date et l'heure d'expiration du token, ou null si non applicable.
+     * @deprecated conversion locale Europe/Berlin (non UTC) : ne pas l'utiliser pour comparer à l'horloge,
+     * utiliser {@link #expiresAtInstant()}.
      */
+    @Deprecated
     @JsonIgnore
     public LocalDateTime expiredAt(Clock clock) {
         if (this.payload != null && this.payload.getExp() != 0) {
@@ -100,5 +104,18 @@ public class JWTAuthToken {
         return null;
     }
 
+
+    /**
+     * Instant d'expiration du token (claim {@code exp}, epoch seconds => instant absolu, indépendant de tout fuseau).
+     * À utiliser pour toute comparaison avec l'horloge applicative.
+     * @return l'instant d'expiration, ou null si le claim {@code exp} est absent.
+     */
+    @JsonIgnore
+    public Instant expiresAtInstant() {
+        if (this.payload != null && this.payload.getExp() != 0) {
+            return Instant.ofEpochSecond(this.payload.getExp());
+        }
+        return null;
+    }
 
 }

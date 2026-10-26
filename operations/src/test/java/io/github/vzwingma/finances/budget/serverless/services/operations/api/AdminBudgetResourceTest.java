@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static io.restassured.RestAssured.given;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 
@@ -38,7 +39,7 @@ class AdminBudgetResourceTest {
     BudgetAdminService budgetAdminService;
 
     @Inject
-    IJwtSigningKeyReadRepository jwtSigningKeyReadRepository;
+    BudgetService budgetService;
 
     @BeforeAll
     static void init() {
@@ -50,8 +51,6 @@ class AdminBudgetResourceTest {
 
     @BeforeEach
     void setup() {
-        when(jwtSigningKeyReadRepository.getJwksSigningAuthKeys())
-                .thenReturn(Multi.createFrom().item(BudgetsResourceTest.jwksAuthKey()));
     }
 
     @Test
@@ -97,10 +96,10 @@ class AdminBudgetResourceTest {
         p.setEmail("toto.toto@world.com");
         p.setFamily_name("Test");
         p.setGiven_name("Test");
-        p.setIat(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now()));
-        p.setExp(BudgetDateTimeUtils.getSecondsFromLocalDateTime(LocalDateTime.now().plusHours(1)));
+        p.setIat(JwtTestSupport.epochSecondsIn(java.time.Duration.ZERO));
+        p.setExp(JwtTestSupport.epochSecondsIn(java.time.Duration.ofHours(1)));
         p.setIss("https://accounts.google.com");
         p.setAud("test.apps.googleusercontent.com");
-        return "Bearer " + JWTUtils.encodeJWT(new JWTAuthToken(h, p));
+        return JwtTestSupport.signedBearer(new JWTAuthToken(h, p));
     }
 }

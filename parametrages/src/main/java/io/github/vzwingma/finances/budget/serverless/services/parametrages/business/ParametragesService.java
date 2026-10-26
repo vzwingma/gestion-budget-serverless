@@ -65,6 +65,7 @@ public class ParametragesService implements IParametrageAppProvider, IJwtSigning
      * Initialisation des clés de signature JWT de Google
      */
     @Override
+    @Deprecated // AP004 T0.6 : plus appelé (validation JWT déléguée à quarkus-oidc) ; à supprimer en Phase 4
     public Uni<Void> refreshJwksSigningKeys() {
         LOGGER.info("Initialisation des clés de signature JWT");
         return jwtAuthSigningKeyServiceProvider.getJwksAuthKeys()
