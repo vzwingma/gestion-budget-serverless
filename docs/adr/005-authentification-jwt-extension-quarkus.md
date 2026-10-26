@@ -3,7 +3,7 @@
 ---
 
 **Date :** 2026-10-25
-**Statut :** Acceptée (principe — Gate #1 GO 2026-10-25 ; choix final `quarkus-oidc` / repli `smallrye-jwt` tranché par l'essai en Phase 0 du plan 004)
+**Statut :** Acceptée (principe Gate #1 GO 2026-10-25 ; confirmée 2026-10-26 : l'essai de la Phase 0 du plan 004 a validé `quarkus-oidc`, sans repli sur `smallrye-jwt`)
 **Décideurs :** 🟠 ARCos + 👤 Développeur humain (Gate #0 : trajectoire A puis B, sans C)
 
 ---
@@ -105,9 +105,13 @@ Précisions :
 - **Tâches de suivi** : DEVon — spike natif `quarkus-oidc` vs `smallrye-jwt`, puis migration des 4 services ; QALvin — adaptation des tests de sécurité (401/403, jeton expiré, mauvaise signature, mauvais `iss`/`aud`, `kid` inconnu) ; DOCly — `docs/ARCHITECTURE.md`, index ADR, wikis.
 - **Date d'effet** : Lot 6 du Plan d'Action 004, après le hotfix Lot 0 (branche `fix/securite-jwt-lot0`).
 
+### Note de mise en œuvre (Phase 0, plan 004)
+
+`quarkus-oidc` en mode `service` est en place sur les 4 microservices (commits `42a3d4b` bascule, `bc15842` masquage du jeton dans les logs et durcissement de `JwtRolesAugmentor`). L'essai n'a pas nécessité le repli `smallrye-jwt`. Particularités : `issuer=any` avec contrôle strict des 2 formes d'issuer dans `JwtRolesAugmentor` (Google émet les deux), `email` requis et `email_verified=true`, discovery conservée avec `connection-timeout=3S` / `connection-delay=4S`. Limites connues (JWKS injoignable → 500, masquage du jeton par configuration seule, build natif et cold start à valider en QUA) : voir [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md#-sécurité). Le 401 remplace le 403 : plan IHM 008, prérequis PROD.
+
 ### Points ouverts
 
-- `quarkus-oidc` vs `smallrye-jwt` : à trancher au Gate #1 / spike du Lot 6.
+- ~~`quarkus-oidc` vs `smallrye-jwt`~~ : tranché en Phase 0 (`quarkus-oidc`).
 - Sort de la collection Mongo `jwks_auth_signing_keys` : conservée, décision ultérieure (aucun `drop`).
 - Alignement des codes 401/403 avec le comportement attendu par l'IHM.
 
