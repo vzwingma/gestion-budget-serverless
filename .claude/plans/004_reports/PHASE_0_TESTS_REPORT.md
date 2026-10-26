@@ -85,3 +85,39 @@ Tests (`test(security)`) et rapport + inventaire (`docs(plans)`) en **deux commi
 - Bug 1 (fuite jeton dans les logs) à traiter avant PROD.
 - Bug 2 : décision 👤 sur le 500 en cas de panne JWKS (lié au plan IHM 008).
 - Validation QUA indispensable (cold start réel, Google réel, kid, natif).
+
+## Ajustement Gate #3
+
+Gate #3 : AJUSTER. DEVon a corrigé les défauts 1 et 3 (commit `bc15842`) ; défaut 2 conservé (décision 👤). Code de production non modifié par QALvin.
+
+### Tests réactivés / corrigés
+- `TestJwtRolesAugmentorJsonValue` : 3 `@Disabled("BUG AP004 T0.5")` réactivés avec le comportement durci ; le test « documentation du refus actuel » est inversé (`JsonValue.TRUE` et `JsonString "true"` acceptés). Cas ajoutés : `email_verified` = `JsonValue.FALSE`, `JsonValue.NULL`, `Boolean.FALSE`, `null`, entier ; chaînes et `JsonString` `false` / `TRUE` / `True` / `1` / `yes` / vide / `" true"` refusés ; `email` = `null`, `JsonValue.NULL`, chaîne ou `JsonString` vide / blanche / tabulation refusés.
+- `OidcSecurityTest.logs_signatureInvalide_aucuneFuite` réactivé ; ajout de `logs_jetonMalForme_aucuneFuite` (jeton tronqué), `logs_jetonIllisible_aucuneFuite` (`a.b.c`) et d'un test sentinelle `capture_logsApplicatifs_sentinelle`.
+
+### Choix : preuve d'absence de fuite non vide
+Le WARN d'`OidcProvider` n'est plus émis (c'est le correctif) : `logs_expDepasse_aucuneFuite` et `logs_cleApi_jamaisLogguee_surSignatureInvalide` échouaient sur `assertFalse(messages.isEmpty())`. Plutôt que d'abaisser le niveau de la catégorie (ce qui réintroduirait la fuite) ou de poser un filtre maison, l'exigence « logs non vides » est retirée de `logsPendantAppel` et remplacée par :
+1. contrôle que le jeton est bien rejeté (HTTP 401) dans les scénarios de rejet, pour ne pas tester un autre chemin ;
+2. test sentinelle : un refus d'issuer émet le WARN de l'augmentor (« issuer inattendu »), que le handler JUL racine doit capturer ; prouve que la capture fonctionne ;
+3. preuve de régression (ci-dessous) : sans le correctif, les tests de fuite passent au rouge, donc ils ne passent pas à vide.
+
+### Détection de régression (défaut 1)
+Ligne `quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".level=ERROR` commentée :
+- uniquement dans `comptes/src/test/resources/application.properties` : **tests toujours verts**, car le profil `dev` de `comptes/src/main/resources/dev/application.properties` est copié dans `target/classes/application.properties` et porte la même ligne (redondance des deux fichiers) ;
+- dans le fichier de test **et** dans `dev/application.properties` : **2 tests rouges**, `logs_signatureInvalide_aucuneFuite` (« jeton complet présent dans les logs ») et `logs_jetonMalForme_aucuneFuite` (« jeton tronqué présent dans les logs »).
+Lignes rétablies par édition (`sed`), `git diff` vide sur `comptes/src/test/resources` et `comptes/src/main/resources`.
+
+### Preuves
+`mvn clean install -Dmaven.test.failure.ignore=true -Dsonar` : BUILD SUCCESS.
+
+| Module | Tests | Échecs | Erreurs | Ignorés |
+|---|---|---|---|---|
+| communs | 182 | 0 | 4 (Mongo sans Docker, préexistantes) | 0 |
+| parametrages | 35 | 0 | 0 | 0 |
+| utilisateurs | 36 | 0 | 0 | 0 |
+| comptes | 112 | 0 | 0 | 0 |
+| operations | 97 | 0 | 0 | 0 |
+
+Couverture `JwtRolesAugmentor` : lignes 25/25 (100 %), branches 29/30 (97 %), seuil 80 % atteint. `grep -rn "BUG AP004" --include=*.java .` : vide.
+
+### Limite connue (défaut 2)
+JWKS / discovery injoignable : HTTP **500** conservé (décision 👤), pas 401. L'IHM ne se déconnecte pas sur ce code. `OidcColdStartJwksDownTest` inchangé et caractérise ce comportement (passera au rouge s'il évolue). À observer en QUA (cold start réel, Google réel). Autres limites : masquage du jeton par configuration seule (revérifier à chaque montée de version de `quarkus-oidc`), `kid` inconnu non testable avec `public-key`.
