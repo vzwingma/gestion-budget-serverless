@@ -7,6 +7,8 @@ import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.json.JsonString;
+import jakarta.json.JsonValue;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.slf4j.Logger;
@@ -45,8 +47,7 @@ public class JwtRolesAugmentor implements SecurityIdentityAugmentor {
             LOG.warn("Token refusé : issuer inattendu");
             return Uni.createFrom().failure(new AuthenticationFailedException("Issuer invalide"));
         }
-        Object email = jwt.getClaim("email");
-        if (email == null || email.toString().isBlank()) {
+        if (!hasNonBlankEmail(jwt.getClaim("email"))) {
             LOG.warn("Token refusé : claim email absent");
             return Uni.createFrom().failure(new AuthenticationFailedException("Email absent"));
         }
@@ -58,9 +59,27 @@ public class JwtRolesAugmentor implements SecurityIdentityAugmentor {
     }
 
     /**
-     * Google peut émettre {@code email_verified} en booléen ou en chaîne : les deux formes {@code true} sont acceptées.
+     * L'email doit être une valeur non nulle, non vide et non blanche ({@code JsonValue.NULL} et {@code JsonString} vide refusés).
+     */
+    private static boolean hasNonBlankEmail(Object claim) {
+        if (claim == null || JsonValue.NULL.equals(claim)) {
+            return false;
+        }
+        String value = claim instanceof JsonString js ? js.getString() : claim.toString();
+        return !value.isBlank();
+    }
+
+    /**
+     * Google peut émettre {@code email_verified} en booléen ou en chaîne : les formes {@code true} sont acceptées
+     * ({@code Boolean.TRUE}, chaîne "true", {@code JsonValue.TRUE}, {@code JsonString} "true"). Tout le reste est refusé.
      */
     private static boolean isEmailVerified(Object claim) {
-        return Boolean.TRUE.equals(claim) || (claim instanceof CharSequence cs && "true".equals(cs.toString()));
+        if (Boolean.TRUE.equals(claim) || JsonValue.TRUE.equals(claim)) {
+            return true;
+        }
+        if (claim instanceof JsonString js) {
+            return "true".equals(js.getString());
+        }
+        return claim instanceof CharSequence cs && "true".contentEquals(cs);
     }
 }
