@@ -1,7 +1,7 @@
 # Plan d'Action 004 — Revue architecture backend : sécurisation, fiabilisation, modernisation Quarkus/Mongo
 
 **Date création :** 2026-10-25
-**Statut :** 🔵 En cours — Gate #1 GO ; Phase 0 en ajustement (bascule `quarkus-oidc`)
+**Statut :** 🔵 En cours — Phase 0 ✅ clôturée (Gate #4 GO 2026-10-26, PR #220 non mergée, QUA/PROD à venir) ; Phase 1 en cadrage
 **Porteur :** ⚫ MAINa
 **ADR liés :** [ADR-005 — Authentification JWT via extension Quarkus](../../docs/adr/005-authentification-jwt-extension-quarkus.md) (`Acceptée` pour le principe ; choix final oidc / smallrye-jwt par essai Phase 0) · ADR-002 (migrations maison, maintenu) · ADR-004 (`Clock`, maintenu)
 
@@ -28,7 +28,7 @@ Contexte 👤 : application familiale, multi-utilisateurs. `ApiKeyRequired` + Us
 
 ---
 
-## Phase 0 — Hotfix sécurité JWT (Lot 0) — 🔵 en cours (autorisé avant Gate #1)
+## Phase 0 — Hotfix sécurité JWT (Lot 0) — ✅ clôturée (Gate #4 GO 2026-10-26)
 
 ### Contexte
 Faille S1/S2/S4/S5 exploitable aujourd'hui. Autorisation 👤 de lancer avant validation du plan complet.
@@ -224,6 +224,7 @@ Chaque phase : Gate #2 (code) → Gate #3 (tests) ; Gate #4 global en fin de pla
 | #2 (T0.6) | 2026-10-25 | Validation code après ajustement | ✅ GO | Build SUCCESS (communs : 4 erreurs Mongo sans Docker, préexistantes ; autres modules verts) ; `TestJwtRolesAugmentor` 6/6 ; `connection-timeout=3S`, `connection-delay=4S`, discovery conservée. 2 commits DEVon (code + docs), sans push ni PR. T0.7 sortie vers le plan IHM 008. Suite : QALvin T0.5 (test e2e, cas `JsonValue` pour `email_verified`) |
 | #3 (T0.5) | 2026-10-26 | Validation tests sécurité | 🔁 AJUSTER | 84 tests ajoutés, couverture sécurité ≥ 83 % en branches, régression détectée. Défaut 1 (jeton complet dans les logs `OidcProvider` WARN) → catégorie passée en ERROR (fix bc15842). Défaut 3 → augmentor durci (`JsonValue`/`JsonString`). **Défaut 2 conservé (décision 👤)** : JWKS injoignable → 500 au lieu de 401, limite connue (voir ci-dessous). Les 4 tests `@Disabled` BUG sont réactivés par QALvin |
 | #3 (T0.5) | 2026-10-26 | Validation tests après ajustement | ✅ GO | BUILD SUCCESS, 0 échec, 0 test « BUG AP004 » ignoré (communs : 4 erreurs Mongo sans Docker, préexistantes). `JwtRolesAugmentor` : 100 % lignes / 97 % branches. Tests de fuite rouges sans le correctif. Commits bc15842, b8ff152, 783fc3a. Push et PR faits par le 👤 ; pas de merge, pas de PROD. Suite : DOCly, phase doc limitée à la Phase 0 |
+| #4 (Phase 0) | 2026-10-26 | Validation doc + clôture Phase 0 | ✅ GO | `ARCHITECTURE.md` (sécurité, versions, ADR 003-005), ADR-005 `Acceptée` (896e0bd), rapport de tests harmonisé (f5dc86e). Wikis modifiés, commités par le 👤. Restent hors gate : merge PR #220, QUA (cold start, natif, `kid`), plan IHM 008 avant PROD. Phase 1 lancée en parallèle de la QUA, sur une branche distincte depuis `master`, sans toucher à la sécurité/OIDC |
 
 ### ⚠️ Limites connues (Phase 0)
 
