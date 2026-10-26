@@ -10,23 +10,17 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAut
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
-import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
-import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -49,9 +43,6 @@ class UtilisateursResourceTest {
 
     }
 
-    @BeforeEach
-    void setup() {
-    }
     @Test
     void testInfoEndpoint() {
         when(utilisateurService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));

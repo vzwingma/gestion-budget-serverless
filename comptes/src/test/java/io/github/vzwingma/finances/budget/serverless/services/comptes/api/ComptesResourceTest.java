@@ -8,26 +8,19 @@ import io.github.vzwingma.finances.budget.services.communs.api.security.Abstract
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
-import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
-import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -51,10 +44,7 @@ class ComptesResourceTest {
         QuarkusMock.installMockForType(mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
-    @BeforeEach
-    void setupMocks() {
-    }
-
+    
     @Test
     void testInfoEndpoint() {
         when(comptesService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
@@ -131,16 +121,5 @@ class ComptesResourceTest {
         p.setIss("https://accounts.google.com");
         p.setAud("test.apps.googleusercontent.com");
         return JwtTestSupport.signedBearer(new JWTAuthToken(h, p));
-    }
-
-    private static JwksAuthKey getJwksAuthKey() {
-        JwksAuthKey key = new JwksAuthKey();
-        key.setKid("test");
-        key.setKty("RSA");
-        key.setAlg("RS256");
-        key.setUse("sig");
-        key.setN("test");
-        key.setE("test");
-        return key;
     }
 }
