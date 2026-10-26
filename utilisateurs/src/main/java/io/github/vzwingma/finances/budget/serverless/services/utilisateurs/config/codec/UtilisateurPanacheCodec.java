@@ -18,7 +18,6 @@ import org.bson.codecs.EncoderContext;
 import org.bson.types.ObjectId;
 
 import java.time.Instant;
-import java.util.Date;
 
 /**
  * Panache Codec pour la classe Utilisateur
