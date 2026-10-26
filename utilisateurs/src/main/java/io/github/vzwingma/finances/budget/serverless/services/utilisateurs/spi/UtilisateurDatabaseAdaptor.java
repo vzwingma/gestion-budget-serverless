@@ -3,10 +3,17 @@ package io.github.vzwingma.finances.budget.serverless.services.utilisateurs.spi;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.model.Utilisateur;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.ports.IUtilisateursRepository;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
+import io.github.vzwingma.finances.budget.services.communs.utils.data.BudgetDateTimeUtils;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * Service Provider  données en MongoDB fournissant les infos des utilisateurs et comptes
@@ -39,15 +46,19 @@ public class UtilisateurDatabaseAdaptor implements IUtilisateursRepository {
 
 
     /**
-     * Met à jour l'utilisateur en BDD
+     * Met à jour uniquement la date de dernier accès ({@code $set} ciblé sur {@code dernierAcces}).
+     *
+     * @param login login utilisateur
+     * @param date  date de dernier accès
+     * @return flux vide à la fin de l'écriture
      */
-    public void majUtilisateur(Utilisateur utilisateur) {
-        try {
-            LOGGER.info("Mise à jour de l'utilisateur [{}]", utilisateur.getLogin());
-            update(utilisateur)
-                    .subscribe().with(item -> LOGGER.info("Utilisateur [{}] mis à jour", utilisateur.toFullString()));
-        } catch (Exception e) {
-            LOGGER.error("Erreur lors de la sauvegarde de l'utilisateur", e);
-        }
+    @Override
+    public Uni<Void> majDernierAcces(String login, LocalDateTime date) {
+        LOGGER.info("Mise à jour de la date de dernier accès de l'utilisateur [{}]", login);
+        Date dateMongo = Date.from(Instant.ofEpochMilli(BudgetDateTimeUtils.getMillisecondsFromLocalDateTime(date)));
+        return mongoCollection()
+                .updateOne(Filters.eq("login", login), Updates.set("dernierAcces", dateMongo))
+                .invoke(result -> LOGGER.info("Utilisateur [{}] : dernier accès mis à jour ({} document modifié)", login, result.getModifiedCount()))
+                .replaceWithVoid();
     }
 }
