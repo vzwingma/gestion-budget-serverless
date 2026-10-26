@@ -69,10 +69,11 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
     Uni<BudgetMensuel> sauvegardeBudgetMensuel(BudgetMensuel budget);
 
     /**
-     * Liste des libellés des opérations d'un compte
+     * Liste des libellés bruts des opérations d'un compte, regroupés côté MongoDB avec leur nombre d'occurrences
+     * (documents {@code {_id: {libelle, categorieId, ssCategorieId}, n}})
      *
      * @param idCompte id du  compte
-     * @return libelles des opérations
+     * @return groupes de libellés bruts avec leur compteur
      */
     Multi<Document> getLibellesOperations(String idCompte);
 

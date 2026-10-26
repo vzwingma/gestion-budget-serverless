@@ -492,79 +492,142 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     }
 
     /**
-     * Création des opérations de virement interne
+     * Création des opérations de virement interne.
+     * <p>
+     * Écritures <strong>séquentielles</strong> (ADR-007) : opération sur le compte source, puis opération sur le compte
+     * de destination. Si l'écriture cible échoue, l'opération source est retirée (compensation) et l'erreur d'origine
+     * est propagée. Un échec de la compensation est loggé en ERROR (identifiants source et destination) et n'écrase pas
+     * l'erreur d'origine.
+     * <p>
+     * Gardes avant toute écriture : source = destination (400), compte destination introuvable (404),
+     * compte destination clos (406).
      *
      * @param idBudget            identifiant du budget source
      * @param ligneOperation      ligne de dépense à ajouter
      * @param idCompteDestination identifiant du compte de destination
-     * @return budget mensuel mis à jour
+     * @return budget mensuel source mis à jour
      */
     @Override
     public Uni<BudgetMensuel> createOperationsVirementInterne(String idBudget, final LigneOperation ligneOperation, String idCompteDestination, String auteur) {
 
         try {
-            final String libelleOperation = ligneOperation.getLibelle();
-            String idBudgetDestination = BudgetMensuel.getBudgetId(idCompteDestination, BudgetDataUtils.getMoisFromBudgetId(idBudget), BudgetDataUtils.getAnneeFromBudgetId(idBudget));
-            String idCompteSource = BudgetDataUtils.getCompteFromBudgetId(idBudget);
-            Month moisFromBudgetId = BudgetDataUtils.getMoisFromBudgetId(idBudget);
-            Integer anneeFromBudgetId = BudgetDataUtils.getAnneeFromBudgetId(idBudget);
+            final String idCompteSource = BudgetDataUtils.getCompteFromBudgetId(idBudget);
+            final Month moisFromBudgetId = BudgetDataUtils.getMoisFromBudgetId(idBudget);
+            final int anneeFromBudgetId = BudgetDataUtils.getAnneeFromBudgetId(idBudget);
 
-            if(!IdsCategoriesEnum.SS_CAT_VIREMENT_INTERNE.getId().equals(ligneOperation.getSsCategorie().getId())){
+            if (ligneOperation.getSsCategorie() == null || !IdsCategoriesEnum.SS_CAT_VIREMENT_INTERNE.getId().equals(ligneOperation.getSsCategorie().getId())) {
                 LOGGER.error("L'opération {} n'est pas un virement interne. L'opération est annulée", ligneOperation.getLibelle());
-                return Uni.createFrom().failure(new BadParametersException("L'opération "+ligneOperation+" n'est pas un virement interne"));
+                return Uni.createFrom().failure(new BadParametersException("L'opération " + ligneOperation + " n'est pas un virement interne"));
             }
-            LOGGER.info("Ajout d'un virement interne de {} vers {} ({}) > {} ", idBudget, idBudgetDestination, idCompteDestination, ligneOperation);
+            // Garde (Q4) : virement vers le même compte -> 400 (BadParametersException, comme les autres paramètres invalides)
+            if (idCompteSource.equals(idCompteDestination)) {
+                LOGGER.error("Virement interne refusé : le compte source et le compte de destination sont identiques ({})", idCompteSource);
+                return Uni.createFrom().failure(new BadParametersException("Virement interne impossible : le compte source et le compte de destination sont identiques"));
+            }
+            LOGGER.info("Ajout d'un virement interne de {} vers le compte {} > {} ", idBudget, idCompteDestination, ligneOperation);
 
-            /*
-             * Opération sur Compte source
-             */
-            Uni<BudgetMensuel> budgetCourant =
-                    Uni.combine().all().unis(
-                                    getBudgetAndCompteActif(idBudget).map(Tuple2::getItem1),
-                                    this.comptesService.getCompteById(idCompteDestination))
-                            .asTuple()
-                            .invoke(tuple -> {
-                                BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteDestination);
-                                ligneOperation.setLibelle("[vers " + tuple.getItem2().getId() + "] " + libelleOperation);
-                                try {
-                                    this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), ligneOperation, auteur, null);
-                                } catch (DataNotFoundException e) {
-                                    tuple.mapItem1(u -> Uni.createFrom().failure(e));
-                                }
-                            })
-                            .map(Tuple2::getItem1)
-                            .onItem().ifNotNull()
-                            .invoke(this::recalculSoldes)
-                            // Sauvegarde du budget
-                            .call(this::sauvegardeBudget);
-
-            /*
-             * Opération sur Compte cible
-             */
-            Uni<BudgetMensuel> budgetCible = this.comptesService.getCompteById(idCompteDestination)
-                                                .onItem().ifNotNull()
-                                                .transformToUni(compteDestination -> chargerBudgetMensuelSurCompteActif(compteDestination, moisFromBudgetId, anneeFromBudgetId))
-                            .invoke(tuple -> {
-                                BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudgetDestination).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource);
-                                String libelleOperationCible = "[depuis " + idCompteSource+ "] " + libelleOperation;
-                                this.operationsAppProvider.addOperationVirementInterne(tuple.getListeOperations(), ligneOperation, libelleOperationCible, auteur);
-                            })
-                            .onItem().ifNotNull()
-                            .invoke(this::recalculSoldes)
-                            // Sauvegarde du budget
-                            .call(this::sauvegardeBudget);
-
-            return Uni.combine().all().unis(budgetCourant, budgetCible)
+            // Lecture du budget et du compte source (actif), et un seul appel de lecture du compte de destination
+            return Uni.combine().all().unis(
+                            getBudgetAndCompteActif(idBudget).map(Tuple2::getItem1),
+                            this.comptesService.getCompteById(idCompteDestination))
                     .asTuple()
-                    .onItem()
-                    .invoke(tuple -> BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource))
-                    .onItem()
-                    .ifNotNull().transform(Tuple2::getItem1);
+                    .chain(tuple -> {
+                        CompteBancaire compteDestination = tuple.getItem2();
+                        if (compteDestination == null) {
+                            LOGGER.error("Virement interne refusé : compte de destination {} introuvable", idCompteDestination);
+                            return Uni.createFrom().failure(new DataNotFoundException("Compte de destination " + idCompteDestination + " introuvable"));
+                        }
+                        // Garde (Q4) : compte de destination clos -> 406
+                        if (!Boolean.TRUE.equals(compteDestination.isActif())) {
+                            LOGGER.error("Virement interne refusé : le compte de destination {} est clos", idCompteDestination);
+                            return Uni.createFrom().failure(new CompteClosedException("Impossible de créer un virement vers le compte " + idCompteDestination + " : il est cloturé"));
+                        }
+                        return virementInterneSequentiel(tuple.getItem1(), compteDestination, idCompteSource, idBudget, moisFromBudgetId, anneeFromBudgetId, ligneOperation, auteur);
+                    })
+                    .invoke(budgetSource -> BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource));
 
         } catch (BudgetNotFoundException e) {
             LOGGER.error("Erreur lors de la création des opérations de virements internes", e);
             return Uni.createFrom().failure(e);
         }
+    }
+
+    /**
+     * Écritures séquentielles du virement interne : source, puis cible, avec compensation de la source si la cible échoue.
+     *
+     * @return budget source sauvegardé
+     */
+    private Uni<BudgetMensuel> virementInterneSequentiel(BudgetMensuel budgetSource, CompteBancaire compteDestination, String idCompteSource,
+                                                         String idBudget, Month mois, int annee, LigneOperation ligneOperation, String auteur) {
+        final String libelleOperation = ligneOperation.getLibelle();
+        final String idOperation = ligneOperation.getId();
+
+        // 1. Écriture source
+        return ecrireOperationVirementSource(budgetSource, compteDestination, idBudget, ligneOperation, libelleOperation, auteur)
+                // 2. Écriture cible, puis compensation de la source en cas d'échec (l'erreur d'origine est propagée)
+                .chain(budgetSourceSauvegarde -> ecrireOperationVirementCible(compteDestination, idCompteSource, mois, annee, ligneOperation, libelleOperation, auteur)
+                        .replaceWith(budgetSourceSauvegarde)
+                        .onFailure().recoverWithUni(erreur -> {
+                            LOGGER.error("Echec de l'écriture du virement sur le compte {} : compensation de l'opération {} du compte {}", compteDestination.getId(), idOperation, idCompteSource, erreur);
+                            return compenserVirementSource(budgetSourceSauvegarde, idOperation, idCompteSource, compteDestination.getId())
+                                    .chain(() -> Uni.createFrom().<BudgetMensuel>failure(erreur));
+                        }));
+    }
+
+    /**
+     * Ajout de l'opération de virement (dépense) dans le budget du compte source, recalcul et sauvegarde.
+     */
+    private Uni<BudgetMensuel> ecrireOperationVirementSource(BudgetMensuel budgetSource, CompteBancaire compteDestination, String idBudget,
+                                                             LigneOperation ligneOperation, String libelleOperation, String auteur) {
+        return Uni.createFrom().item(budgetSource)
+                .invoke(budget -> {
+                    BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, compteDestination.getId());
+                    ligneOperation.setLibelle("[vers " + compteDestination.getId() + "] " + libelleOperation);
+                })
+                .chain(budget -> {
+                    try {
+                        this.operationsAppProvider.addOrReplaceOperation(budget.getListeOperations(), ligneOperation, auteur, null);
+                    } catch (DataNotFoundException e) {
+                        // Erreur propagée (F2a)
+                        return Uni.createFrom().<BudgetMensuel>failure(e);
+                    }
+                    recalculSoldes(budget);
+                    return sauvegardeBudget(budget);
+                });
+    }
+
+    /**
+     * Ajout de l'opération de virement (rentrée) dans le budget du compte de destination, recalcul et sauvegarde.
+     */
+    private Uni<BudgetMensuel> ecrireOperationVirementCible(CompteBancaire compteDestination, String idCompteSource, Month mois, int annee,
+                                                            LigneOperation ligneOperation, String libelleOperation, String auteur) {
+        return chargerBudgetMensuelSurCompteActif(compteDestination, mois, annee)
+                .invoke(budgetCible -> {
+                    BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, budgetCible.getId()).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource);
+                    String libelleOperationCible = "[depuis " + idCompteSource + "] " + libelleOperation;
+                    this.operationsAppProvider.addOperationVirementInterne(budgetCible.getListeOperations(), ligneOperation, libelleOperationCible, auteur);
+                })
+                .invoke(this::recalculSoldes)
+                .call(this::sauvegardeBudget);
+    }
+
+    /**
+     * Compensation : retire l'opération de virement du budget source et le sauvegarde. Un échec de compensation est
+     * loggé en ERROR avec les identifiants source et destination, et n'est pas propagé.
+     */
+    private Uni<Void> compenserVirementSource(BudgetMensuel budgetSource, String idOperation, String idCompteSource, String idCompteDestination) {
+        return Uni.createFrom().item(budgetSource)
+                .invoke(budget -> {
+                    this.operationsAppProvider.deleteOperation(budget.getListeOperations(), idOperation);
+                    recalculSoldes(budget);
+                })
+                .chain(this::sauvegardeBudget)
+                .replaceWithVoid()
+                .onFailure().recoverWithUni(erreurCompensation -> {
+                    LOGGER.error("ECHEC de la compensation du virement interne : l'opération {} reste dans le budget du compte source {} alors que le virement vers {} a échoué. Intervention manuelle nécessaire",
+                            idOperation, idCompteSource, idCompteDestination, erreurCompensation);
+                    return Uni.createFrom().voidItem();
+                });
     }
 
     /**

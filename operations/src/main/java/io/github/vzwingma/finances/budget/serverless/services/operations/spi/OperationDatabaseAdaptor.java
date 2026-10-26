@@ -92,7 +92,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
         if(mois != null){
             query += " and " + ATTRIBUT_MOIS + " = ?3";
         }
-        return find(query, idCompte, annee, mois, Sort.by("id"))
+        return find(query, Sort.by(ATTRIBUT_BUDGET_ID), idCompte, annee, mois)
                 .project(ProjectionBudgetSoldes.class)
                 .stream()
                 .onFailure()
@@ -200,7 +200,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     public Multi<BudgetMensuel> overrideLibellesOperations(String idCompte, List<LibelleAvantApres> libellesToOverride) {
 
         LOGGER.info("Mise à jour des libellés des opérations du compte {} : {} éléments", idCompte, libellesToOverride != null ? libellesToOverride.size() : 0);
-        return find(ATTRIBUT_COMPTE_ID + "=?1", idCompte, Sort.by("id"))
+        return find(ATTRIBUT_COMPTE_ID + "=?1", Sort.by(ATTRIBUT_BUDGET_ID), idCompte)
                 .stream()
                 .onItem().transform(budget -> {
                     if (budget.getListeOperations() == null) {
@@ -226,39 +226,35 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     }
 
     /**
-     * Liste des libellés des opérations d'un compte
+     * Liste des libellés des opérations d'un compte, regroupés côté MongoDB (C3) sur la valeur brute
+     * (libellé, catégorie, sous-catégorie) avec le nombre d'occurrences de chaque combinaison.
+     * La normalisation des libellés (suppression des tags et commentaires) reste côté Java : elle somme ensuite les compteurs.
+     * <p>
+     * Documents retournés : {@code {_id: {libelle, categorieId, ssCategorieId}, n: <nombre d'opérations>}}
+     * (un champ absent de l'opération est absent de {@code _id}).
      *
      * @param idCompte id du  compte
-     * @return libelles des opérations
+     * @return groupes de libellés bruts avec leur compteur
      */
     @Override
     public Multi<Document> getLibellesOperations(String idCompte) {
 
         LOGGER.info("Liste des libellés des opérations du compte {}", idCompte);
-        String opattribute = "operationLibelleAttributes";
+        String listeOperations = "$listeOperations";
         return mongoCollection()
                 .aggregate(
                         Arrays.asList(
                                 new Document("$match",
                                         new Document(ATTRIBUT_COMPTE_ID, idCompte)),
-                                // On projette les libellés des opérations et les catégories associées
-                                new Document("$project",
-                                        new Document(opattribute,
-                                                new Document("$map",
-                                                        new Document("input", "$listeOperations")
-                                                                .append("as", "operation")
-                                                                .append("in",
-                                                                        new Document("libelle", "$$operation.libelle")
-                                                                                .append("categorieId"   , "$$operation.categorie._id")
-                                                                                .append("ssCategorieId" , "$$operation.ssCategorie._id"))
-                                                )
-                                        )
-                                ),
-                                // et on éclate le tableau en documents séparés
-                                new Document("$unwind",
-                                        new Document("path", "$" + opattribute)
-                                                .append("includeArrayIndex", "string")
-                                                .append("preserveNullAndEmptyArrays", false))
+                                // on éclate le tableau des opérations en documents séparés
+                                new Document("$unwind", new Document("path", listeOperations).append("preserveNullAndEmptyArrays", false)),
+                                // et on regroupe sur la valeur brute du libellé et des catégories, avec un compteur
+                                new Document("$group",
+                                        new Document("_id",
+                                                new Document("libelle", listeOperations + ".libelle")
+                                                        .append("categorieId", listeOperations + ".categorie._id")
+                                                        .append("ssCategorieId", listeOperations + ".ssCategorie._id"))
+                                                .append("n", new Document("$sum", 1)))
                         )
                         , Document.class);
     }
