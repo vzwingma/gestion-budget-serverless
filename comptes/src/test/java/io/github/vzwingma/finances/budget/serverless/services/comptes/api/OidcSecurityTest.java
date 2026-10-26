@@ -10,7 +10,6 @@ import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -30,6 +29,7 @@ import java.util.stream.Stream;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -276,8 +276,21 @@ class OidcSecurityTest {
 
     // ---------- logs : aucun jeton / clé API dans les logs ----------
 
-    /** Envoie le jeton avec une clé API secrète et renvoie tout ce qui a été loggé pendant l'appel. */
+    /**
+     * Envoie le jeton avec une clé API secrète et renvoie tout ce qui a été loggé pendant l'appel, via un handler JUL posé sur le logger racine
+     * (reçoit tout enregistrement dépassant le niveau de sa catégorie).
+     * <p>
+     * Depuis le correctif du défaut 1 (catégorie {@code io.quarkus.oidc.runtime.OidcProvider} relevée à ERROR), quarkus-oidc n'émet plus de WARN
+     * contenant le jeton : la capture peut légitimement être vide pour signature invalide / jeton expiré. La preuve « sans fuite » n'est donc pas
+     * garantie par un volume de logs, mais par (1) le contrôle que le jeton est bien rejeté (401), (2) le test sentinelle
+     * {@link #capture_logsApplicatifs_sentinelle} qui prouve que le handler reçoit bien les logs applicatifs, et (3) la preuve de régression :
+     * retirer la ligne de catégorie des application.properties fait échouer {@code logs_signatureInvalide_aucuneFuite}.
+     */
     private String logsPendantAppel(String token, String apiKey) {
+        return logsPendantAppel(token, apiKey, true);
+    }
+
+    private String logsPendantAppel(String token, String apiKey, boolean attendu401) {
         List<String> messages = Collections.synchronizedList(new ArrayList<>());
         Handler handler = new Handler() {
             @Override
@@ -298,13 +311,16 @@ class OidcSecurityTest {
         };
         java.util.logging.Logger root = java.util.logging.Logger.getLogger("");
         root.addHandler(handler);
+        int status;
         try {
-            given().header(HttpHeaders.AUTHORIZATION, OidcTokenForge.bearer(token)).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, apiKey)
+            status = given().header(HttpHeaders.AUTHORIZATION, OidcTokenForge.bearer(token)).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, apiKey)
                     .when().get(URL).then().extract().statusCode();
         } finally {
             root.removeHandler(handler);
         }
-        assertFalse(messages.isEmpty(), "des logs doivent avoir été capturés (sinon le test ne prouve rien)");
+        if (attendu401) {
+            assertEquals(401, status, "le jeton doit être rejeté (sinon le scénario testé n'est pas celui attendu)");
+        }
         return String.join("\n", messages);
     }
 
@@ -321,7 +337,16 @@ class OidcSecurityTest {
     @Test
     void logs_jetonValide_aucuneFuite() {
         String token = OidcTokenForge.valid(OidcTokenForge.validClaims());
-        assertSansFuite(logsPendantAppel(token, "SECRET-API-KEY-987"), token, "SECRET-API-KEY-987");
+        assertSansFuite(logsPendantAppel(token, "SECRET-API-KEY-987", false), token, "SECRET-API-KEY-987");
+    }
+
+    /** Sentinelle : un refus applicatif (issuer invalide) émet un WARN de l'augmentor ; prouve que la capture reçoit bien les logs. */
+    @Test
+    void capture_logsApplicatifs_sentinelle() {
+        Map<String, Object> bad = OidcTokenForge.validClaims();
+        bad.put("iss", "https://evil.com");
+        String logs = logsPendantAppel(OidcTokenForge.valid(bad), "SECRET-API-KEY-987");
+        assertTrue(logs.contains("issuer inattendu"), "le handler doit capturer le WARN de l'augmentor, sinon les tests de fuite passent à vide : " + logs);
     }
 
     @Test
@@ -346,13 +371,26 @@ class OidcSecurityTest {
         assertFalse(logsPendantAppel(token, "SECRET-API-KEY-987").contains("SECRET-API-KEY-987"), "clé API présente dans les logs");
     }
 
+    /** Défaut 1 (corrigé) : OidcProvider logguait le jeton complet en WARN sur signature invalide. */
     @Test
-    @Disabled("BUG AP004 T0.5 — quarkus-oidc (io.quarkus.oidc.runtime.OidcProvider:294, WARN) logue le jeton COMPLET (en-tête, payload, signature) "
-            + "quand la signature est invalide (message jose4j 'Invalid JWS Signature: JsonWebSignature{...}->jeton'). "
-            + "Correctif attendu (DEVon) : relever le niveau de la catégorie io.quarkus.oidc.runtime.OidcProvider (ex. ERROR) dans les application.properties, "
-            + "ou filtrer. Retirer ce @Disabled une fois corrigé.")
     void logs_signatureInvalide_aucuneFuite() {
         String token = OidcTokenForge.sign(OidcTokenForge.rs256Header(), OidcTokenForge.validClaims(), OidcTokenForge.otherPrivateKey());
         assertSansFuite(logsPendantAppel(token, "SECRET-API-KEY-987"), token, "SECRET-API-KEY-987");
+    }
+
+    @Test
+    void logs_jetonMalForme_aucuneFuite() {
+        String token = OidcTokenForge.valid(OidcTokenForge.validClaims());
+        String tronque = token.substring(0, token.length() - 10);
+        String logs = logsPendantAppel(tronque, "SECRET-API-KEY-987");
+        assertFalse(logs.contains(tronque), "jeton tronqué présent dans les logs");
+        assertFalse(logs.contains(token.split("[.]")[1]), "payload présent dans les logs");
+        assertFalse(logs.contains("SECRET-API-KEY-987"), "clé API présente dans les logs");
+    }
+
+    @Test
+    void logs_jetonIllisible_aucuneFuite() {
+        String logs = logsPendantAppel("a.b.c", "SECRET-API-KEY-987");
+        assertFalse(logs.contains("SECRET-API-KEY-987"), "clé API présente dans les logs");
     }
 }

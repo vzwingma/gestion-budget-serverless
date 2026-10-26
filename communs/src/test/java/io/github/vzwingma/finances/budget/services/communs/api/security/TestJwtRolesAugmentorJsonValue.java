@@ -7,8 +7,9 @@ import jakarta.json.Json;
 import jakarta.json.JsonValue;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Set;
 
@@ -22,8 +23,8 @@ import static org.mockito.Mockito.when;
  * selon l'implémentation MP JWT, {@code getClaim} peut renvoyer ces types plutôt que {@code Boolean} / {@code String}.
  * <p>
  * Constat : le test e2e du module comptes ({@code OidcSecurityTest}) prouve que, avec {@code quarkus-oidc} 3.40, {@code getClaim}
- * renvoie bien {@code Boolean} / {@code String} (jetons acceptés, 200). Le cas {@code JsonValue.TRUE} reste théorique mais est refusé
- * par le code actuel : test désactivé et signalé (voir {@code @Disabled}).
+ * renvoie bien {@code Boolean} / {@code String} (jetons acceptés, 200). L'augmentor est durci pour accepter aussi les formes
+ * {@code JsonValue.TRUE} / {@code JsonString "true"} et refuser {@code email} nul, {@code JsonValue.NULL}, vide ou blanc.
  */
 class TestJwtRolesAugmentorJsonValue {
 
@@ -56,41 +57,50 @@ class TestJwtRolesAugmentorJsonValue {
     }
 
     @Test
-    @Disabled("BUG AP004 T0.5 (non bloquant en pratique, à arbitrer par DEVon) — JwtRolesAugmentor.isEmailVerified refuse JsonValue.TRUE "
-            + "(n'accepte que Boolean.TRUE ou CharSequence 'true'). Le type réel renvoyé par quarkus-oidc est Boolean (prouvé par l'e2e comptes), "
-            + "donc aucun impact constaté. Correctif suggéré : accepter aussi JsonValue.TRUE (ou comparer JsonValue.ValueType.TRUE).")
-    void emailVerifiedJsonValueTrue_devraitEtreAccepte() {
-        SecurityIdentity result = augment("a@b.com", JsonValue.TRUE);
-        assertTrue(result.getRoles().contains("USER_COMPTES"));
+    void emailVerifiedJsonValueTrue_accepte() {
+        assertTrue(augment("a@b.com", JsonValue.TRUE).getRoles().contains("USER_COMPTES"));
     }
 
     @Test
-    @Disabled("BUG AP004 T0.5 (même cause que ci-dessus) — JsonString 'true' n'est pas un CharSequence : refusé alors que la valeur sémantique est true.")
-    void emailVerifiedJsonStringTrue_devraitEtreAccepte() {
-        SecurityIdentity result = augment("a@b.com", Json.createValue("true"));
-        assertTrue(result.getRoles().contains("USER_COMPTES"));
+    void emailVerifiedJsonStringTrue_accepte() {
+        assertTrue(augment("a@b.com", Json.createValue("true")).getRoles().contains("USER_COMPTES"));
     }
 
     @Test
-    void emailVerifiedJsonValueTrue_etJsonString_documentation_refusActuel() {
-        // Caractérise le comportement actuel (fail-closed) : refus, sans exception autre que AuthenticationFailedException
-        assertThrows(AuthenticationFailedException.class, () -> augment("a@b.com", JsonValue.TRUE));
-        assertThrows(AuthenticationFailedException.class, () -> augment("a@b.com", Json.createValue("true")));
+    void emailVerifiedChaineTrue_accepte() {
+        assertTrue(augment("a@b.com", "true").getRoles().contains("USER_COMPTES"));
     }
 
     @Test
     void emailVerifiedJsonValueFalse_refuse() {
         assertThrows(AuthenticationFailedException.class, () -> augment("a@b.com", JsonValue.FALSE));
-        assertThrows(AuthenticationFailedException.class, () -> augment("a@b.com", Json.createValue("false")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"false", "TRUE", "True", "1", "yes", "", " true"})
+    void emailVerifiedChaineNonTrue_refusee(String value) {
+        assertThrows(AuthenticationFailedException.class, () -> augment("a@b.com", value), "String " + value);
+        assertThrows(AuthenticationFailedException.class, () -> augment("a@b.com", Json.createValue(value)), "JsonString " + value);
     }
 
     @Test
-    @Disabled("BUG AP004 T0.5 (théorique, même famille) — JwtRolesAugmentor teste email.toString().isBlank() : pour un JsonValue.NULL, toString() = 'null' "
-            + "et pour un JsonString vide/blanc toString() = '\"   \"' (guillemets inclus) => jamais blanc => email vide ACCEPTÉ. "
-            + "Aucun impact constaté : le type réel d'email est String (e2e comptes : email vide/blanc => 401). Correctif suggéré : extraire la valeur "
-            + "(JsonString#getString) ou n'accepter que String.")
-    void emailJsonValueNullOuBlanc_devraitEtreRefuse() {
+    void emailVerifiedAutresTypes_refuse() {
+        assertThrows(AuthenticationFailedException.class, () -> augment("a@b.com", null));
+        assertThrows(AuthenticationFailedException.class, () -> augment("a@b.com", JsonValue.NULL));
+        assertThrows(AuthenticationFailedException.class, () -> augment("a@b.com", Boolean.FALSE));
+        assertThrows(AuthenticationFailedException.class, () -> augment("a@b.com", 1));
+    }
+
+    @Test
+    void emailNullOuJsonNull_refuse() {
+        assertThrows(AuthenticationFailedException.class, () -> augment(null, true));
         assertThrows(AuthenticationFailedException.class, () -> augment(JsonValue.NULL, true));
-        assertThrows(AuthenticationFailedException.class, () -> augment(Json.createValue("   "), true));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "   ", "	"})
+    void emailVideOuBlanc_refuse(String value) {
+        assertThrows(AuthenticationFailedException.class, () -> augment(value, true), "String [" + value + "]");
+        assertThrows(AuthenticationFailedException.class, () -> augment(Json.createValue(value), true), "JsonString [" + value + "]");
     }
 }
