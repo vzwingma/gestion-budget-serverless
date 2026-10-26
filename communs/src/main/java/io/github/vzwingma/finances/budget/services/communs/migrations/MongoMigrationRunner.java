@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Exécute au démarrage de l'application les migrations MongoDB ({@link IMongoMigration}) non encore
@@ -32,6 +33,12 @@ public class MongoMigrationRunner {
     private final Instance<IMongoMigration> migrations;
 
     private final MigrationRepository migrationRepository;
+
+    /**
+     * Identifiant de ce runner (unique par instance, donc par cold start), écrit dans le champ {@code owner}
+     * de la réservation : seul le détenteur peut finaliser le statut (ADR-006).
+     */
+    private final String owner = UUID.randomUUID().toString();
 
     @Inject
     public MongoMigrationRunner(Instance<IMongoMigration> migrations, MigrationRepository migrationRepository) {
@@ -86,19 +93,28 @@ public class MongoMigrationRunner {
     }
 
     /**
-     * Exécute une migration unitaire et journalise explicitement le résultat, avec enregistrement dans
-     * la collection {@code _migrations} en cas de succès comme en cas d'échec (traçabilité).
+     * Réserve atomiquement la version puis exécute la migration et finalise son statut dans la collection
+     * {@code _migrations}. Si la version est déjà prise (SUCCES, ou EN_COURS non périmé chez un autre runner),
+     * on passe à la version suivante sans l'exécuter. Un échec de migration est tracé en {@code ECHEC}
+     * (rejouable au prochain démarrage, y compris vers {@code SUCCES}).
      */
     private Uni<Void> executerMigration(IMongoMigration migration) {
-        if (LOG.isInfoEnabled()) {
-            LOG.info("[MIGRATIONS] Exécution migration {} : {}", migration.version(), migration.description());
-        }
-        return migration.migrate()
-                .chain(() -> migrationRepository.enregistrerSucces(migration.version(), migration.description()))
-                .invoke(() -> LOG.info("[MIGRATIONS] Migration {} appliquée avec succès", migration.version()))
-                .onFailure().recoverWithUni(erreur -> {
-                    LOG.error("[MIGRATIONS] ECHEC migration {} ({}) : {}", migration.version(), migration.description(), erreur.getMessage(), erreur);
-                    return migrationRepository.enregistrerEchec(migration.version(), migration.description());
+        return migrationRepository.reserver(migration.version(), migration.description(), owner)
+                .chain(reservee -> {
+                    if (Boolean.FALSE.equals(reservee)) {
+                        LOG.info("[MIGRATIONS] Migration {} déjà prise par un autre runner ou déjà appliquée, ignorée", migration.version());
+                        return Uni.createFrom().voidItem();
+                    }
+                    if (LOG.isInfoEnabled()) {
+                        LOG.info("[MIGRATIONS] Exécution migration {} : {}", migration.version(), migration.description());
+                    }
+                    return migration.migrate()
+                            .chain(() -> migrationRepository.finaliserSucces(migration.version(), owner))
+                            .invoke(() -> LOG.info("[MIGRATIONS] Migration {} appliquée avec succès", migration.version()))
+                            .onFailure().recoverWithUni(erreur -> {
+                                LOG.error("[MIGRATIONS] ECHEC migration {} ({}) : {}", migration.version(), migration.description(), erreur.getMessage(), erreur);
+                                return migrationRepository.finaliserEchec(migration.version(), owner);
+                            });
                 });
     }
 }

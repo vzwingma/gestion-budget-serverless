@@ -55,7 +55,8 @@ class TestMigrationRecord {
 
     @Test
     void testMigrationStatutEnumValues() {
-        assertEquals(2, MigrationRecord.MigrationStatutEnum.values().length);
+        assertEquals(3, MigrationRecord.MigrationStatutEnum.values().length);
+        assertEquals(MigrationRecord.MigrationStatutEnum.EN_COURS, MigrationRecord.MigrationStatutEnum.valueOf("EN_COURS"));
         assertEquals(MigrationRecord.MigrationStatutEnum.SUCCES, MigrationRecord.MigrationStatutEnum.valueOf("SUCCES"));
         assertEquals(MigrationRecord.MigrationStatutEnum.ECHEC, MigrationRecord.MigrationStatutEnum.valueOf("ECHEC"));
     }

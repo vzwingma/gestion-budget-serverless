@@ -19,8 +19,8 @@ import static org.junit.jupiter.api.Assertions.fail;
  * Test d'intégration de {@link MigrationRepository} contre un vrai MongoDB (Dev Services), en
  * complément du test de fumée {@link TestMigrationRepository}.
  * <p>
- * Couvre {@link MigrationRepository#enregistrerSucces(String, String)},
- * {@link MigrationRepository#enregistrerEchec(String, String)} et le filtrage opéré par
+ * Couvre {@link MigrationRepository#finaliserSucces(String, String)},
+ * {@link MigrationRepository#finaliserEchec(String, String)} et le filtrage opéré par
  * {@link MigrationRepository#listerVersionsAppliquees()} (seules les versions {@code SUCCES} sont
  * retournées — comportement dont dépend l'idempotence de {@link MongoMigrationRunner}).
  * <p>
@@ -52,6 +52,8 @@ class TestMigrationRepositoryPersistence {
     private static final String VERSION_LISTE_SUCCES_2 = "TEST-LISTE-002";
     private static final String VERSION_LISTE_ECHEC = "TEST-LISTE-003";
 
+    private static final String OWNER = "owner-test";
+
     @Inject
     MigrationRepository migrationRepository;
 
@@ -66,6 +68,19 @@ class TestMigrationRepositoryPersistence {
     }
 
     /**
+     * Simule l'exécution complète d'une version : réservation (ADR-006) puis finalisation par le même owner.
+     */
+    private void enregistrer(String version, String description, boolean succes) {
+        assertTrue(migrationRepository.reserver(version, description, OWNER).await().indefinitely(),
+                "La version doit pouvoir être réservée");
+        if (succes) {
+            migrationRepository.finaliserSucces(version, OWNER).await().indefinitely();
+        } else {
+            migrationRepository.finaliserEchec(version, OWNER).await().indefinitely();
+        }
+    }
+
+    /**
      * Relit un {@link MigrationRecord} par sa version via {@link MigrationRepository#findById(Object)}.
      */
     private Optional<MigrationRecord> recupererRecordParVersion(String version) {
@@ -76,7 +91,7 @@ class TestMigrationRepositoryPersistence {
     void testEnregistrerSucces_persisteRecordAvecStatutSucces() {
         String description = "Migration test enregistrée en succès";
 
-        migrationRepository.enregistrerSucces(VERSION_SUCCES, description).await().indefinitely();
+        enregistrer(VERSION_SUCCES, description, true);
 
         MigrationRecord recordPersiste = recupererRecordParVersion(VERSION_SUCCES)
                 .orElseGet(() -> fail("Le MigrationRecord doit être persisté et retrouvable via findById()"));
@@ -95,7 +110,7 @@ class TestMigrationRepositoryPersistence {
     void testEnregistrerEchec_persisteRecordAvecStatutEchec() {
         String description = "Migration test enregistrée en échec";
 
-        migrationRepository.enregistrerEchec(VERSION_ECHEC, description).await().indefinitely();
+        enregistrer(VERSION_ECHEC, description, false);
 
         MigrationRecord recordPersiste = recupererRecordParVersion(VERSION_ECHEC)
                 .orElseGet(() -> fail("Le MigrationRecord doit être persisté même en cas d'échec (traçabilité)"));
@@ -106,7 +121,7 @@ class TestMigrationRepositoryPersistence {
         assertNotNull(recordPersiste.getDateExecution());
 
         // Une migration en échec ne doit pas être considérée "appliquée" : permet une nouvelle tentative
-        // au prochain démarrage (cf. javadoc MigrationRepository#enregistrerEchec).
+        // au prochain démarrage (cf. javadoc MigrationRepository#finaliserEchec).
         List<String> versionsAppliquees = migrationRepository.listerVersionsAppliquees().await().indefinitely();
         assertFalse(versionsAppliquees.contains(VERSION_ECHEC),
                 "listerVersionsAppliquees() ne doit pas inclure une version en échec");
@@ -114,9 +129,9 @@ class TestMigrationRepositoryPersistence {
 
     @Test
     void testListerVersionsAppliquees_neRetourneQueLesVersionsEnSucces() {
-        migrationRepository.enregistrerSucces(VERSION_LISTE_SUCCES_1, "Migration succès 1").await().indefinitely();
-        migrationRepository.enregistrerSucces(VERSION_LISTE_SUCCES_2, "Migration succès 2").await().indefinitely();
-        migrationRepository.enregistrerEchec(VERSION_LISTE_ECHEC, "Migration échec").await().indefinitely();
+        enregistrer(VERSION_LISTE_SUCCES_1, "Migration succès 1", true);
+        enregistrer(VERSION_LISTE_SUCCES_2, "Migration succès 2", true);
+        enregistrer(VERSION_LISTE_ECHEC, "Migration échec", false);
 
         List<String> versionsAppliquees = migrationRepository.listerVersionsAppliquees().await().indefinitely();
 
