@@ -1,6 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business;
 
 
+import com.mongodb.MongoException;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.ProjectionBudgetSoldes;
@@ -25,11 +26,14 @@ import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadP
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DonneeCorrompueException;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -41,6 +45,9 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.IntStream;
 
 /**
  * Service fournissant les budgets
@@ -77,6 +84,11 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     @Inject
     IJwtSigningKeyReadRepository iJwtSigningKeyReadRepository;
 
+    /**
+     * Nombre maximal de mois intermédiaires sans budget créés pour un compte actif (F4)
+     */
+    static final int MAX_MOIS_REMPLISSAGE = 24;
+
     Clock clock = Clock.systemUTC();
     /**
      * Chargement du budget du mois courant
@@ -95,7 +107,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                 .onItem().ifNotNull()
                 .transformToUni(compte -> {
                     if (Boolean.TRUE.equals(compte.isActif())) {
-                        return chargerBudgetMensuelSurCompteActif(compte, mois, annee);
+                        return chargerBudgetMensuelSurCompteActif(compte, mois, annee, ModeChargement.AFFICHAGE);
                     } else {
                         return chargerBudgetMensuelSurCompteInactif(compte, mois, annee);
                     }
@@ -163,24 +175,64 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      * @param compteBancaire compte
      * @param mois           mois
      * @param annee          année
+     * @param mode           {@link ModeChargement#AFFICHAGE} (mode dégradé toléré sur M-1) ou {@link ModeChargement#ECRITURE} (échec sur M-1)
      * @return budget mensuel chargé et initialisé à partir des données précédentes
      */
-    private Uni<BudgetMensuel> chargerBudgetMensuelSurCompteActif(CompteBancaire compteBancaire, Month mois, int annee) {
+    private Uni<BudgetMensuel> chargerBudgetMensuelSurCompteActif(CompteBancaire compteBancaire, Month mois, int annee, ModeChargement mode) {
         LOGGER.debug("Chargement du budget de {}/{} sur compte actif ", mois, annee);
 
         return this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, mois, annee)
-                // Budget introuvable - init d'un nouveau budget
-                .onFailure()
-                .recoverWithUni(() -> initNewBudget(compteBancaire, mois, annee))
-                .invoke(budgetMensuel -> LOGGER.debug("Budget mensuel chargé : {}", budgetMensuel))
-                // rechargement du solde mois précédent (s'il a changé)
+                .onItem().transform(Optional::of)
+                // Seule l'absence réelle du budget déclenche l'init d'un nouveau budget (Optional vide).
+                // Toute autre erreur (technique : Mongo, timeout...) remonte, sans jamais initialiser/écraser un budget vierge.
+                .onFailure(BudgetNotFoundException.class)
+                .recoverWithItem(() -> Optional.<BudgetMensuel>empty())
                 .onItem()
-                .transformToUni(budgetMensuel -> recalculSoldeAFinMoisPrecedent(budgetMensuel, compteBancaire))
+                .transformToUni(budgetExistant -> budgetExistant.isPresent()
+                        // rechargement du solde mois précédent (s'il a changé), uniquement pour un budget existant
+                        ? recalculSoldeAFinMoisPrecedent(budgetExistant.get(), compteBancaire, mode)
+                        // un budget nouvellement initialisé porte déjà le solde de fin du mois précédent, et doit être enregistré
+                        : initNewBudget(compteBancaire, mois, annee).map(budgetInitialise -> new ChargementBudget(budgetInitialise, true)))
+                .invoke(chargement -> LOGGER.debug("Budget mensuel chargé : {}", chargement.budget()))
                 // recalcul de tous les soldes du budget courant
                 .onItem().ifNotNull()
-                .invoke(this::recalculSoldes)
-                // Sauvegarde du budget
-                .call(this::sauvegardeBudget);
+                .invoke(chargement -> recalculSoldes(chargement.budget()))
+                // Sauvegarde du budget (sauf si le solde du mois précédent n'a pas pu être relu : budget servi tel que stocké)
+                .call(chargement -> chargement.aSauvegarder() ? sauvegardeBudget(chargement.budget()) : Uni.createFrom().voidItem())
+                .map(ChargementBudget::budget);
+    }
+
+    /**
+     * Usage du chargement d'un budget sur compte actif.
+     * <ul>
+     *     <li>{@link #AFFICHAGE} : lecture seule (GET budget). Une erreur technique sur M-1 est tolérée : M est servi avec son solde stocké, sans enregistrement ;</li>
+     *     <li>{@link #ECRITURE} : le budget chargé va être modifié puis enregistré (ex. virement interne, compte destination).
+     *     Une erreur technique sur M-1 fait échouer le chargement : un solde de report périmé ne doit jamais être enregistré.</li>
+     * </ul>
+     */
+    private enum ModeChargement {
+        AFFICHAGE, ECRITURE
+    }
+
+    /**
+     * Budget chargé et indicateur de sauvegarde.
+     *
+     * @param budget       budget à servir
+     * @param aSauvegarder {@code false} si le budget doit être servi sans être enregistré
+     */
+    private record ChargementBudget(BudgetMensuel budget, boolean aSauvegarder) {
+    }
+
+    /**
+     * Garde : le mois d'un budget doit être renseigné pour calculer les mois précédent, suivant et l'écart.
+     * Un mois absent est une donnée corrompue (500), pas une indisponibilité (503).
+     *
+     * @return l'exception à retourner en échec si le mois est absent, {@code null} sinon
+     */
+    private static DonneeCorrompueException erreurSiMoisAbsent(BudgetMensuel budget, String contexte) {
+        return budget.getMois() == null
+                ? new DonneeCorrompueException("Le budget " + budget.getId() + " n'a pas de mois : " + contexte)
+                : null;
     }
 
 
@@ -196,16 +248,9 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     private Uni<BudgetMensuel> chargerBudgetMensuelSurCompteInactif(CompteBancaire compteBancaire, Month mois, int annee) {
         LOGGER.debug(" Chargement du budget sur compte inactif de {}/{}", mois, annee);
 
-        // Calcul de paramètres pour le recovery
-        Month moisPrecedent = mois.minus(1);
-        int anneePrecedente = Month.DECEMBER.equals(moisPrecedent) ? annee - 1 : annee;
-
-        // Chargement du budget précédent
-        return this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, mois, annee)
-                .onItem()
-                // Si le budget n'existe pas, on recherche le dernier
-                .ifNull()
-                .switchTo(() -> chargerBudgetMensuelSurCompteInactif(compteBancaire, moisPrecedent, anneePrecedente))
+        // F3 : une seule requête, "dernier budget <= M" (le budget du mois M s'il existe, sinon le plus récent avant)
+        return this.dataOperationsProvider.chargeDernierBudgetAvant(compteBancaire.getId(), mois, annee)
+                .onItem().ifNull().failWith(() -> new BudgetNotFoundException("Aucun budget trouvé pour le compte inactif " + compteBancaire.getId() + " jusqu'à " + mois + "/" + annee))
                 .onItem()
                 .transform(budgetMensuel -> {
                     // On reporte l'état inactif du compte sur les anciens budgets
@@ -224,31 +269,71 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
 
     /**
      * Recalcul du solde à la fin du mois précédent
+     * <ul>
+     *     <li>M-1 lu : le solde de fin de M-1 est reporté sur M, M sera enregistré ;</li>
+     *     <li>M-1 absent ({@link BudgetNotFoundException}) : premier mois du compte, solde stocké inchangé, M sera enregistré ;</li>
+     *     <li>erreur Mongo sur M-1 en {@link ModeChargement#AFFICHAGE} : loggée en ERROR, M est servi avec le solde stocké et n'est pas enregistré
+     *     (l'erreur ne fait pas échouer l'affichage d'un budget existant) ;</li>
+     *     <li>erreur Mongo sur M-1 en {@link ModeChargement#ECRITURE} : l'erreur est propagée (503), rien n'est enregistré ;</li>
+     *     <li>mois de M absent, ou soldes de M ou de M-1 absents : {@link DonneeCorrompueException} (500), jamais de mode dégradé ;</li>
+     *     <li>toute autre exception (hors {@link MongoException}) est propagée.</li>
+     * </ul>
      *
      * @param budgetMensuel  budget mensuel
      * @param compteBancaire compte
-     * @return budget mensuel recalculé
+     * @param mode           mode de chargement
+     * @return budget mensuel recalculé et indicateur de sauvegarde
      */
-    private Uni<BudgetMensuel> recalculSoldeAFinMoisPrecedent(final BudgetMensuel budgetMensuel, CompteBancaire compteBancaire) {
+    private Uni<ChargementBudget> recalculSoldeAFinMoisPrecedent(final BudgetMensuel budgetMensuel, CompteBancaire compteBancaire, ModeChargement mode) {
         // Maj du budget ssi budget actif
         if (budgetMensuel != null && budgetMensuel.isActif()) {
+            final DonneeCorrompueException moisAbsent = erreurSiMoisAbsent(budgetMensuel, "impossible de déterminer le mois précédent");
+            if (moisAbsent != null) {
+                return Uni.createFrom().failure(moisAbsent);
+            }
             // Recalcul du résultat du mois précédent
             Month moisPrecedent = budgetMensuel.getMois().minus(1);
             int anneePrecedente = Month.DECEMBER.equals(moisPrecedent) ? budgetMensuel.getAnnee() - 1 : budgetMensuel.getAnnee();
 
             LOGGER.debug("Recalcul du solde à partir du budget du mois précédent du compte actif {} : {}/{}", compteBancaire, moisPrecedent, anneePrecedente);
 
-            return Uni.combine().all().unis(
-                            Uni.createFrom().item(budgetMensuel),
-                            this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, moisPrecedent, anneePrecedente)
-                    ).asTuple()
-                    .invoke(tuple -> tuple.getItem1().getSoldes().setSoldeAtFinMoisPrecedent(tuple.getItem2().getSoldes().getSoldeAtFinMoisCourant()))
-                    .map(Tuple2::getItem1);
+            return this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, moisPrecedent, anneePrecedente)
+                    .chain(budgetPrecedent -> reporterSoldeMoisPrecedent(budgetMensuel, budgetPrecedent))
+                    // Premier mois du compte (budget précédent absent) : solde du mois précédent inchangé (0 pour un budget vierge), pas d'échec
+                    .onFailure(BudgetNotFoundException.class)
+                    .recoverWithItem(e -> {
+                        LOGGER.debug("Pas de budget précédent {}/{} pour le compte {} : solde du mois précédent inchangé", moisPrecedent, anneePrecedente, compteBancaire.getId());
+                        return new ChargementBudget(budgetMensuel, true);
+                    })
+                    // Erreur Mongo (technique) en affichage : le budget M existe, il est servi avec son solde stocké, sans être enregistré.
+                    // En écriture, ou pour toute autre exception (donnée corrompue, NPE...), l'erreur remonte.
+                    .onFailure(e -> mode == ModeChargement.AFFICHAGE && e instanceof MongoException)
+                    .recoverWithItem(e -> {
+                        LOGGER.error("Erreur technique lors du chargement du budget précédent {}/{} du compte {} : le budget {} est servi avec le solde stocké du mois précédent, sans enregistrement",
+                                moisPrecedent, anneePrecedente, compteBancaire.getId(), budgetMensuel.getId(), e);
+                        return new ChargementBudget(budgetMensuel, false);
+                    });
         } else {
             LOGGER.debug("Budget inactif, pas de recalcul du solde à partir du budget du mois précédent du compte actif {}", compteBancaire);
-            return Uni.createFrom().item(budgetMensuel);
+            return Uni.createFrom().item(new ChargementBudget(budgetMensuel, true));
         }
 
+    }
+
+    /**
+     * Report du solde de fin de M-1 sur M.
+     *
+     * @return budget M à enregistrer, ou échec {@link DonneeCorrompueException} (500) si les soldes de M ou de M-1 sont absents
+     */
+    private static Uni<ChargementBudget> reporterSoldeMoisPrecedent(BudgetMensuel budgetMensuel, BudgetMensuel budgetPrecedent) {
+        if (budgetPrecedent == null || budgetPrecedent.getSoldes() == null) {
+            return Uni.createFrom().failure(new DonneeCorrompueException("Le budget précédent du budget " + budgetMensuel.getId() + " n'a pas de soldes : impossible de reporter le solde de fin de mois"));
+        }
+        if (budgetMensuel.getSoldes() == null) {
+            return Uni.createFrom().failure(new DonneeCorrompueException("Le budget " + budgetMensuel.getId() + " n'a pas de soldes : impossible de reporter le solde de fin du mois précédent"));
+        }
+        budgetMensuel.getSoldes().setSoldeAtFinMoisPrecedent(budgetPrecedent.getSoldes().getSoldeAtFinMoisCourant());
+        return Uni.createFrom().item(new ChargementBudget(budgetMensuel, true));
     }
 
     /**
@@ -287,33 +372,145 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
             return Uni.createFrom().failure(new CompteClosedException("Compte bancaire inactif"));
         }
         LOGGER.info("(Ré)initialisation du budget de {}/{}", mois, annee);
+        final BudgetMensuel budgetInitVide = nouveauBudgetVide(compteBancaire, mois, annee);
+
+        // MAJ Calculs à partir du mois précédent
+        // Recherche du dernier budget connu <= M-1 : UNE seule lecture, quel que soit l'écart (F4).
+        // Une erreur technique remonte (jamais de budget vierge sur erreur) ; seule l'absence (null) donne un budget vierge.
+        final Month moisPrecedent = mois.minus(1);
+        final int anneePrecedente = Month.DECEMBER.equals(moisPrecedent) ? annee - 1 : annee;
+        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, BudgetMensuel.getBudgetId(compteBancaire.getId(), moisPrecedent, anneePrecedente));
+        LOGGER.debug("Recherche du dernier budget précédent pour initialisation");
+        return this.dataOperationsProvider.chargeDernierBudgetAvant(compteBancaire.getId(), moisPrecedent, anneePrecedente)
+                .onItem()
+                .transformToUni(dernierBudget -> initialiserDepuisDernierBudget(compteBancaire, budgetInitVide, dernierBudget, moisPrecedent, anneePrecedente));
+        // La sauvegarde du budget initialisé est réalisée dans le flux suivant
+    }
+
+    /**
+     * Initialise le nouveau budget à partir du dernier budget connu (&le; M-1), sans relire les mois intermédiaires.
+     * <ul>
+     *     <li>aucun budget connu (nouveau compte) : budget vierge à solde 0</li>
+     *     <li>écart de k mois (0 &le; k &le; {@value #MAX_MOIS_REMPLISSAGE}) : les k mois intermédiaires sont créés en mémoire à partir
+     *     du dernier budget puis sauvegardés (1 écriture par mois créé, déjà clos), le dernier budget, relu par id juste avant sa clôture, est clos s'il est encore actif</li>
+     *     <li>écart &gt; {@value #MAX_MOIS_REMPLISSAGE} : WARN, mois intermédiaires non créés, le solde du dernier budget connu est repris</li>
+     * </ul>
+     * Appels au dépôt pour initialiser M (hors lecture et écriture de M par l'appelant) : 1 lecture {@code chargeDernierBudgetAvant},
+     * puis, si le dernier budget est actif, 1 relecture par id ({@code chargeBudgetMensuel(id)}) avant sa clôture, et au plus
+     * k + 1 écritures (k mois créés + clôture du dernier budget).
+     */
+    private Uni<BudgetMensuel> initialiserDepuisDernierBudget(CompteBancaire compteBancaire, BudgetMensuel budgetInitVide,
+                                                              BudgetMensuel dernierBudget, Month moisPrecedent, int anneePrecedente) {
+        if (dernierBudget == null) {
+            LOGGER.debug("Aucun budget précédent : budget vierge");
+            return Uni.createFrom().item(budgetInitVide);
+        }
+        // Garde : le mois d'un budget lu doit être renseigné pour calculer l'écart (donnée non conforme sinon)
+        final DonneeCorrompueException moisAbsent = erreurSiMoisAbsent(dernierBudget, "impossible de déterminer l'écart avec "
+                + moisPrecedent + "/" + anneePrecedente + " (compte " + compteBancaire.getId() + ")");
+        if (moisAbsent != null) {
+            return Uni.createFrom().failure(moisAbsent);
+        }
+        final int ecartMois = (anneePrecedente * 12 + moisPrecedent.getValue()) - (dernierBudget.getAnnee() * 12 + dernierBudget.getMois().getValue());
+        if (ecartMois > MAX_MOIS_REMPLISSAGE) {
+            LOGGER.warn("Compte {} : {} mois sans budget avant {}/{} (limite {}). Mois intermédiaires non créés, solde repris du dernier budget connu {}",
+                    compteBancaire.getId(), ecartMois, moisPrecedent, anneePrecedente, MAX_MOIS_REMPLISSAGE, dernierBudget.getId());
+            recalculSoldes(dernierBudget);
+            budgetInitVide.getSoldes().setSoldeAtFinMoisPrecedent(dernierBudget.getSoldes().getSoldeAtFinMoisCourant());
+            return Uni.createFrom().item(budgetInitVide);
+        }
+        if (ecartMois > 0) {
+            LOGGER.info("Compte {} : {} mois intermédiaire(s) à créer jusqu'à {}/{}", compteBancaire.getId(), ecartMois, moisPrecedent, anneePrecedente);
+        }
+        return creerMoisIntermediaires(compteBancaire, dernierBudget, Math.max(ecartMois, 0))
+                .map(budgetPrecedent -> {
+                    LOGGER.debug("Budget précédent : {}", budgetPrecedent);
+                    return initBudgetFromBudgetPrecedent(budgetInitVide, budgetPrecedent);
+                });
+    }
+
+    /**
+     * Crée, en mémoire puis en base, les {@code restants} budgets suivant {@code precedent}, et renvoie le dernier (clos).
+     * Chaque budget intermédiaire est créé clos (#115 : opérations prévues reportées) et sauvegardé une seule fois ; aucune lecture.
+     * Le budget {@code precedent} est relu puis clos et sauvegardé s'il est encore actif (#115, voir {@link #cloreBudgetSiActif}).
+     *
+     * @param compteBancaire compte
+     * @param precedent      dernier budget connu ou budget intermédiaire déjà créé
+     * @param restants       nombre de mois restant à créer après {@code precedent}
+     * @return le budget du mois M-1, clos
+     */
+    private Uni<BudgetMensuel> creerMoisIntermediaires(CompteBancaire compteBancaire, BudgetMensuel precedent, int restants) {
+        final DonneeCorrompueException moisAbsent = erreurSiMoisAbsent(precedent, "impossible de créer le mois suivant (compte " + compteBancaire.getId() + ")");
+        if (moisAbsent != null) {
+            return Uni.createFrom().failure(moisAbsent);
+        }
+        return cloreBudgetSiActif(precedent)
+                .onItem().transformToUni(precedentClos -> {
+                    if (restants <= 0) {
+                        return Uni.createFrom().item(precedentClos);
+                    }
+                    // La version relue à la clôture a le même identifiant : son mois est vérifié aussi
+                    final DonneeCorrompueException moisClosAbsent = erreurSiMoisAbsent(precedentClos, "impossible de créer le mois suivant (compte " + compteBancaire.getId() + ")");
+                    if (moisClosAbsent != null) {
+                        return Uni.createFrom().<BudgetMensuel>failure(moisClosAbsent);
+                    }
+                    final Month moisSuivant = precedentClos.getMois().plus(1);
+                    final int anneeSuivante = Month.JANUARY.equals(moisSuivant) ? precedentClos.getAnnee() + 1 : precedentClos.getAnnee();
+                    final BudgetMensuel intermediaire = initBudgetFromBudgetPrecedent(nouveauBudgetVide(compteBancaire, moisSuivant, anneeSuivante), precedentClos);
+                    appliquerEtatBudget(intermediaire, false);
+                    recalculSoldes(intermediaire);
+                    return sauvegardeBudget(intermediaire)
+                            .onItem().transformToUni(sauvegarde -> creerMoisIntermediaires(compteBancaire, intermediaire, restants - 1));
+                });
+    }
+
+    /**
+     * Clôture automatique (#115) d'un budget encore actif : le budget est <strong>relu par id juste avant la clôture</strong>
+     * (comme {@link #setBudgetActif(String, boolean)}), pour ne pas écraser une écriture concurrente survenue depuis la lecture
+     * initiale (ajout, modification ou suppression d'opération sur le mois précédent). Les opérations prévues sont reportées
+     * sur la version relue, puis recalcul et sauvegarde. Un budget déjà clos (instantané ou version relue) n'est pas réécrit.
+     * <p>
+     * Coût : 1 lecture par id supplémentaire, uniquement quand une clôture est nécessaire (au plus une par initialisation de budget).
+     * La fenêtre de concurrence est réduite à l'intervalle lecture-écriture de la clôture, comme pour toute écriture du service.
+     * Une absence du budget à la relecture donne une {@link BudgetNotFoundException} (404), une erreur technique remonte.
+     */
+    private Uni<BudgetMensuel> cloreBudgetSiActif(BudgetMensuel budget) {
+        if (!budget.isActif()) {
+            return Uni.createFrom().item(budget);
+        }
+        final DonneeCorrompueException moisAbsent = erreurSiMoisAbsent(budget, "impossible de le clore");
+        if (moisAbsent != null) {
+            return Uni.createFrom().failure(moisAbsent);
+        }
+        return dataOperationsProvider.chargeBudgetMensuel(budget.getId())
+                .onItem().transformToUni(budgetRelu -> {
+                    if (!budgetRelu.isActif()) {
+                        // clos entre-temps par un autre appel : rien à réécrire
+                        return Uni.createFrom().item(budgetRelu);
+                    }
+                    final DonneeCorrompueException moisReluAbsent = erreurSiMoisAbsent(budgetRelu, "impossible de le clore");
+                    if (moisReluAbsent != null) {
+                        return Uni.createFrom().<BudgetMensuel>failure(moisReluAbsent);
+                    }
+                    appliquerEtatBudget(budgetRelu, false);
+                    recalculSoldes(budgetRelu);
+                    return sauvegardeBudget(budgetRelu).replaceWith(budgetRelu);
+                });
+    }
+
+    /**
+     * Construit un budget vierge actif pour le compte, le mois et l'année.
+     */
+    private BudgetMensuel nouveauBudgetVide(CompteBancaire compteBancaire, Month mois, int annee) {
         BudgetMensuel budgetInitVide = new BudgetMensuel();
         budgetInitVide.setActif(true);
         budgetInitVide.setAnnee(annee);
         budgetInitVide.setMois(mois);
         budgetInitVide.setIdCompteBancaire(compteBancaire.getId());
-
         budgetInitVide.setNewBudget(true);
         budgetInitVide.setId();
         budgetInitVide.setDateMiseAJour(LocalDateTime.now(clock));
-
-        // MAJ Calculs à partir du mois précédent
-        // Recherche du budget précédent
-        // Si impossible : on retourne le budget initialisé
-        String idBudgetPrecedent = BudgetMensuel.getBudgetId(compteBancaire.getId(), mois.minus(1), Month.DECEMBER.equals(mois.minus(1)) ? annee - 1 : annee);
-        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudgetPrecedent);
-        LOGGER.debug("Chargement du budget précédent pour initialisation");
-        return getBudgetMensuel(idBudgetPrecedent)
-                .onFailure()
-                .recoverWithUni(() -> chargerBudgetMensuelSurCompteActif(compteBancaire, mois.minus(1), Month.DECEMBER.equals(mois.minus(1)) ? annee - 1 : annee))
-                .onItem()
-                .transformToUni(budgetPrecedent -> {
-                    LOGGER.debug("Budget précédent trouvé : {}. Actif ? : {}", budgetPrecedent, budgetPrecedent.isActif());
-                    // #115 : Cloture automatique du mois précédent
-                    return budgetPrecedent.isActif() ? setBudgetActif(budgetPrecedent.getId(), false) : Uni.createFrom().item(budgetPrecedent);
-                })
-                .map(budgetPrecedent -> initBudgetFromBudgetPrecedent(budgetInitVide, budgetPrecedent));
-        // La sauvegarde du budget initialisé est réalisée dans le flux suivant
+        return budgetInitVide;
     }
 
     /**
@@ -405,22 +602,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
         LOGGER.info("{} du budget", budgetActif ? "Réouverture" : "Fermeture");
 
         return dataOperationsProvider.chargeBudgetMensuel(idBudgetMensuel)
-                .map(budgetMensuel -> {
-                    budgetMensuel.setActif(budgetActif);
-                    budgetMensuel.setDateMiseAJour(LocalDateTime.now(clock));
-                    //  #119 #141 : Toutes les opérations en attente sont reportées
-                    if (!budgetActif) {
-                        LOGGER.info("Toutes les opérations prévues sont reportées :");
-                        budgetMensuel.getListeOperations()
-                                .stream()
-                                .filter(op -> OperationEtatEnum.PREVUE.equals(op.getEtat()))
-                                .forEach(op -> {
-                                    LOGGER.info("[idOperation:{}] {} -> REPORTEE", op.getId(), op.getLibelle());
-                                    op.setEtat(OperationEtatEnum.REPORTEE);
-                                });
-                    }
-                    return budgetMensuel;
-                })
+                .map(budgetMensuel -> appliquerEtatBudget(budgetMensuel, budgetActif))
                 .onItem()
                 .ifNotNull()
                 .invoke(this::recalculSoldes)
@@ -429,6 +611,25 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
 
     }
 
+
+    /**
+     * Applique l'état actif/clos à un budget (en mémoire) : à la clôture, toutes les opérations prévues sont reportées (#119 #141).
+     */
+    private BudgetMensuel appliquerEtatBudget(BudgetMensuel budgetMensuel, boolean budgetActif) {
+        budgetMensuel.setActif(budgetActif);
+        budgetMensuel.setDateMiseAJour(LocalDateTime.now(clock));
+        if (!budgetActif) {
+            LOGGER.info("Toutes les opérations prévues sont reportées :");
+            budgetMensuel.getListeOperations()
+                    .stream()
+                    .filter(op -> OperationEtatEnum.PREVUE.equals(op.getEtat()))
+                    .forEach(op -> {
+                        LOGGER.info("[idOperation:{}] {} -> REPORTEE", op.getId(), op.getLibelle());
+                        op.setEtat(OperationEtatEnum.REPORTEE);
+                    });
+        }
+        return budgetMensuel;
+    }
 
     /**
      * sauvegarde du budget Courant
@@ -492,79 +693,201 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     }
 
     /**
-     * Création des opérations de virement interne
+     * Création des opérations de virement interne.
+     * <p>
+     * Écritures <strong>séquentielles</strong> (ADR-007) : opération sur le compte source, puis opération sur le compte
+     * de destination. Si l'écriture cible échoue, l'opération source est retirée (compensation) et l'erreur d'origine
+     * est propagée. Un échec de la compensation est loggé en ERROR (identifiants source et destination) et n'écrase pas
+     * l'erreur d'origine.
+     * <p>
+     * Gardes avant toute écriture : opération non virement ou état absent (400), source = destination (400), compte destination introuvable (404),
+     * compte destination clos (406).
      *
      * @param idBudget            identifiant du budget source
      * @param ligneOperation      ligne de dépense à ajouter
      * @param idCompteDestination identifiant du compte de destination
-     * @return budget mensuel mis à jour
+     * @return budget mensuel source mis à jour
      */
     @Override
     public Uni<BudgetMensuel> createOperationsVirementInterne(String idBudget, final LigneOperation ligneOperation, String idCompteDestination, String auteur) {
 
         try {
-            final String libelleOperation = ligneOperation.getLibelle();
-            String idBudgetDestination = BudgetMensuel.getBudgetId(idCompteDestination, BudgetDataUtils.getMoisFromBudgetId(idBudget), BudgetDataUtils.getAnneeFromBudgetId(idBudget));
-            String idCompteSource = BudgetDataUtils.getCompteFromBudgetId(idBudget);
-            Month moisFromBudgetId = BudgetDataUtils.getMoisFromBudgetId(idBudget);
-            Integer anneeFromBudgetId = BudgetDataUtils.getAnneeFromBudgetId(idBudget);
+            final String idCompteSource = BudgetDataUtils.getCompteFromBudgetId(idBudget);
+            final Month moisFromBudgetId = BudgetDataUtils.getMoisFromBudgetId(idBudget);
+            final int anneeFromBudgetId = BudgetDataUtils.getAnneeFromBudgetId(idBudget);
 
-            if(!IdsCategoriesEnum.SS_CAT_VIREMENT_INTERNE.getId().equals(ligneOperation.getSsCategorie().getId())){
+            if (ligneOperation.getSsCategorie() == null || !IdsCategoriesEnum.SS_CAT_VIREMENT_INTERNE.getId().equals(ligneOperation.getSsCategorie().getId())) {
                 LOGGER.error("L'opération {} n'est pas un virement interne. L'opération est annulée", ligneOperation.getLibelle());
-                return Uni.createFrom().failure(new BadParametersException("L'opération "+ligneOperation+" n'est pas un virement interne"));
+                return Uni.createFrom().failure(new BadParametersException("L'opération " + ligneOperation + " n'est pas un virement interne"));
             }
-            LOGGER.info("Ajout d'un virement interne de {} vers {} ({}) > {} ", idBudget, idBudgetDestination, idCompteDestination, ligneOperation);
+            // Garde : état absent -> 400 (addOperationVirementInterne fait un switch sur l'état : NPE/500 et compensation systématique)
+            if (ligneOperation.getEtat() == null) {
+                LOGGER.error("Virement interne refusé : état de l'opération {} absent", ligneOperation.getLibelle());
+                return Uni.createFrom().failure(new BadParametersException("Virement interne impossible : l'état de l'opération est obligatoire"));
+            }
+            // Garde (Q4) : virement vers le même compte -> 400 (BadParametersException, comme les autres paramètres invalides)
+            if (idCompteSource.equals(idCompteDestination)) {
+                LOGGER.error("Virement interne refusé : le compte source et le compte de destination sont identiques ({})", idCompteSource);
+                return Uni.createFrom().failure(new BadParametersException("Virement interne impossible : le compte source et le compte de destination sont identiques"));
+            }
+            LOGGER.info("Ajout d'un virement interne de {} vers le compte {} > {} ", idBudget, idCompteDestination, ligneOperation);
 
-            /*
-             * Opération sur Compte source
-             */
-            Uni<BudgetMensuel> budgetCourant =
-                    Uni.combine().all().unis(
-                                    getBudgetAndCompteActif(idBudget).map(Tuple2::getItem1),
-                                    this.comptesService.getCompteById(idCompteDestination))
-                            .asTuple()
-                            .invoke(tuple -> {
-                                BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteDestination);
-                                ligneOperation.setLibelle("[vers " + tuple.getItem2().getId() + "] " + libelleOperation);
-                                try {
-                                    this.operationsAppProvider.addOrReplaceOperation(tuple.getItem1().getListeOperations(), ligneOperation, auteur, null);
-                                } catch (DataNotFoundException e) {
-                                    tuple.mapItem1(u -> Uni.createFrom().failure(e));
-                                }
-                            })
-                            .map(Tuple2::getItem1)
-                            .onItem().ifNotNull()
-                            .invoke(this::recalculSoldes)
-                            // Sauvegarde du budget
-                            .call(this::sauvegardeBudget);
-
-            /*
-             * Opération sur Compte cible
-             */
-            Uni<BudgetMensuel> budgetCible = this.comptesService.getCompteById(idCompteDestination)
-                                                .onItem().ifNotNull()
-                                                .transformToUni(compteDestination -> chargerBudgetMensuelSurCompteActif(compteDestination, moisFromBudgetId, anneeFromBudgetId))
-                            .invoke(tuple -> {
-                                BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudgetDestination).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource);
-                                String libelleOperationCible = "[depuis " + idCompteSource+ "] " + libelleOperation;
-                                this.operationsAppProvider.addOperationVirementInterne(tuple.getListeOperations(), ligneOperation, libelleOperationCible, auteur);
-                            })
-                            .onItem().ifNotNull()
-                            .invoke(this::recalculSoldes)
-                            // Sauvegarde du budget
-                            .call(this::sauvegardeBudget);
-
-            return Uni.combine().all().unis(budgetCourant, budgetCible)
+            // Lecture du budget et du compte source (actif), et un seul appel de lecture du compte de destination
+            return Uni.combine().all().unis(
+                            getBudgetAndCompteActif(idBudget).map(Tuple2::getItem1),
+                            getCompteDestination(idCompteDestination))
                     .asTuple()
-                    .onItem()
-                    .invoke(tuple -> BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource))
-                    .onItem()
-                    .ifNotNull().transform(Tuple2::getItem1);
+                    .chain(tuple -> {
+                        CompteBancaire compteDestination = tuple.getItem2();
+                        if (compteDestination == null) {
+                            LOGGER.error("Virement interne refusé : compte de destination {} introuvable", idCompteDestination);
+                            return Uni.createFrom().failure(new DataNotFoundException("Compte de destination " + idCompteDestination + " introuvable"));
+                        }
+                        // Garde (Q4) : compte de destination clos -> 406
+                        if (!Boolean.TRUE.equals(compteDestination.isActif())) {
+                            LOGGER.error("Virement interne refusé : le compte de destination {} est clos", idCompteDestination);
+                            return Uni.createFrom().failure(new CompteClosedException("Impossible de créer un virement vers le compte " + idCompteDestination + " : il est cloturé"));
+                        }
+                        return virementInterneSequentiel(tuple.getItem1(), compteDestination, idCompteSource, idBudget, moisFromBudgetId, anneeFromBudgetId, ligneOperation, auteur);
+                    })
+                    .invoke(budgetSource -> BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource));
 
         } catch (BudgetNotFoundException e) {
             LOGGER.error("Erreur lors de la création des opérations de virements internes", e);
             return Uni.createFrom().failure(e);
         }
+    }
+
+    /**
+     * Lecture du compte de destination. Un 404 distant du service comptes (le client REST lève une
+     * {@link WebApplicationException} de statut 404 pour un compte inconnu) est traduit en {@link DataNotFoundException}
+     * (404 côté API) ; toute autre erreur est propagée inchangée.
+     */
+    private Uni<CompteBancaire> getCompteDestination(String idCompteDestination) {
+        return this.comptesService.getCompteById(idCompteDestination)
+                .onFailure(erreur -> erreur instanceof WebApplicationException wae
+                        && wae.getResponse() != null
+                        && wae.getResponse().getStatus() == Response.Status.NOT_FOUND.getStatusCode())
+                .transform(erreur -> {
+                    LOGGER.error("Virement interne refusé : compte de destination {} introuvable (404 du service comptes)", idCompteDestination);
+                    return new DataNotFoundException("Compte de destination " + idCompteDestination + " introuvable");
+                });
+    }
+
+    /**
+     * Écritures séquentielles du virement interne : source, puis cible, avec compensation de la source si la cible échoue.
+     *
+     * @return budget source sauvegardé
+     */
+    private Uni<BudgetMensuel> virementInterneSequentiel(BudgetMensuel budgetSource, CompteBancaire compteDestination, String idCompteSource,
+                                                         String idBudget, Month mois, int annee, LigneOperation ligneOperation, String auteur) {
+        final String libelleOperation = ligneOperation.getLibelle();
+        // L'id est garanti avant toute écriture : la compensation ciblée ($pull / $set / $push) en dépend.
+        // L'API le génère déjà (UUID, BudgetsResource) ; en appel direct du service on applique le même mécanisme.
+        if (ligneOperation.getId() == null || ligneOperation.getId().isBlank()) {
+            ligneOperation.setId(UUID.randomUUID().toString());
+        }
+        final String idOperation = ligneOperation.getId();
+        // Ligne d'origine (modification d'une opération existante) et son rang, capturés avant l'écriture source : null / -1 en cas de création.
+        // addOrReplaceOperation remplace ou supprime la ligne sans modifier l'objet d'origine.
+        final List<LigneOperation> operationsSource = budgetSource.getListeOperations();
+        final int rangOriginal = indexOperation(operationsSource, idOperation);
+        final LigneOperation operationOriginale = rangOriginal >= 0 ? operationsSource.get(rangOriginal) : null;
+
+        // 1. Écriture source
+        return ecrireOperationVirementSource(budgetSource, compteDestination, idBudget, ligneOperation, libelleOperation, auteur)
+                // 2. Écriture cible, puis compensation de la source en cas d'échec (l'erreur d'origine est propagée)
+                .chain(budgetSourceSauvegarde -> ecrireOperationVirementCible(compteDestination, idCompteSource, mois, annee, ligneOperation, libelleOperation, auteur)
+                        .replaceWith(budgetSourceSauvegarde)
+                        .onFailure().recoverWithUni(erreur -> {
+                            LOGGER.error("Echec de l'écriture du virement sur le compte {} : compensation de l'opération {} du compte {}", compteDestination.getId(), idOperation, idCompteSource, erreur);
+                            return compenserVirementSource(budgetSourceSauvegarde, idOperation, operationOriginale, rangOriginal, idCompteSource, compteDestination.getId())
+                                    .chain(() -> Uni.createFrom().<BudgetMensuel>failure(erreur));
+                        }));
+    }
+
+    /**
+     * Ajout de l'opération de virement (dépense) dans le budget du compte source, recalcul et sauvegarde.
+     */
+    private Uni<BudgetMensuel> ecrireOperationVirementSource(BudgetMensuel budgetSource, CompteBancaire compteDestination, String idBudget,
+                                                             LigneOperation ligneOperation, String libelleOperation, String auteur) {
+        return Uni.createFrom().item(budgetSource)
+                .invoke(budget -> {
+                    BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, compteDestination.getId());
+                    ligneOperation.setLibelle("[vers " + compteDestination.getId() + "] " + libelleOperation);
+                })
+                .chain(budget -> {
+                    try {
+                        this.operationsAppProvider.addOrReplaceOperation(budget.getListeOperations(), ligneOperation, auteur, null);
+                    } catch (DataNotFoundException e) {
+                        // Erreur propagée (F2a)
+                        return Uni.createFrom().<BudgetMensuel>failure(e);
+                    }
+                    recalculSoldes(budget);
+                    return sauvegardeBudget(budget);
+                });
+    }
+
+    /**
+     * Ajout de l'opération de virement (rentrée) dans le budget du compte de destination, recalcul et sauvegarde.
+     */
+    private Uni<BudgetMensuel> ecrireOperationVirementCible(CompteBancaire compteDestination, String idCompteSource, Month mois, int annee,
+                                                            LigneOperation ligneOperation, String libelleOperation, String auteur) {
+        return chargerBudgetMensuelSurCompteActif(compteDestination, mois, annee, ModeChargement.ECRITURE)
+                .invoke(budgetCible -> {
+                    BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, budgetCible.getId()).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource);
+                    String libelleOperationCible = "[depuis " + idCompteSource + "] " + libelleOperation;
+                    this.operationsAppProvider.addOperationVirementInterne(budgetCible.getListeOperations(), ligneOperation, libelleOperationCible, auteur);
+                })
+                .invoke(this::recalculSoldes)
+                .call(this::sauvegardeBudget);
+    }
+
+    /**
+     * Rang d'une opération dans la liste, recherchée par identifiant.
+     *
+     * @return l'index de l'opération, ou {@code -1} si absente
+     */
+    private static int indexOperation(List<LigneOperation> operations, String idOperation) {
+        return IntStream.range(0, operations.size())
+                .filter(i -> idOperation.equals(operations.get(i).getId()))
+                .findFirst().orElse(-1);
+    }
+
+    /**
+     * Compensation ciblée de l'écriture source (ADR-007) : création -> l'opération est retirée ; modification -> la ligne
+     * d'origine est restaurée (ré-insérée à son rang d'origine si la ligne a disparu de la liste, par exemple suppression concurrente).
+     * Seule {@code listeOperations} est modifiée en base (pas de réécriture du budget entier),
+     * avec les soldes et totaux recalculés sur le snapshot mémoire. Un échec de compensation est loggé en ERROR avec les
+     * identifiants source et destination, et n'est pas propagé.
+     */
+    private Uni<Void> compenserVirementSource(BudgetMensuel budgetSource, String idOperation, LigneOperation operationOriginale, int rangOriginal,
+                                              String idCompteSource, String idCompteDestination) {
+        return Uni.createFrom().item(budgetSource)
+                .invoke(budget -> {
+                    if (operationOriginale == null) {
+                        this.operationsAppProvider.deleteOperation(budget.getListeOperations(), idOperation);
+                    } else {
+                        List<LigneOperation> operations = budget.getListeOperations();
+                        final int indexExistant = indexOperation(operations, idOperation);
+                        if (indexExistant >= 0) {
+                            operations.set(indexExistant, operationOriginale);
+                        } else {
+                            // Ligne absente de la liste (suppression concurrente) : ré-insertion à son rang d'origine
+                            // (l'ordre de la liste est visible de l'utilisateur) ; rang inconnu (négatif) ou hors liste : en fin de liste, comme en base
+                            final int rang = rangOriginal >= 0 && rangOriginal <= operations.size() ? rangOriginal : operations.size();
+                            operations.add(rang, operationOriginale);
+                        }
+                    }
+                    recalculSoldes(budget);
+                    budget.setDateMiseAJour(LocalDateTime.now(clock));
+                })
+                .chain(budget -> dataOperationsProvider.compenseOperation(budget, idOperation, operationOriginale, rangOriginal))
+                .onFailure().recoverWithUni(erreurCompensation -> {
+                    LOGGER.error("ECHEC de la compensation du virement interne : l'opération {} reste modifiée/ajoutée dans le budget du compte source {} alors que le virement vers {} a échoué. Intervention manuelle nécessaire",
+                            idOperation, idCompteSource, idCompteDestination, erreurCompensation);
+                    return Uni.createFrom().voidItem();
+                });
     }
 
     /**

@@ -37,8 +37,11 @@ public abstract class AbstractAPIExceptionsHandler implements ExceptionMapper<Ab
         } else if (e instanceof UserAccessForbiddenException) {
             LOGGER.error("Statut HTTP : [403] Access forbidden : {}", e.getLibelle());
             return Response.status(Response.Status.FORBIDDEN).entity(e.getLibelle()).build();
+        } else if (e instanceof DonneeCorrompueException) {
+            LOGGER.error("Statut HTTP : [500] Donnée corrompue : {}", e.getLibelle());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getLibelle()).build();
         }
-        LOGGER.error("Statut HTTP : [500] Internal Error : {}", e.getLibelle());
+        LOGGER.error("Statut HTTP : [503] Internal Error : {}", e.getLibelle());
         return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(e.getLibelle()).build();
     }
 }

@@ -5,6 +5,7 @@ import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.busin
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.ports.IUtilisateursRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -72,33 +73,27 @@ public class UtilisateursService implements IUtilisateursAppProvider, IJwtSignin
     }
 
     /**
-     * Date de dernier accès
+     * Date de dernier accès (valeur lue avant mise à jour).
+     * La nouvelle date est persistée (chaînée, avant l'émission de la réponse). Un échec d'écriture est
+     * loggé en WARN et n'empêche pas la réponse.
      *
      * @param login login de l'utilisateur
-     * @return date de dernier accès
+     * @return date de dernier accès précédente
+     * @throws DataNotFoundException (via le flux) si l'utilisateur est inconnu (404)
      */
     public Uni<LocalDateTime> getLastAccessDate(String login) {
-        // Enregistrement de la date du dernier accès à maintenant, en async
         return getUtilisateur(login)
-                .onItem().transform(user -> {
-                    LOGGER.info("{} accède à l'application", user != null ? user.toFullString() : "Utilisateur inconnu");
-                    if(user != null){
-                        updateUtilisateurLastConnection(user);
-                    }
-                    return user;
-                })
-                .map(Utilisateur::getDernierAcces);
-    }
-
-    /**
-     * Mise à jour de la date de dernier accès
-     *
-     * @param utilisateurUni utilisateur connecté
-     */
-    private void updateUtilisateurLastConnection(Utilisateur utilisateurUni) {
-        Utilisateur clone = new Utilisateur(utilisateurUni, clock);
-        clone.setDernierAcces(LocalDateTime.now(clock));
-        dataDBUsers.majUtilisateur(clone);
+                .onItem().ifNull().failWith(() -> new DataNotFoundException("Utilisateur " + login + " introuvable"))
+                .flatMap(user -> {
+                    LOGGER.info("{} accède à l'application", user.toFullString());
+                    LocalDateTime dernierAcces = user.getDernierAcces();
+                    return dataDBUsers.majDernierAcces(user.getLogin(), LocalDateTime.now(clock))
+                            .onFailure().recoverWithUni(e -> {
+                                LOGGER.warn("Impossible de mettre à jour le dernier accès de {} : {}", login, e.getMessage());
+                                return Uni.createFrom().voidItem();
+                            })
+                            .replaceWith(dernierAcces);
+                });
     }
 
     /**

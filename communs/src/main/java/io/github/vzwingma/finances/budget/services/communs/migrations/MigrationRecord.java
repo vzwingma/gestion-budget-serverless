@@ -34,7 +34,8 @@ public class MigrationRecord {
     private String description;
 
     /**
-     * Date/heure d'exécution (succès ou échec) de la migration.
+     * Date/heure de réservation puis d'exécution de la migration. Pour un statut {@link MigrationStatutEnum#EN_COURS},
+     * sert de début du bail : au-delà de la durée de bail, la réservation est considérée comme périmée et peut être reprise.
      */
     private LocalDateTime dateExecution;
 
@@ -42,6 +43,11 @@ public class MigrationRecord {
      * Statut d'exécution de la migration.
      */
     private MigrationStatutEnum statut;
+
+    /**
+     * Identifiant du runner qui a réservé la migration (ADR-006) : seul ce runner peut finaliser le statut.
+     */
+    private String owner;
 
     public MigrationRecord(String version, String description, LocalDateTime dateExecution, MigrationStatutEnum statut) {
         this.version = version;
@@ -57,6 +63,7 @@ public class MigrationRecord {
                 ", description='" + description + '\'' +
                 ", dateExecution=" + dateExecution +
                 ", statut=" + statut +
+                ", owner='" + owner + "'" +
                 '}';
     }
 
@@ -65,6 +72,8 @@ public class MigrationRecord {
      */
     @RegisterForReflection
     public enum MigrationStatutEnum {
+        /** Migration réservée par un runner, en cours d'exécution (bail limité dans le temps). */
+        EN_COURS,
         SUCCES,
         ECHEC
     }

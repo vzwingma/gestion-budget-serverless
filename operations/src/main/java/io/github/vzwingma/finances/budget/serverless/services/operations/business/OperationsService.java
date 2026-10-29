@@ -393,8 +393,9 @@ public class OperationsService implements IOperationsAppProvider {
                             .filter(SsCategorieOperations::isActif)
                             .toList();
 
+                    // Chaque document est un groupe MongoDB sur la valeur brute : {_id: {libelle, categorieId, ssCategorieId}, n}
                     return tuple.getItem2().stream().map(doc -> {
-                        Object attributesObj = doc.get("operationLibelleAttributes");
+                        Object attributesObj = doc.get("_id");
                         Document attributes = attributesObj instanceof Document document ? document : null;
                         LibelleCategorieOperation libelleCategorieOperation = new LibelleCategorieOperation();
                         if (attributes != null) {
@@ -413,13 +414,15 @@ public class OperationsService implements IOperationsAppProvider {
                                 libelleCategorieOperation.setSsCategorieId(null);
                             }
                         }
+                        libelleCategorieOperation.setNbOccurrences(doc.get("n") instanceof Number n ? n.intValue() : 0);
                         return libelleCategorieOperation;
                     })
                     .filter(libelleCategorieOperation -> libelleCategorieOperation.getCategorieId() != null && libelleCategorieOperation.getSsCategorieId() != null)
                     .collect(Collectors.toMap(
                             l -> l.getLibelle() + "|" + l.getCategorieId() + "|" + l.getSsCategorieId(),
-                            l -> { l.setNbOccurrences(1); return l; },
-                            (existing, replacement) -> { existing.setNbOccurrences(existing.getNbOccurrences() + 1); return existing; }
+                            l -> l,
+                            // Après normalisation, plusieurs groupes bruts peuvent donner le même libellé : on somme les compteurs
+                            (existing, replacement) -> { existing.setNbOccurrences(existing.getNbOccurrences() + replacement.getNbOccurrences()); return existing; }
                     ))
                     .values().stream()
                     .filter(l -> l.getNbOccurrences() > 1)

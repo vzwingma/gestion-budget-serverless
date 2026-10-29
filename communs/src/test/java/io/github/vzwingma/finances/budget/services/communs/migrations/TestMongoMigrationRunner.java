@@ -60,6 +60,8 @@ class TestMongoMigrationRunner {
         @SuppressWarnings("unchecked")
         Instance<IMongoMigration> instance = mock(Instance.class);
         when(instance.stream()).thenAnswer(inv -> java.util.Arrays.stream(migrations));
+        // Réservation atomique (ADR-006) : par défaut la version est réservée par ce runner
+        when(migrationRepository.reserver(anyString(), anyString(), anyString())).thenReturn(Uni.createFrom().item(true));
         runner = new MongoMigrationRunner(instance, migrationRepository);
     }
 
@@ -89,8 +91,8 @@ class TestMongoMigrationRunner {
 
         when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
-        when(migrationRepository.enregistrerSucces(anyString(), anyString()))
-                .thenReturn(Uni.createFrom().voidItem());
+        when(migrationRepository.finaliserSucces(anyString(), anyString()))
+                .thenReturn(Uni.createFrom().item(true));
 
         // Act
         runner.onStart(null);
@@ -98,8 +100,8 @@ class TestMongoMigrationRunner {
         // Assert
         verify(migration, times(1)).migrate();
         verify(migrationRepository, times(1))
-                .enregistrerSucces("V001", "Init collection");
-        verify(migrationRepository, never()).enregistrerEchec(anyString(), anyString());
+                .finaliserSucces(eq("V001"), anyString());
+        verify(migrationRepository, never()).finaliserEchec(anyString(), anyString());
     }
 
     // ====== 2. Idempotence : migration déjà en SUCCES n'est pas ré-exécutée ======
@@ -118,8 +120,8 @@ class TestMongoMigrationRunner {
 
         // Assert : ni exécution, ni nouvel enregistrement
         verify(migration, never()).migrate();
-        verify(migrationRepository, never()).enregistrerSucces(anyString(), anyString());
-        verify(migrationRepository, never()).enregistrerEchec(anyString(), anyString());
+        verify(migrationRepository, never()).finaliserSucces(anyString(), anyString());
+        verify(migrationRepository, never()).finaliserEchec(anyString(), anyString());
     }
 
     @Test
@@ -146,8 +148,8 @@ class TestMongoMigrationRunner {
 
         when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
-        when(migrationRepository.enregistrerSucces(anyString(), anyString()))
-                .thenReturn(Uni.createFrom().voidItem());
+        when(migrationRepository.finaliserSucces(anyString(), anyString()))
+                .thenReturn(Uni.createFrom().item(true));
 
         List<String> ordreExecution = new java.util.ArrayList<>();
         doAnswer(inv -> {
@@ -171,15 +173,15 @@ class TestMongoMigrationRunner {
 
         ArgumentCaptor<String> versionCaptor = ArgumentCaptor.forClass(String.class);
         verify(migrationRepository, times(3))
-                .enregistrerSucces(versionCaptor.capture(), anyString());
+                .finaliserSucces(versionCaptor.capture(), anyString());
         assertEquals(List.of("V001", "V002", "V003"), versionCaptor.getAllValues());
     }
 
     // ====== 4. Echec explicite non bloquant ======
 
     @Test
-    void testMigrationEnEchecEstEnregistreeEnEchecSansBloquerLesSuivantes() {
-        // Arrange : V001 échoue (Uni en failure), V002 doit quand même s'exécuter
+    void testMigrationEnEchecEstEnregistreeEnEchecEtArreteLaChaine() {
+        // Arrange : V001 échoue (Uni en failure), V002 ne doit PAS s'exécuter (chaîne arrêtée)
         RuntimeException erreurSimulee = new RuntimeException("Erreur simulee migration V001");
         IMongoMigration v001 = migrationEchec("V001", "Premiere en echec", erreurSimulee);
         IMongoMigration v002 = migrationSucces("V002", "Deuxieme ok");
@@ -187,22 +189,70 @@ class TestMongoMigrationRunner {
 
         when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
-        when(migrationRepository.enregistrerSucces(anyString(), anyString()))
-                .thenReturn(Uni.createFrom().voidItem());
-        when(migrationRepository.enregistrerEchec(anyString(), anyString()))
+        when(migrationRepository.finaliserSucces(anyString(), anyString()))
+                .thenReturn(Uni.createFrom().item(true));
+        when(migrationRepository.finaliserEchec(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
         // Act : onStart ne doit lever aucune exception (non bloquant pour le demarrage)
         assertDoesNotThrow(() -> runner.onStart(null));
 
-        // Assert : V001 enregistree en echec, V002 executee et enregistree en succes malgre l'echec precedent
+        // Assert : V001 enregistree en echec, V002 jamais executee ni reservee
         verify(migrationRepository, times(1))
-                .enregistrerEchec("V001", "Premiere en echec");
+                .finaliserEchec(eq("V001"), anyString());
         verify(migrationRepository, never())
-                .enregistrerSucces(eq("V001"), anyString());
+                .finaliserSucces(eq("V001"), anyString());
+        verify(v002, never()).migrate();
+        verify(migrationRepository, never()).reserver(eq("V002"), anyString(), anyString());
+    }
+
+    @Test
+    void testEchecFinalisationSuccesArreteLaChaine() {
+        IMongoMigration v001 = migrationSucces("V001", "Ok mais finalisation en echec");
+        IMongoMigration v002 = migrationSucces("V002", "Ne doit pas etre jouee");
+        setMigrations(v001, v002);
+        when(migrationRepository.listerVersionsAppliquees()).thenReturn(Uni.createFrom().item(List.of()));
+        when(migrationRepository.finaliserSucces(eq("V001"), anyString()))
+                .thenReturn(Uni.createFrom().failure(new RuntimeException("Ecriture _migrations indisponible")));
+
+        assertDoesNotThrow(() -> runner.onStart(null));
+
+        verify(v001, times(1)).migrate();
+        verify(migrationRepository, never()).finaliserEchec(anyString(), anyString());
+        verify(v002, never()).migrate();
+    }
+
+    @Test
+    void testVersionPasseeEnSuccesParUnAutreRunnerLaChaineContinue() {
+        IMongoMigration v001 = migrationSucces("V001", "Appliquee entre-temps");
+        IMongoMigration v002 = migrationSucces("V002", "A executer");
+        setMigrations(v001, v002);
+        when(migrationRepository.listerVersionsAppliquees()).thenReturn(Uni.createFrom().item(List.of()));
+        when(migrationRepository.reserver(eq("V001"), anyString(), anyString())).thenReturn(Uni.createFrom().item(false));
+        when(migrationRepository.estAppliquee("V001")).thenReturn(Uni.createFrom().item(true));
+        when(migrationRepository.finaliserSucces(anyString(), anyString())).thenReturn(Uni.createFrom().item(true));
+
+        assertDoesNotThrow(() -> runner.onStart(null));
+
+        verify(v001, never()).migrate();
         verify(v002, times(1)).migrate();
-        verify(migrationRepository, times(1))
-                .enregistrerSucces("V002", "Deuxieme ok");
+        verify(migrationRepository, times(1)).finaliserSucces(eq("V002"), anyString());
+    }
+
+    @Test
+    void testVersionEnCoursChezUnAutreRunnerArreteLaChaine() {
+        IMongoMigration v001 = migrationSucces("V001", "En cours ailleurs");
+        IMongoMigration v002 = migrationSucces("V002", "Ne doit pas etre jouee");
+        setMigrations(v001, v002);
+        when(migrationRepository.listerVersionsAppliquees()).thenReturn(Uni.createFrom().item(List.of()));
+        when(migrationRepository.reserver(eq("V001"), anyString(), anyString())).thenReturn(Uni.createFrom().item(false));
+        when(migrationRepository.estAppliquee("V001")).thenReturn(Uni.createFrom().item(false));
+
+        assertDoesNotThrow(() -> runner.onStart(null));
+
+        verify(v001, never()).migrate();
+        verify(v002, never()).migrate();
+        verify(migrationRepository, never()).reserver(eq("V002"), anyString(), anyString());
     }
 
     @Test
@@ -215,9 +265,9 @@ class TestMongoMigrationRunner {
 
         when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
-        when(migrationRepository.enregistrerSucces(anyString(), anyString()))
+        when(migrationRepository.finaliserSucces(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().failure(new RuntimeException("Ecriture _migrations indisponible")));
-        when(migrationRepository.enregistrerEchec(anyString(), anyString()))
+        when(migrationRepository.finaliserEchec(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
         // Act / Assert : aucune exception ne doit remonter au StartupEvent
@@ -225,23 +275,23 @@ class TestMongoMigrationRunner {
     }
 
     @Test
-    void testPlusieursEchecsSontTousEnregistresIndependamment() {
-        // Arrange : deux migrations, toutes deux en echec -> les deux doivent etre enregistrees en ECHEC
+    void testPremierEchecEnregistreEtLesSuivantesNeSontPasJouees() {
+        // Arrange : deux migrations en echec -> seule la premiere est jouee et enregistree en ECHEC
         IMongoMigration v001 = migrationEchec("V001", "Premiere", new RuntimeException("boom1"));
         IMongoMigration v002 = migrationEchec("V002", "Deuxieme", new RuntimeException("boom2"));
         setMigrations(v001, v002);
 
         when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
-        when(migrationRepository.enregistrerEchec(anyString(), anyString()))
+        when(migrationRepository.finaliserEchec(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
         // Act
         assertDoesNotThrow(() -> runner.onStart(null));
 
-        // Assert
-        verify(migrationRepository, times(1)).enregistrerEchec(eq("V001"), anyString());
-        verify(migrationRepository, times(1)).enregistrerEchec(eq("V002"), anyString());
+        // Assert : la chaîne s'arrête à V001, V002 n'est pas jouée
+        verify(migrationRepository, times(1)).finaliserEchec(eq("V001"), anyString());
+        verify(migrationRepository, never()).finaliserEchec(eq("V002"), anyString());
     }
 
     // ====== Cas mixte additionnel : combinaison tri + idempotence + echec ======
@@ -257,9 +307,9 @@ class TestMongoMigrationRunner {
 
         when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of("V001")));
-        when(migrationRepository.enregistrerSucces(anyString(), anyString()))
-                .thenReturn(Uni.createFrom().voidItem());
-        when(migrationRepository.enregistrerEchec(anyString(), anyString()))
+        when(migrationRepository.finaliserSucces(anyString(), anyString()))
+                .thenReturn(Uni.createFrom().item(true));
+        when(migrationRepository.finaliserEchec(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
         // Act
@@ -269,8 +319,24 @@ class TestMongoMigrationRunner {
         verify(v001, never()).migrate();
         verify(v002, times(1)).migrate();
         verify(v003, times(1)).migrate();
-        verify(migrationRepository, never()).enregistrerSucces(eq("V001"), anyString());
-        verify(migrationRepository, times(1)).enregistrerSucces(eq("V002"), anyString());
-        verify(migrationRepository, times(1)).enregistrerEchec(eq("V003"), anyString());
+        verify(migrationRepository, never()).finaliserSucces(eq("V001"), anyString());
+        verify(migrationRepository, times(1)).finaliserSucces(eq("V002"), anyString());
+        verify(migrationRepository, times(1)).finaliserEchec(eq("V003"), anyString());
+    }
+
+    @Test
+    void testFinalisationSuccesSansDocument_arreteLaChaine() {
+        // Bail repris par un autre runner : finaliserSucces ne trouve aucun document (false) -> chaîne arrêtée
+        IMongoMigration v001 = migrationSucces("V001", "Finalisation sans document");
+        IMongoMigration v002 = migrationSucces("V002", "Ne doit pas etre jouee");
+        setMigrations(v001, v002);
+        when(migrationRepository.listerVersionsAppliquees()).thenReturn(Uni.createFrom().item(List.of()));
+        when(migrationRepository.finaliserSucces(eq("V001"), anyString())).thenReturn(Uni.createFrom().item(false));
+
+        assertDoesNotThrow(() -> runner.onStart(null));
+
+        verify(v001, times(1)).migrate();
+        verify(migrationRepository, never()).finaliserEchec(anyString(), anyString());
+        verify(v002, never()).migrate();
     }
 }

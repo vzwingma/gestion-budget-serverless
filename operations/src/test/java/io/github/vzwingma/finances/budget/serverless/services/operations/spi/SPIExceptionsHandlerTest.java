@@ -50,7 +50,7 @@ class SPIExceptionsHandlerTest {
     void testToResponseMongoClientExceptionGenerique() {
         MongoClientException e = new MongoClientException("Erreur générique") {};
         try (Response response = handler.toResponse(e)) {
-            assertEquals(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), response.getStatus());
+            assertEquals(Response.Status.SERVICE_UNAVAILABLE.getStatusCode(), response.getStatus());
         }
     }
 }

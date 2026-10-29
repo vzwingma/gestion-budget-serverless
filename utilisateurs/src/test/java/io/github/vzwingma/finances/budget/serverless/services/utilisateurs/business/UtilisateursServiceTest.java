@@ -26,7 +26,6 @@ import java.util.concurrent.CompletionException;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -58,7 +57,7 @@ class UtilisateursServiceTest {
 
         when(serviceDataProvider.chargeUtilisateur("Test")).thenReturn(Uni.createFrom().item(MockDataUtilisateur.getTestUtilisateur()));
         when(serviceDataProvider.chargeUtilisateur("Test2")).thenReturn(Uni.createFrom().failure(new DataNotFoundException("Utilisateur non trouvé")));
-        doNothing().when(serviceDataProvider).majUtilisateur(any());
+        when(serviceDataProvider.majDernierAcces(anyString(), any())).thenReturn(Uni.createFrom().voidItem());
     }
 
     @Test
@@ -74,7 +73,7 @@ class UtilisateursServiceTest {
     void testGetUtilisateurKO() {
         Assertions.assertThrows(CompletionException.class, () -> appProvider.getUtilisateur("Test2").await().indefinitely());
         verify(serviceDataProvider, times(1)).chargeUtilisateur(anyString());
-        verify(serviceDataProvider, never()).majUtilisateur(any());
+        verify(serviceDataProvider, never()).majDernierAcces(anyString(), any());
     }
 
     @Test
@@ -83,10 +82,10 @@ class UtilisateursServiceTest {
         assertNotNull(lastAccess);
         verify(serviceDataProvider, times(1)).chargeUtilisateur(anyString());
         // Horodatage déterministe (ADR-004, Clock.fixed injecté dans setup()) : le clone persisté
-        // (majUtilisateur) porte la date de dernier accès calculée via l'horloge applicative
-        ArgumentCaptor<Utilisateur> cloneCaptor = ArgumentCaptor.forClass(Utilisateur.class);
-        verify(serviceDataProvider, times(1)).majUtilisateur(cloneCaptor.capture());
-        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), cloneCaptor.getValue().getDernierAcces());
+        // (majDernierAcces) reçoit la date de dernier accès calculée via l'horloge applicative
+        ArgumentCaptor<LocalDateTime> dateCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(serviceDataProvider, times(1)).majDernierAcces(anyString(), dateCaptor.capture());
+        assertEquals(LocalDateTime.ofInstant(INSTANT_FIXE, ZoneOffset.UTC), dateCaptor.getValue());
     }
 
     @Test
@@ -94,7 +93,7 @@ class UtilisateursServiceTest {
         Assertions.assertThrows(CompletionException.class,
                 () -> appProvider.getLastAccessDate("Test2").await().indefinitely());
         verify(serviceDataProvider, times(1)).chargeUtilisateur(anyString());
-        verify(serviceDataProvider, never()).majUtilisateur(any());
+        verify(serviceDataProvider, never()).majDernierAcces(anyString(), any());
     }
 
     @Test

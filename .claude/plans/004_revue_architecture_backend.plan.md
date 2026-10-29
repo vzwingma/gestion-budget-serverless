@@ -1,7 +1,7 @@
 # Plan d'Action 004 — Revue architecture backend : sécurisation, fiabilisation, modernisation Quarkus/Mongo
 
 **Date création :** 2026-10-25
-**Statut :** 🔵 En cours — Phase 0 ✅ clôturée (Gate #4 GO 2026-10-26, PR #220 non mergée, QUA/PROD à venir) ; Phase 1 en cadrage
+**Statut :** 🔵 En cours — Phase 0 ✅ clôturée (Gate #4 GO 2026-10-26, PR #220 non mergée, QUA/PROD à venir) ; Phase 1 en cours (Gate #1 de phase GO, branche `feat/ap004-phase1-fiabilite-mongo`)
 **Porteur :** ⚫ MAINa
 **ADR liés :** [ADR-005 — Authentification JWT via extension Quarkus](../../docs/adr/005-authentification-jwt-extension-quarkus.md) (`Acceptée` pour le principe ; choix final oidc / smallrye-jwt par essai Phase 0) · ADR-002 (migrations maison, maintenu) · ADR-004 (`Clock`, maintenu)
 
@@ -90,31 +90,143 @@ Branche `fix/securite-jwt-lot0` (dépôt serverless), non commitée.
 - **Déclencheur :** à planifier avant le déploiement PROD du Lot 0 (sinon un jeton expiré renvoie une erreur au lieu de déconnecter). Traçabilité : ce plan ou un plan IHM dédié, au choix du 👤.
 - **Acceptation :** `npm run lint`, `npm run typecheck`, `npx vitest run` verts ; couverture ≥ 80 % sur le service.
 
-## Phase 1 — Fiabilité fonctionnelle + MongoDB (Lots 1 et 2, option A)
+## Phase 1 — Fiabilité fonctionnelle + MongoDB (Lots 1 et 2, option A) — 🔵 en cours (Gate #1 de phase GO 2026-10-26)
+
+### Contexte
+Cadrage détaillé ARCos (2026-10-26) sur le code de `master` (e08db1f). Options retenues au Gate #1 de phase :
+**A3** (réservation atomique des migrations par version), **B2** (virement séquentiel avec compensation),
+**C3** (libellés : `$group` côté serveur sur le libellé brut, puis normalisation Java en sommant les compteurs),
+**timeouts Mongo dans le bloc Mongo existant** (placement D1). Deux défauts nouveaux sont intégrés :
+**F4 sur comptes actifs neufs** (récursion jusqu'au timeout Lambda) et **F6b** (une version `ECHEC` ne peut jamais passer `SUCCES` : clé dupliquée, migration rejouée à chaque cold start).
+
+- **Branche :** `feat/ap004-phase1-fiabilite-mongo`, créée depuis `origin/master`, sans le Lot 0. Push uniquement avec accord 👤 (`git push -u origin feat/ap004-phase1-fiabilite-mongo`, car l'upstream par défaut est `origin/master`).
+- **Mise à jour 2026-10-26 :** la PR #220 (Lot 0) est **mergée** dans `master` (7a50e5d). La branche de Phase 1 est repartie de `master` (7a843cb, Lot 0 inclus) et le plan détaillé y a été repris (cherry-pick de d4524cb → eb51127). Le commit d4524cb n'avait pas été poussé sur #220.
+- **Ordre de merge (décision 👤) :** #220 d'abord (✅ fait) → Phase 1 → CI → QUA Phase 1, après validation QUA du Lot 0.
+
+### Règles de périmètre (rédigées avant le merge de #220, maintenues pour garder la sécurité hors Phase 1)
+- Ne pas toucher : `communs/.../api/security/*`, `utils/security/*`, `*JwtSecurityFilter`, `RequestJWTHeaderFactory`, `AbstractAPIResource`, `RootAPIResource`, `JwsSigningKeysDatabaseAdaptor`, `IJwtSigningKey*`, `JWTAuthToken`, ni les lignes JWT de `BudgetService.java` (17-18, 53, 77-78, 616-622) et `UtilisateursService.java` (6-7, 25, 36-37, 104-110).
+- `*/src/main/resources/{dev,prod}/application.properties` : insertion **uniquement dans le bloc Mongo** (après `quarkus.mongodb.database` / `metrics`), **jamais en fin de fichier**.
+- Interdit de modifier : `*/src/test/resources/application.properties`, le `pom.xml` racine, les `*ResourceTest` existants. Configuration de test via `QuarkusTestProfile` ; dépendance éventuelle dans le pom du module.
+- Docs (`docs/ARCHITECTURE.md`, index des plans) seulement après le merge de #220. Les nouveaux fichiers ADR (006/007) peuvent être créés sur la branche de Phase 1.
+
+### Décisions 👤 (Gate #1 de phase)
+| # | Sujet | Décision |
+|---|---|---|
+| Q3 | F3 compte inactif sans budget ce mois-là | **200 + dernier budget existant** (au lieu de 404). ⚠️ Changement de comportement visible par l'IHM, à tracer dans un plan IHM (voir T1.5) |
+| Q4 | Gardes du virement | **406** si le compte de destination est clos, **400** si source = destination. ⚠️ Impact IHM à tracer dans un plan IHM (voir T1.5) |
+| Q5 | Format des `_id` de budgets en PROD | Le 👤 lance lui-même la requête en lecture seule (commande ci-dessous). **T1.1b-ID, T1.1c et F3 bloqués tant que le résultat n'est pas connu** |
+| Q6 | Utilisateur inconnu sur lastaccess | **404** (au lieu de 500 sur NPE) |
+| Q7 | Tier Atlas / DocumentDB | **Inconnu.** Pool 10 par défaut (valeur ARCos), sans autre hypothèse. Mention « DocumentDB » d'`ARCHITECTURE.md` corrigée seulement après confirmation 👤 |
+| Q8 | Timeouts REST client | **Phase 2** (hors Phase 1) |
+| Q9 | F4, écart de plusieurs mois | Remplissage des mois intermédiaires conservé, **limite 24 mois** |
+| Q10 | Index `utilisateurs.login` | **Non unique** dans V002 (index unique plus tard, après contrôle des doublons) |
+
+#### Commande Q5, à lancer par le 👤 (mongosh, lecture seule, base PROD)
+```javascript
+// 0. Contrôle préalable du type stocké pour "mois" (attendu : nom d'enum Month, ex. "JANUARY")
+db.budgets.findOne({}, { _id: 1, idCompteBancaire: 1, annee: 1, mois: 1 })
+
+// 1. Nombre total de budgets
+db.budgets.countDocuments({})
+
+// 2. Budgets dont l'_id ne respecte pas <idCompteBancaire>_<AAAA>_<MM> (MM sur 2 chiffres)
+db.budgets.aggregate([
+  { $addFields: { _m: { $add: [ { $indexOfArray: [ ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"], "$mois" ] }, 1 ] } } },
+  { $addFields: { _idAttendu: { $concat: [ "$idCompteBancaire", "_", { $toString: "$annee" }, "_",
+      { $cond: [ { $lt: ["$_m", 10] }, { $concat: ["0", { $toString: "$_m" }] }, { $toString: "$_m" } ] } ] } } },
+  { $match: { $expr: { $ne: ["$_id", "$_idAttendu"] } } },
+  { $facet: {
+      total: [ { $count: "nbNonConformes" } ],
+      exemples: [ { $project: { _id: 1, idCompteBancaire: 1, annee: 1, mois: 1, _idAttendu: 1 } }, { $limit: 20 } ]
+  } }
+])
+```
+- Si l'étape 0 montre un `mois` numérique, ne pas interpréter l'étape 2 : transmettre le résultat de l'étape 0 à MAINa, qui adaptera la requête.
+- Résultat attendu pour débloquer : `nbNonConformes` absent ou 0. Sinon, exemples à transmettre : ARCos ajustera (repli sur la requête par champs pour les documents historiques, ou migration de normalisation).
 
 ### Critères de réussite
-- F1-F4 corrigés et couverts par tests de non-régression.
-- Requêtes `budgets` en IXSCAN (index déclarés par migration `V002`).
-- Migrations sans exécution concurrente (verrou) ; client Mongo avec timeouts < timeout Lambda.
+- F1-F4 et F6/F6b corrigés et couverts par des tests de non-régression.
+- Requêtes `budgets` indexées (V002), sans exécution concurrente des migrations.
+- Client Mongo avec timeouts inférieurs au timeout Lambda de 15 s.
+- Contrat API inchangé (aucun `*APIEnum`, aucun DTO). Seuls changements de code HTTP : F3 (404 → 200), virement (406 / 400), utilisateur inconnu (500 → 404), compte actif neuf (timeout → 200 avec budget vierge).
+- CI `build-on-all` verte sur la branche de phase (preuve des tests d'intégration Dev Services : pas de Docker sur les postes agents).
 
 ### Tâches
-#### T1.1 — Fiabiliser les flux réactifs (DEVon)
-- F1 `utilisateurs/.../spi/UtilisateurDatabaseAdaptor.java` / `UtilisateursService.java` : écriture lastAccess chaînée (plus de `subscribe()` fire-and-forget).
-- F2 `operations/.../business/BudgetService.java` virement : propagation d'erreur, un seul appel compte destination.
-- F3 repli compte inactif (`OperationDatabaseAdaptor.java` erreur vs `ifNull`), F4 récursion bornée.
-- Tri `Sort` mal passé (`OperationDatabaseAdaptor.java:~95`), `chargeBudgetMensuel` par `_id`.
-- **Acceptation :** `mvn clean test` vert ; comportement documenté dans le rapport.
 
-#### T1.2 — Index + verrou migrations + client Mongo (DEVon)
-- Migration `V002` défensive (ADR-002) : `budgets {idCompteBancaire:1, annee:1, mois:1}`, `utilisateurs {login:1}` unique, `comptesbancaires {"proprietaires.login":1}`.
-- Verrou `_migrations` (statut `EN_COURS` + index unique) ou exécution unique (F6).
-- Timeouts pool / server selection / socket dans `*/src/main/resources/prod/application.properties`.
-- Agrégation libellés côté Mongo (P3).
-- **Acceptation :** migration idempotente ; `explain` IXSCAN (QUA) ; timeouts < 15 s.
+**Piste A — operations (séquentielle : `BudgetService` et `OperationDatabaseAdaptor` partagés)**
+
+#### T1.1b — Dépôt opérations : tri, lecture par `_id`, dernier budget (DEVon)
+- **Fichier(s) :** `operations/.../spi/OperationDatabaseAdaptor.java` (`:59-71`, `:95`, `:203`), `operations/.../business/ports/IOperationsRepository.java`
+- **Implémenter :**
+  - **T1.1b-tri (non bloqué) :** `find(query, Sort.by("_id"), params...)` en `:95` et `:203` (le tri était passé comme paramètre de requête et ignoré).
+  - **T1.1b-ID (bloqué par Q5) :** `chargeBudgetMensuel` lu par `_id` ; nouvelle méthode `chargeDernierBudgetAvant(idCompte, mois, annee)` : 1 requête (filtre compte + borne `_id` ≤ M, tri `_id` descendant, premier résultat).
+- **Acceptation :** tri appliqué (test d'intégration) ; « dernier budget ≤ M » en 1 seule requête.
+
+#### T1.1d — Virement F2, option B2 (DEVon)
+- **Fichier(s) :** `operations/.../business/BudgetService.java:502-568` + méthode de retrait / compensation dans le dépôt
+- **Implémenter :** propagation de l'erreur (F2a) ; écritures **séquentielles** source puis cible, avec compensation de la source si l'écriture cible échoue (F2b) ; un seul `getCompteById(dest)` (F2c) ; plus de modification concurrente de `ligneOperation` (F2d) ; gardes **406** si destination close et **400** si source = destination (Q4) ; NPE évitée si le compte destination est `null`.
+- **Acceptation :** échec de l'écriture cible → source restaurée en base + réponse non-2xx ; échec de compensation loggé en ERROR avec les 2 identifiants ; 1 appel REST destination.
+- **Note :** réalisable avant T1.1c (indépendant de Q5), mais même fichier que T1.1c : exécution séquentielle.
+
+#### T1.1c — F3 + F4 (DEVon) — ⏸️ bloqué par Q5 (via T1.1b-ID)
+- **Fichier(s) :** `operations/.../business/BudgetService.java` (`:168-218`, `:232-252`, `:281-317`)
+- **Implémenter :**
+  - **F3 :** compte inactif, M absent → **200 + dernier budget ≤ M** (`actif=false`) en 1 appel dépôt ; aucun budget → 404.
+  - **F4 :** compte actif → requête préalable « dernier budget ≤ M-1 » ; aucun budget → budget vierge, sans récursion ; écart de k mois → remplissage des mois intermédiaires conservé, **k ≤ 24** (au-delà : budget vierge + WARN) ; premier mois : solde précédent à 0, sans échec (`recalculSoldeAFinMoisPrecedent`).
+- **Acceptation :** compte actif sans budget → nombre d'appels dépôt ≤ 3 ; tests des 4 cas F3/F4.
+
+#### T1.2d — Libellés P3, option C3 (DEVon)
+- **Fichier(s) :** `OperationDatabaseAdaptor.java:235-263`, `OperationsService.java:381-435`
+- **Implémenter :** pipeline `$match idCompteBancaire` → `$unwind listeOperations` → `$group {_id:{libellé, catégorie, sous-catégorie}, n:{$sum:1}}` ; normalisation Java inchangée, en additionnant les compteurs (`nb += n`).
+- **Acceptation :** **test de parité** : sortie identique à l'ancien algorithme sur un jeu de données (ex. `operations/src/test/resources/test/alignement-libelles.json`).
+
+**Piste B — communs, migrations (parallèle à A)**
+
+#### T1.2a — Verrou des migrations, option A3, + F6b (DEVon)
+- **Fichier(s) :** `communs/.../migrations/{MongoMigrationRunner,MigrationRepository,MigrationRecord}.java`
+- **Implémenter :** réservation `findOneAndUpdate({_id:V, $or:[{statut:ECHEC},{statut:EN_COURS, dateExecution < now-bail}]}, {$set:{statut:EN_COURS, owner, dateExecution}}, upsert)` ; E11000 = version déjà prise → version suivante ; finalisation `updateOne({_id:V, owner}, {$set:{statut}})` ; bail de 5 min (Clock injectée, ADR-004) ; nouvel état `EN_COURS` et champ `owner`.
+- **Acceptation :** 2 runners concurrents → 1 seule exécution ; `ECHEC` → `SUCCES` possible ; `EN_COURS` périmé repris ; compatible natif.
+
+#### T1.2b — Migration V002 : index (DEVon) — même PR que T1.2a (obligatoire)
+- **Fichier(s) :** `communs/.../migrations/scripts/V002_AjoutIndexBudgetsUtilisateurs.java`
+- **Implémenter :** `budgets {idCompteBancaire:1, annee:1, mois:1}` ; `utilisateurs {login:1}` **non unique** (Q10) ; index existants listés d'abord, création ignorée si la même clé existe déjà (quel que soit son nom).
+- **Acceptation :** index présents après démarrage ; 2e exécution sans erreur ; index préexistant de même clé ignoré.
+
+**Piste C — utilisateurs (parallèle)**
+
+#### T1.1a — F1 lastAccess + utilisateur inconnu (DEVon)
+- **Fichier(s) :** `utilisateurs/.../business/ports/IUtilisateursRepository.java`, `.../spi/UtilisateurDatabaseAdaptor.java`, `.../business/UtilisateursService.java` (corps de méthodes uniquement, hors lignes JWT)
+- **Implémenter :** `Uni<Void> majDernierAcces(login, date)` avec `$set dernierAcces` ciblé, chaîné avant la réponse ; échec d'écriture → WARN, la réponse reste 200 ; utilisateur inconnu → **404** (Q6).
+- **Acceptation :** `.subscribe()` absent de `utilisateurs/src/main` ; date persistée avant l'émission de la réponse (test) ; seul le champ `dernierAcces` écrit.
+
+**Piste D — configuration (parallèle)**
+
+#### T1.2c — Timeouts et pool Mongo (DEVon)
+- **Fichier(s) :** les 8 `{comptes,operations,parametrages,utilisateurs}/src/main/resources/{dev,prod}/application.properties`, **dans le bloc Mongo**
+- **Valeurs :** `server-selection-timeout=5S`, `connect-timeout=3S`, `read-timeout=8S`, `wait-queue-timeout=2S`, `max-pool-size=10` (Q7 : tier Atlas inconnu), `min-pool-size=0`, `max-connection-idle-time=60S`.
+- **Acceptation :** valeurs lues au runtime (test de configuration via `QuarkusTestProfile` ou lecture `ConfigProvider`) ; aucune modification des test resources.
+
+**Tests et documentation**
 
 #### T1.3 — Tests Phase 1 (QALvin)
-- Tests non-régression F1-F4, test virement en échec partiel, tests adaptateurs Dev Services Mongo (si Docker dispo CI) pour requêtes/index/tri.
-- **Acceptation :** verts, couverture ≥ 80 % classes touchées.
+- **Implémenter :** nouvelles classes de test uniquement ; tests unitaires F1-F4 et F2 (échec partiel + compensation, gardes 406/400) ; tests d'intégration `@QuarkusTest` Dev Services (`OperationDatabaseAdaptorIT` : tri, `_id`, dernier budget, parité C3 ; concurrence du runner ; persistance lastAccess) ; correction de `BudgetServiceTest.java:199-217` (simulation `nullItem` erronée qui masquait F3) et de `UtilisateursServiceTest`.
+- **Acceptation :** couverture ≥ 80 % des nouveaux chemins ; **run CI `build-on-all` vert** sur la branche de phase.
+
+#### T1.4 — Documentation Phase 1 (DOCly)
+- **ADR-006** « Réservation atomique par version des migrations MongoDB » (complète ADR-002) et **ADR-007** « Cohérence du virement : écriture séquentielle compensée » : créés en `Proposée` sur la branche de Phase 1 dès le lancement ; `Acceptée` au Gate #2 de phase si l'implémentation est conforme.
+- Après le merge de #220 : `docs/ARCHITECTURE.md` (§ Migrations : `EN_COURS`, bail ; § Mongo : timeouts ; correction de la collection `operations` inexistante, les opérations étant stockées dans `budgets.listeOperations`). Mention DocumentDB corrigée **seulement après confirmation 👤** (Q7).
+
+#### T1.5 — Traçabilité IHM (MAINa)
+- Plan IHM dédié à créer (comme le plan 008) : F3 (404 → 200 avec un budget d'un mois antérieur, `actif=false`), virement (406 destination close, 400 vers soi-même), utilisateur inconnu (404). À synchroniser avec le plan IHM 008 (gestion du 401).
+
+### Ordre et parallélisation
+```
+Piste A : T1.1b-tri → T1.1d → [Q5] → T1.1b-ID → T1.1c → T1.2d
+Piste B : T1.2a → T1.2b
+Piste C : T1.1a
+Piste D : T1.2c
+           ↘ T1.3 (QALvin, au fil des livraisons ; preuve CI) → Gate #2/#3 de phase → [merge #220 + rebase] → QUA → T1.4 docs
+```
 
 ---
 
@@ -225,6 +337,13 @@ Chaque phase : Gate #2 (code) → Gate #3 (tests) ; Gate #4 global en fin de pla
 | #3 (T0.5) | 2026-10-26 | Validation tests sécurité | 🔁 AJUSTER | 84 tests ajoutés, couverture sécurité ≥ 83 % en branches, régression détectée. Défaut 1 (jeton complet dans les logs `OidcProvider` WARN) → catégorie passée en ERROR (fix bc15842). Défaut 3 → augmentor durci (`JsonValue`/`JsonString`). **Défaut 2 conservé (décision 👤)** : JWKS injoignable → 500 au lieu de 401, limite connue (voir ci-dessous). Les 4 tests `@Disabled` BUG sont réactivés par QALvin |
 | #3 (T0.5) | 2026-10-26 | Validation tests après ajustement | ✅ GO | BUILD SUCCESS, 0 échec, 0 test « BUG AP004 » ignoré (communs : 4 erreurs Mongo sans Docker, préexistantes). `JwtRolesAugmentor` : 100 % lignes / 97 % branches. Tests de fuite rouges sans le correctif. Commits bc15842, b8ff152, 783fc3a. Push et PR faits par le 👤 ; pas de merge, pas de PROD. Suite : DOCly, phase doc limitée à la Phase 0 |
 | #4 (Phase 0) | 2026-10-26 | Validation doc + clôture Phase 0 | ✅ GO | `ARCHITECTURE.md` (sécurité, versions, ADR 003-005), ADR-005 `Acceptée` (896e0bd), rapport de tests harmonisé (f5dc86e). Wikis modifiés, commités par le 👤. Restent hors gate : merge PR #220, QUA (cold start, natif, `kid`), plan IHM 008 avant PROD. Phase 1 lancée en parallèle de la QUA, sur une branche distincte depuis `master`, sans toucher à la sécurité/OIDC |
+
+| #1 (Phase 1) | 2026-10-26 | Cadrage Phase 1 (ARCos) + options | ✅ GO | Options A3 / B2 / C3 / timeouts dans le bloc Mongo. Q1 plan sur `fix/securite-jwt-lot0` ; Q2 #220 mergée d'abord, pas de QUA Phase 1 avant ; Q3 F3 → 200 ; Q4 406/400 ; Q5 requête PROD lancée par le 👤 (T1.1b-ID et T1.1c bloqués) ; Q6 404 ; Q7 tier Atlas inconnu (pool 10) ; Q8 REST en Phase 2 ; Q9 limite 24 mois ; Q10 index login non unique. ADR-006 et ADR-007 en `Proposée` |
+| #2 (Phase 1) | 2026-10-26 | Code tâches non bloquées (1er passage) | 🔁 AJUSTER | Revue : dernierAcces/fuseau, compensation (perte de ligne), ordre des migrations, ECHEC sur finalisation, timeout V002, compensation pleine. Bail : limite documentée (ADR-006) ; 404 compte inconnu ; `wait-queue-timeout` abandonné (absent de Quarkus 3.40.1) ; plan IHM T1.5 (= IHM 009) |
+| #2 (Phase 1) | 2026-10-29 | 2e passage | 🔁 AJUSTER | Points 1-4, 6. Point 5 (soldes depuis l'instantané) accepté = R2 (ADR-007) ; V002 : ECHEC + rejeu accepté (ADR-006) |
+| #2 (Phase 1) | 2026-10-29 | 3e passage | 🔁 AJUSTER | Finalisation à 0 document → arrêt de chaîne ; virement `etat == null` → 400 avant écriture ; mineurs |
+| Q5 | 2026-10-29 | Format des `_id` en PROD (requête 👤) | ℹ️ Résultat | `mois` stocké en texte ; 1023 budgets, tous `_id` string ; ex. `inglivretA_2014_12` ; 0 `_id` hors `/^.+_[0-9]{4}_[0-9]{2}$/` (1re requête `$facet` non concluante, refaite plus simple). **T1.1b-ID et T1.1c débloqués** |
+| #2 (Phase 1) | 2026-10-29 | 4e passage (inclut T1.1b-ID + T1.1c) | 🔁 AJUSTER | Absence ≠ erreur technique (jamais de budget vierge sur erreur Mongo), lectures constantes pour un écart de k mois, garde `mois` null. Décisions 👤 : **repli défensif par champs retiré** ; écart > 24 mois → **solde du dernier budget repris** (vierge à 0 si nouveau compte) ; réinsertion `$push` **conservée** (cas résiduel documenté dans ADR-007) |
 
 ### ⚠️ Limites connues (Phase 0)
 
