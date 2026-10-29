@@ -43,6 +43,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.IntStream;
 
 /**
  * Service fournissant les budgets
@@ -578,12 +580,19 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     private Uni<BudgetMensuel> virementInterneSequentiel(BudgetMensuel budgetSource, CompteBancaire compteDestination, String idCompteSource,
                                                          String idBudget, Month mois, int annee, LigneOperation ligneOperation, String auteur) {
         final String libelleOperation = ligneOperation.getLibelle();
+        // L'id est garanti avant toute écriture : la compensation ciblée ($pull / $set / $push) en dépend.
+        // L'API le génère déjà (UUID, BudgetsResource) ; en appel direct du service on applique le même mécanisme.
+        if (ligneOperation.getId() == null || ligneOperation.getId().isBlank()) {
+            ligneOperation.setId(UUID.randomUUID().toString());
+        }
         final String idOperation = ligneOperation.getId();
-        // Ligne d'origine (modification d'une opération existante), capturée avant l'écriture source : null en cas de création.
-        // addOrReplaceOperation remplace la ligne dans la liste sans modifier l'objet d'origine.
-        final LigneOperation operationOriginale = budgetSource.getListeOperations().stream()
-                .filter(op -> idOperation != null && idOperation.equals(op.getId()))
-                .findFirst().orElse(null);
+        // Ligne d'origine (modification d'une opération existante) et son rang, capturés avant l'écriture source : null / -1 en cas de création.
+        // addOrReplaceOperation remplace ou supprime la ligne sans modifier l'objet d'origine.
+        final List<LigneOperation> operationsSource = budgetSource.getListeOperations();
+        final int rangOriginal = IntStream.range(0, operationsSource.size())
+                .filter(i -> idOperation.equals(operationsSource.get(i).getId()))
+                .findFirst().orElse(-1);
+        final LigneOperation operationOriginale = rangOriginal >= 0 ? operationsSource.get(rangOriginal) : null;
 
         // 1. Écriture source
         return ecrireOperationVirementSource(budgetSource, compteDestination, idBudget, ligneOperation, libelleOperation, auteur)
@@ -592,7 +601,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                         .replaceWith(budgetSourceSauvegarde)
                         .onFailure().recoverWithUni(erreur -> {
                             LOGGER.error("Echec de l'écriture du virement sur le compte {} : compensation de l'opération {} du compte {}", compteDestination.getId(), idOperation, idCompteSource, erreur);
-                            return compenserVirementSource(budgetSourceSauvegarde, idOperation, operationOriginale, idCompteSource, compteDestination.getId())
+                            return compenserVirementSource(budgetSourceSauvegarde, idOperation, operationOriginale, rangOriginal, idCompteSource, compteDestination.getId())
                                     .chain(() -> Uni.createFrom().<BudgetMensuel>failure(erreur));
                         }));
     }
@@ -636,11 +645,11 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
 
     /**
      * Compensation ciblée de l'écriture source (ADR-007) : création -> l'opération est retirée ; modification -> la ligne
-     * d'origine est restaurée. Seule {@code listeOperations} est modifiée en base (pas de réécriture du budget entier),
+     * d'origine est restaurée (ré-insérée à son rang d'origine si l'écriture source l'avait supprimée, cas {@code etat == null}). Seule {@code listeOperations} est modifiée en base (pas de réécriture du budget entier),
      * avec les soldes et totaux recalculés sur le snapshot mémoire. Un échec de compensation est loggé en ERROR avec les
      * identifiants source et destination, et n'est pas propagé.
      */
-    private Uni<Void> compenserVirementSource(BudgetMensuel budgetSource, String idOperation, LigneOperation operationOriginale,
+    private Uni<Void> compenserVirementSource(BudgetMensuel budgetSource, String idOperation, LigneOperation operationOriginale, int rangOriginal,
                                               String idCompteSource, String idCompteDestination) {
         return Uni.createFrom().item(budgetSource)
                 .invoke(budget -> {
@@ -648,16 +657,23 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                         this.operationsAppProvider.deleteOperation(budget.getListeOperations(), idOperation);
                     } else {
                         List<LigneOperation> operations = budget.getListeOperations();
+                        boolean restauree = false;
                         for (int i = 0; i < operations.size(); i++) {
                             if (idOperation.equals(operations.get(i).getId())) {
                                 operations.set(i, operationOriginale);
+                                restauree = true;
                             }
+                        }
+                        // Ligne supprimée par l'écriture source (etat == null) : ré-insertion à son rang d'origine
+                        // (l'ordre de la liste est visible de l'utilisateur), en fin de liste si le rang dépasse la taille
+                        if (!restauree) {
+                            operations.add(Math.min(Math.max(rangOriginal, 0), operations.size()), operationOriginale);
                         }
                     }
                     recalculSoldes(budget);
                     budget.setDateMiseAJour(LocalDateTime.now(clock));
                 })
-                .chain(budget -> dataOperationsProvider.compenseOperation(budget, idOperation, operationOriginale))
+                .chain(budget -> dataOperationsProvider.compenseOperation(budget, idOperation, operationOriginale, rangOriginal))
                 .onFailure().recoverWithUni(erreurCompensation -> {
                     LOGGER.error("ECHEC de la compensation du virement interne : l'opération {} reste modifiée/ajoutée dans le budget du compte source {} alors que le virement vers {} a échoué. Intervention manuelle nécessaire",
                             idOperation, idCompteSource, idCompteDestination, erreurCompensation);

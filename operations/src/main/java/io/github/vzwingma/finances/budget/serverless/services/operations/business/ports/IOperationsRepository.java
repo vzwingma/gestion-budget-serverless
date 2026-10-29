@@ -75,11 +75,14 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
      * stockés depuis le budget recalculé en mémoire.
      *
      * @param budgetRecalcule    budget en mémoire, déjà compensé et recalculé
-     * @param idOperation        identifiant de l'opération à retirer ou restaurer
+     * @param idOperation        identifiant de l'opération à retirer ou restaurer (obligatoire, non vide)
      * @param operationOriginale ligne d'origine à restaurer ; {@code null} pour retirer l'opération (cas d'une création)
-     * @return complétion ; échec si le budget n'existe plus
+     * @param rangOriginal       position d'origine de la ligne dans {@code listeOperations}, utilisée si la ligne a
+     *                           disparu de la liste (suppression par {@code etat == null}) et doit être ré-insérée ;
+     *                           valeur négative = inconnue (insertion en fin de liste)
+     * @return complétion ; échec si le budget n'existe plus ou si l'identifiant est absent
      */
-    Uni<Void> compenseOperation(BudgetMensuel budgetRecalcule, String idOperation, LigneOperation operationOriginale);
+    Uni<Void> compenseOperation(BudgetMensuel budgetRecalcule, String idOperation, LigneOperation operationOriginale, int rangOriginal);
 
     /**
      * Liste des libellés bruts des opérations d'un compte, regroupés côté MongoDB avec leur nombre d'occurrences

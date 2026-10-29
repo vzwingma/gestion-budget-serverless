@@ -10,6 +10,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTr
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.SecurityUtils;
+import com.mongodb.client.model.PushOptions;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
 import io.quarkus.mongodb.AggregateOptions;
@@ -283,7 +284,10 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
      * <ul>
      *     <li>{@code operationOriginale == null} (création) : {@code $pull} de l'opération par id</li>
      *     <li>{@code operationOriginale != null} (modification) : {@code $set} positionnel filtré par id
-     *     ({@code listeOperations.$[op]} avec {@code op._id == idOperation}) qui restaure la ligne d'origine</li>
+     *     ({@code listeOperations.$[op]} avec {@code op._id == idOperation}) qui restaure la ligne d'origine ;
+     *     si la ligne a disparu de la liste en base (modification en suppression, {@code etat == null}), elle est
+     *     ré-insérée par {@code $push} à son rang d'origine ({@code $position}, ou en fin de liste si le rang est
+     *     inconnu ou dépasse la taille courante), uniquement si aucune ligne de même id n'est présente</li>
      * </ul>
      * Sont également réécrits depuis {@code budgetRecalcule} : {@code soldes}, {@code totauxParCategories},
      * {@code totauxParSSCategories}, {@code totauxParTypeCategories} et {@code dateMiseAJour}. Ces valeurs sont
@@ -291,36 +295,85 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
      * budget n'est pas écrasée dans {@code listeOperations}, mais n'est pas prise en compte dans ces totaux jusqu'au
      * prochain recalcul.
      *
-     * @param budgetRecalcule   budget en mémoire, déjà compensé et recalculé (source des soldes et totaux)
-     * @param idOperation       identifiant de l'opération à retirer ou restaurer
+     * @param budgetRecalcule    budget en mémoire, déjà compensé et recalculé (source des soldes et totaux)
+     * @param idOperation        identifiant de l'opération à retirer ou restaurer (obligatoire, jamais {@code null})
      * @param operationOriginale ligne d'origine à restaurer, {@code null} en cas de création
-     * @return complétion, ou échec si le budget n'existe plus
+     * @param rangOriginal       rang d'origine de la ligne, pour une ré-insertion ; négatif si inconnu
+     * @return complétion, ou échec si le budget n'existe plus ou si l'identifiant est absent
      */
     @Override
-    public Uni<Void> compenseOperation(BudgetMensuel budgetRecalcule, String idOperation, LigneOperation operationOriginale) {
-        LOGGER.info("Compensation ciblée de l'opération {} dans le budget {} ({})", idOperation, budgetRecalcule.getId(), operationOriginale == null ? "retrait" : "restauration");
-        List<Bson> misesAJour = new ArrayList<>();
-        UpdateOptions options = new UpdateOptions();
-        if (operationOriginale == null) {
-            misesAJour.add(Updates.pull(ATTRIBUT_LISTE_OPERATIONS, new Document(ATTRIBUT_ID_OPERATION, idOperation)));
-        } else {
-            misesAJour.add(Updates.set(ATTRIBUT_LISTE_OPERATIONS + ".$[" + FILTRE_OPERATION + "]", operationOriginale));
-            options.arrayFilters(List.of(new Document(FILTRE_OPERATION + "." + ATTRIBUT_ID_OPERATION, idOperation)));
+    public Uni<Void> compenseOperation(BudgetMensuel budgetRecalcule, String idOperation, LigneOperation operationOriginale, int rangOriginal) {
+        // Aucun $pull ni filtre sur un id null : une compensation sans id est refusée avant toute écriture
+        if (idOperation == null || idOperation.isBlank()) {
+            return Uni.createFrom().failure(new IllegalArgumentException("Compensation impossible : identifiant d'opération absent (budget " + budgetRecalcule.getId() + ")"));
         }
-        misesAJour.add(Updates.set("soldes", budgetRecalcule.getSoldes()));
-        misesAJour.add(Updates.set("totauxParCategories", budgetRecalcule.getTotauxParCategories()));
-        misesAJour.add(Updates.set("totauxParSSCategories", budgetRecalcule.getTotauxParSSCategories()));
-        misesAJour.add(Updates.set("totauxParTypeCategories", budgetRecalcule.getTotauxParTypeCategories()));
-        misesAJour.add(Updates.set("dateMiseAJour", budgetRecalcule.getDateMiseAJour() != null ? budgetRecalcule.getDateMiseAJour() : LocalDateTime.now()));
+        LOGGER.info("Compensation ciblée de l'opération {} dans le budget {} ({})", idOperation, budgetRecalcule.getId(), operationOriginale == null ? "retrait" : "restauration");
+        final String idBudget = budgetRecalcule.getId();
+        // dateMiseAJour est toujours renseignée par le service (horloge applicative, ADR-004) : pas d'horloge locale ici
+        final LocalDateTime dateMiseAJour = Objects.requireNonNull(budgetRecalcule.getDateMiseAJour(), "dateMiseAJour du budget recalculé");
+        final List<Bson> champsCalcules = List.of(
+                Updates.set("soldes", budgetRecalcule.getSoldes()),
+                Updates.set("totauxParCategories", budgetRecalcule.getTotauxParCategories()),
+                Updates.set("totauxParSSCategories", budgetRecalcule.getTotauxParSSCategories()),
+                Updates.set("totauxParTypeCategories", budgetRecalcule.getTotauxParTypeCategories()),
+                Updates.set("dateMiseAJour", dateMiseAJour));
 
-        return mongoCollection()
-                .updateOne(new Document(ATTRIBUT_BUDGET_ID, budgetRecalcule.getId()), Updates.combine(misesAJour), options)
-                .onItem().transformToUni(resultat -> {
-                    if (resultat.getMatchedCount() == 0) {
-                        return Uni.createFrom().<Void>failure(new BudgetNotFoundException("Compensation impossible : budget " + budgetRecalcule.getId() + " introuvable"));
+        if (operationOriginale == null) {
+            return appliquerCompensation(new Document(ATTRIBUT_BUDGET_ID, idBudget),
+                    Updates.pull(ATTRIBUT_LISTE_OPERATIONS, new Document(ATTRIBUT_ID_OPERATION, idOperation)),
+                    champsCalcules, new UpdateOptions(), idBudget)
+                    .onItem().transformToUni(trouve -> Boolean.TRUE.equals(trouve) ? Uni.createFrom().<Void>voidItem() : echecBudgetIntrouvable(idBudget));
+        }
+        // 1. Restauration en place si la ligne est encore dans la liste
+        final Document filtreLignePresente = new Document(ATTRIBUT_BUDGET_ID, idBudget)
+                .append(ATTRIBUT_LISTE_OPERATIONS, new Document("$elemMatch", new Document(ATTRIBUT_ID_OPERATION, idOperation)));
+        final UpdateOptions optionsPositionnel = new UpdateOptions()
+                .arrayFilters(List.of(new Document(FILTRE_OPERATION + "." + ATTRIBUT_ID_OPERATION, idOperation)));
+        return appliquerCompensation(filtreLignePresente,
+                Updates.set(ATTRIBUT_LISTE_OPERATIONS + ".$[" + FILTRE_OPERATION + "]", operationOriginale),
+                champsCalcules, optionsPositionnel, idBudget)
+                .onItem().transformToUni(restauree -> {
+                    if (Boolean.TRUE.equals(restauree)) {
+                        return Uni.createFrom().<Void>voidItem();
                     }
-                    return Uni.createFrom().<Void>voidItem();
+                    // 2. Ligne absente de la liste : ré-insertion à son rang d'origine, si et seulement si l'id est absent
+                    LOGGER.warn("Compensation de l'opération {} : ligne absente du budget {}, ré-insertion (rang {})", idOperation, idBudget, rangOriginal);
+                    final Document filtreLigneAbsente = new Document(ATTRIBUT_BUDGET_ID, idBudget)
+                            .append(ATTRIBUT_LISTE_OPERATIONS + "." + ATTRIBUT_ID_OPERATION, new Document("$ne", idOperation));
+                    final PushOptions optionsPush = new PushOptions();
+                    if (rangOriginal >= 0) {
+                        optionsPush.position(rangOriginal);
+                    }
+                    return appliquerCompensation(filtreLigneAbsente,
+                            Updates.pushEach(ATTRIBUT_LISTE_OPERATIONS, List.of(operationOriginale), optionsPush),
+                            champsCalcules, new UpdateOptions(), idBudget)
+                            .onItem().transformToUni(reinseree -> Boolean.TRUE.equals(reinseree) ? Uni.createFrom().<Void>voidItem() : echecBudgetIntrouvable(idBudget));
                 });
+    }
+
+    /**
+     * Applique une mise à jour de compensation et contrôle la cohérence du résultat (ERROR si {@code matched} ou
+     * {@code modified} est incohérent).
+     *
+     * @return {@code true} si un document a été trouvé, {@code false} si le filtre n'a rien sélectionné
+     */
+    private Uni<Boolean> appliquerCompensation(Bson filtre, Bson miseAJourListe, List<Bson> champsCalcules, UpdateOptions options, String idBudget) {
+        final List<Bson> misesAJour = new ArrayList<>();
+        misesAJour.add(miseAJourListe);
+        misesAJour.addAll(champsCalcules);
+        return mongoCollection()
+                .updateOne(filtre, Updates.combine(misesAJour), options)
+                .map(resultat -> {
+                    if (resultat.getMatchedCount() > 1 || (resultat.getMatchedCount() == 1 && resultat.getModifiedCount() != 1)) {
+                        LOGGER.error("Compensation du budget {} : résultat incohérent (matched={}, modified={})", idBudget, resultat.getMatchedCount(), resultat.getModifiedCount());
+                    }
+                    return resultat.getMatchedCount() > 0;
+                });
+    }
+
+    private static Uni<Void> echecBudgetIntrouvable(String idBudget) {
+        LOGGER.error("Compensation du budget {} impossible : budget introuvable, ou ligne déjà présente", idBudget);
+        return Uni.createFrom().failure(new BudgetNotFoundException("Compensation impossible : budget " + idBudget + " introuvable"));
     }
 
     /**
