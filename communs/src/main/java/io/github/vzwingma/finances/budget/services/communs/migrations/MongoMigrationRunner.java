@@ -148,11 +148,11 @@ public class MongoMigrationRunner {
      */
     private Uni<Boolean> finaliserSucces(IMongoMigration migration) {
         return migrationRepository.finaliserSucces(migration.version(), owner)
+                // finalisée == false : le WARN (réservation reprise par un autre runner) est déjà émis par
+                // MigrationRepository.finaliser, il n'est pas répété ici ; l'appelant arrête la chaîne
                 .invoke(finalisee -> {
                     if (Boolean.TRUE.equals(finalisee)) {
                         LOG.info("[MIGRATIONS] Migration {} appliquée avec succès", migration.version());
-                    } else {
-                        LOG.warn("[MIGRATIONS] Migration {} exécutée mais finalisation non persistée (réservation reprise par un autre runner) : arrêt de la chaîne", migration.version());
                     }
                 })
                 .onFailure().recoverWithUni(erreur -> {
