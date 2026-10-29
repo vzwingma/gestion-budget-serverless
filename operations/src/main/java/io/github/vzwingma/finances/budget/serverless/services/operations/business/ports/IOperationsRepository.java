@@ -23,18 +23,20 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
 
     /**
      * Cette méthode est utilisée pour charger le budget mensuel d'un compte bancaire spécifique pour un mois et une année donnés.
-     * Elle peut également inclure les opérations dans le budget chargé en fonction du paramètre includeOperations.
+     * <p>
+     * Contrat : seule l'absence réelle du document donne une {@code BudgetNotFoundException}. Toute erreur technique
+     * (Mongo, timeout...) remonte telle quelle et ne doit jamais être interprétée comme une absence.
      *
      * @param compte Le compte bancaire pour lequel le budget mensuel doit être chargé.
      * @param mois Le mois pour lequel le budget mensuel doit être chargé.
      * @param annee L'année pour laquelle le budget mensuel doit être chargé.
-     * @return Un objet Uni contenant le budget mensuel si trouvé.
+     * @return Un objet Uni contenant le budget mensuel si trouvé, ou en échec {@code BudgetNotFoundException} s'il est absent.
      */
     Uni<BudgetMensuel> chargeBudgetMensuel(CompteBancaire compte, Month mois, int annee);
 
     /**
      * Charge le dernier budget d'un compte dont le mois est inférieur ou égal au mois demandé (le mois demandé inclus),
-     * en une seule requête.
+     * en une seule requête. Absence de budget : {@code Uni} à valeur {@code null}. Erreur technique : elle remonte.
      *
      * @param idCompte identifiant du compte
      * @param mois     mois borne haute (inclus)

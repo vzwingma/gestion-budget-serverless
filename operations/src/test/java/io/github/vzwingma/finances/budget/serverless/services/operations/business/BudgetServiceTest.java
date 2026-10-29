@@ -13,10 +13,12 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.test.da
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.AbstractBusinessException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
+import com.mongodb.MongoTimeoutException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -301,7 +303,9 @@ class BudgetServiceTest {
     }
 
     /**
-     * F4 : écart de k mois (k &le; 24) : les mois intermédiaires sont créés, une requête "dernier budget" par niveau
+     * F4 : écart de 3 mois (février, mars, avril à créer entre janvier et mai).
+     * Appels au dépôt : lectures constantes (1 lecture du mois M, 1 "dernier budget &le; M-1", aucune relecture par id),
+     * écritures : 1 clôture de janvier + 3 mois créés (déjà clos) + 1 sauvegarde de M = 5.
      */
     @Test
     void testGetBudgetSurCompteActif_ecartDe3Mois_creeLesMoisIntermediaires() {
@@ -315,13 +319,18 @@ class BudgetServiceTest {
         // Janvier + février, mars, avril, mai
         assertEquals(5, base.size());
         assertTrue(base.containsKey("C1_2022_02") && base.containsKey("C1_2022_03") && base.containsKey("C1_2022_04"));
+        assertFalse(base.get("C1_2022_01").isActif());
         assertFalse(base.get("C1_2022_04").isActif());
-        // Chaîne : mai -> avril -> mars -> février, un appel "dernier budget" par mois créé hors mai
-        verify(mockOperationDataProvider, times(4)).chargeDernierBudgetAvant(eq("C1"), any(Month.class), anyInt());
+        assertTrue(base.get("C1_2022_05").isActif());
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt());
+        verify(mockOperationDataProvider, times(1)).chargeDernierBudgetAvant(eq("C1"), eq(Month.APRIL), eq(2022));
+        verify(mockOperationDataProvider, never()).chargeBudgetMensuel(anyString());
+        verify(mockOperationDataProvider, times(5)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
     /**
-     * F4 : l'écart de 24 mois est la limite incluse : tous les mois intermédiaires sont créés
+     * F4 : l'écart de 24 mois est la limite incluse : tous les mois intermédiaires sont créés, avec un nombre de lectures
+     * constant (identique à l'écart de 3 mois) et 1 écriture par mois créé.
      */
     @Test
     void testGetBudgetSurCompteActif_ecartDe24Mois_creeLesMoisIntermediaires() {
@@ -335,25 +344,109 @@ class BudgetServiceTest {
         assertEquals("C1_2022_02", budgetCharge.getId());
         assertEquals(1 + 24 + 1, base.size());
         assertTrue(base.containsKey("C1_2022_01"));
+        assertFalse(base.get("C1_2022_01").isActif());
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt());
+        verify(mockOperationDataProvider, times(1)).chargeDernierBudgetAvant(eq("C1"), eq(Month.JANUARY), eq(2022));
+        verify(mockOperationDataProvider, never()).chargeBudgetMensuel(anyString());
+        // 1 clôture de janvier 2020 + 24 mois créés + 1 sauvegarde de M
+        verify(mockOperationDataProvider, times(26)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
     /**
-     * F4 : écart &gt; 24 mois : budget vierge (aucun mois intermédiaire créé), solde précédent à 0
+     * F4 : écart &gt; 24 mois : aucun mois intermédiaire créé, le solde du dernier budget connu est repris (pas 0)
      */
     @Test
-    void testGetBudgetSurCompteActif_ecartDe25Mois_budgetVierge() {
+    void testGetBudgetSurCompteActif_ecartDe25Mois_soldeRepris() {
 
-        Map<String, BudgetMensuel> base = initBaseBudgetsFictive(budgetC1(Month.JANUARY, 2020, true));
+        BudgetMensuel dernier = budgetC1(Month.JANUARY, 2020, true);
+        dernier.getSoldes().setSoldeAtFinMoisPrecedent(500D);
+        Map<String, BudgetMensuel> base = initBaseBudgetsFictive(dernier);
 
         // M-1 = février 2022 : écart de 25 mois avec janvier 2020
         BudgetMensuel budgetCharge = budgetAppProvider.getBudgetMensuel("C1", Month.MARCH, 2022)
                 .await().indefinitely();
 
         assertEquals("C1_2022_03", budgetCharge.getId());
-        assertEquals(0D, budgetCharge.getSoldes().getSoldeAtFinMoisPrecedent());
+        assertEquals(500D, budgetCharge.getSoldes().getSoldeAtFinMoisPrecedent(), "Le solde du dernier budget connu est repris");
         assertEquals(2, base.size());
-        assertTrue(base.get("C1_2020_01").isActif(), "Le budget de janvier 2020 n'est pas clos : il n'est pas le mois précédent");
+        assertTrue(base.get("C1_2020_01").isActif(), "Le budget de janvier 2020 n'est pas modifié ni clos");
         verify(mockOperationDataProvider, times(1)).chargeDernierBudgetAvant("C1", Month.FEBRUARY, 2022);
+        verify(mockOperationDataProvider, times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
+
+    /**
+     * Erreur technique sur la lecture du mois M : elle est propagée (type conservé), jamais d'initialisation ni de sauvegarde d'un budget vierge
+     */
+    @Test
+    void testGetBudgetSurCompteActif_erreurTechniqueSurM_propageeSansSauvegarde() {
+
+        when(mockCompteServiceProvider.getCompteById(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt()))
+                .thenReturn(Uni.createFrom().failure(new MongoTimeoutException("timeout")));
+
+        assertThrows(MongoTimeoutException.class, () -> budgetAppProvider.getBudgetMensuel("C1", Month.MARCH, 2022).await().indefinitely());
+
+        verify(mockOperationDataProvider, never()).chargeDernierBudgetAvant(anyString(), any(Month.class), anyInt());
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
+
+    /**
+     * Erreur technique sur "dernier budget &le; M-1" lors de l'initialisation : propagée, aucune sauvegarde
+     */
+    @Test
+    void testGetBudgetSurCompteActif_erreurTechniqueSurDernierBudget_propageeSansSauvegarde() {
+
+        when(mockCompteServiceProvider.getCompteById(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt()))
+                .thenReturn(Uni.createFrom().failure(new BudgetNotFoundException("Budget introuvable")));
+        when(mockOperationDataProvider.chargeDernierBudgetAvant(anyString(), any(Month.class), anyInt()))
+                .thenReturn(Uni.createFrom().failure(new MongoTimeoutException("timeout")));
+
+        assertThrows(MongoTimeoutException.class, () -> budgetAppProvider.getBudgetMensuel("C1", Month.MARCH, 2022).await().indefinitely());
+
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
+
+    /**
+     * Erreur technique sur la lecture de M-1 dans le recalcul du solde : propagée (≠ premier mois), aucune sauvegarde
+     */
+    @Test
+    void testGetBudgetSurCompteActif_erreurTechniqueSurMoisPrecedent_propageeSansSauvegarde() {
+
+        when(mockCompteServiceProvider.getCompteById(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.JANUARY), eq(2022)))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.DECEMBER), eq(2021)))
+                .thenReturn(Uni.createFrom().failure(new MongoTimeoutException("timeout")));
+
+        assertThrows(MongoTimeoutException.class, () -> budgetAppProvider.getBudgetMensuel("C1", Month.JANUARY, 2022).await().indefinitely());
+
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
+
+    /**
+     * Dernier budget connu sans mois : exception métier claire, aucune sauvegarde
+     */
+    @Test
+    void testGetBudgetSurCompteActif_dernierBudgetSansMois_exceptionMetier() {
+
+        BudgetMensuel sansMois = budgetC1(Month.JANUARY, 2022, true);
+        sansMois.setMois(null);
+        when(mockCompteServiceProvider.getCompteById(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt()))
+                .thenReturn(Uni.createFrom().failure(new BudgetNotFoundException("Budget introuvable")));
+        when(mockOperationDataProvider.chargeDernierBudgetAvant(anyString(), any(Month.class), anyInt()))
+                .thenReturn(Uni.createFrom().item(sansMois));
+
+        CompletionException exception = assertThrows(CompletionException.class,
+                () -> budgetAppProvider.getBudgetMensuel("C1", Month.MARCH, 2022).await().indefinitely());
+        assertEquals(AbstractBusinessException.class, exception.getCause().getClass());
+        assertTrue(((AbstractBusinessException) exception.getCause()).getLibelle().contains("n'a pas de mois"));
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
     private static BudgetMensuel budgetC1(Month mois, int annee, boolean actif) {
