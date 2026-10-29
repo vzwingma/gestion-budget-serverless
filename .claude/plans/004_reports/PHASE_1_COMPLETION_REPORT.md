@@ -102,3 +102,95 @@ Décisions 👤 au Gate #2 (2e passage) :
 ### Preuves
 `mvn clean install -Dmaven.test.failure.ignore=true` (racine) : BUILD SUCCESS. communs 182 tests (4 erreurs Mongo sans Docker, préexistantes), parametrages 35, utilisateurs 36, comptes 112, operations 97 : 0 échec / 0 erreur hors communs.
 Périmètre : `git diff --name-only f14cea6 HEAD` = 3 fichiers `operations/src/main` (`BudgetService`, `IOperationsRepository`, `OperationDatabaseAdaptor`).
+
+## Ajustement Gate #2 (4e passage)
+
+Gate #2 : AJUSTER (décision 👤). Trois commits, non poussés.
+
+| Commit | Contenu |
+|---|---|
+| `cfcfb43` `fix(operations)` | Absence vs erreur technique, lectures constantes sur écart de mois, retrait du repli par champs, écart > 24 mois, garde `mois` null, tests |
+| `eba86c9` `fix(migrations)` | WARN en double supprimé (`MigrationRepository.finaliser` le conserve, `MongoMigrationRunner` ne le répète plus) |
+| `9c4a85d` `refactor(operations)` | Nettoyage compensation : commentaires `etat == null`, `echecReinsertion` sans `count`, `idBudget` inutilisé, helper `indexOperation` |
+
+### Points traités (commit `cfcfb43`)
+1. **Absence vs erreur** : `chargeBudgetMensuel(compte, mois, année)` ne lève `BudgetNotFoundException` que si le document est absent. Toute autre erreur remonte avec son type d'origine (plus d'enveloppe en `BudgetNotFoundException`). Choix : `AbstractBDDExceptionsHandler` mappe `MongoClientException` (config, timeout, serveur indisponible) en 503 ; envelopper en `BudgetNotFoundException` donnerait un 404 faux, et créer une exception technique ne ferait que dupliquer ce mapping. Les autres `MongoException` suivent le 500 par défaut. Dans `BudgetService`, seul `onFailure(BudgetNotFoundException.class)` déclenche `initNewBudget` : une erreur technique ne peut plus aboutir au `persistOrUpdate` d'un budget vierge.
+2. **`recalculSoldeAFinMoisPrecedent`** : seule `BudgetNotFoundException` vaut « premier mois » ; une erreur technique remonte.
+3. **`chargeDernierBudgetAvant`** : absence = `Uni` à valeur `null` (compte inactif : `BudgetNotFoundException`, 404) ; erreur technique remonte. Javadoc du port mise à jour.
+4. **Écart de k mois** : `dernierBudget` est passé à `initialiserDepuisDernierBudget` puis `creerMoisIntermediaires` (récursion sur l'objet en mémoire, aucune relecture ni nouvel appel `chargeDernierBudgetAvant`). Les mois intermédiaires sont créés déjà clos (opérations prévues reportées, #115) et sauvegardés une fois. La clôture du dernier budget se fait en mémoire (`appliquerEtatBudget`, extrait de `setBudgetActif`), sans `chargeBudgetMensuel(id)`.
+5. **Garde NPE** : écart calculé depuis `annee`/`mois` du dernier budget ; `mois` null → `AbstractBusinessException` explicite (« n'a pas de mois »), sans repli sur l'`_id`. Raison : le repli par champs est retiré (point 6), et un `mois` null sur un document lu par `_id` est une donnée corrompue qu'il vaut mieux signaler que masquer.
+6. **Repli défensif retiré** : `chargeBudgetParChamps` et `chargeDernierBudgetAvantParChamps` supprimés ; restent la lecture par `_id` et, pour le dernier budget, égalité `idCompteBancaire` + plage d'`_id`. Plus de log de repli.
+7. **Écart > 24 mois** : mois intermédiaires non créés, WARN, solde du dernier budget connu repris (`recalculSoldes` en mémoire, dernier budget non modifié ni clos). Aucun budget précédent : budget vierge à solde 0.
+
+### Décompte des appels au dépôt (initialisation du mois M absent)
+| Cas | Lectures | Écritures |
+|---|---|---|
+| Aucun budget antérieur | 2 (`chargeBudgetMensuel(M)`, `chargeDernierBudgetAvant(M-1)`) | 1 (M) |
+| Écart 0 (M-1 existe, actif) | 2 | 2 (clôture M-1, M) |
+| Écart k (1 ≤ k ≤ 24) | 2 | k + 2 (clôture du dernier budget, k mois créés, M) ; k + 1 si le dernier budget est déjà clos |
+| Écart 3 (test) | 2 | 5 |
+| Écart 24 (test) | 2 | 26 |
+| Écart > 24 | 2 | 1 (M) |
+
+Avant : à chaque niveau, relecture de M-j, un `chargeDernierBudgetAvant` et un `setBudgetActif` (lecture + écriture) : lectures proportionnelles à k, 2 écritures par mois créé.
+
+### Tests (`BudgetServiceTest`, 33 tests, 0 échec)
+Adaptés : écart de 3 mois (1 appel `chargeDernierBudgetAvant`, 0 lecture par id, 5 sauvegardes) et de 24 mois (26 sauvegardes). Ajoutés : écart de 25 mois (solde 500 repris, ancien budget inchangé) ; erreur technique sur M (propagée, aucune sauvegarde, aucun `chargeDernierBudgetAvant`) ; erreur technique sur le dernier budget (propagée, aucune sauvegarde) ; erreur technique sur M-1 dans le recalcul (propagée, aucune sauvegarde) ; dernier budget sans `mois` (`AbstractBusinessException`).
+
+### Risques
+- **R5** : `chargeBudgetMensuel(String idBudget)` (lecture par id seule, utilisée par `setBudgetActif`, `getBudgetMensuel(id)`, `isBudgetActif`) enveloppe encore toute erreur en `BudgetNotFoundException` (404). Hors périmètre demandé, signalé.
+- **R6** : un `mois` null sur le dernier budget donne une `AbstractBusinessException` non typée, rendue en 503 par `AbstractAPIExceptionsHandler`.
+- **R7** : une erreur Mongo hors `MongoClientException` (ex. `MongoCommandException`) n'est pas mappée par `AbstractBDDExceptionsHandler` : 500 par défaut.
+- **R8** : en cas d'écart de k mois, un échec d'écriture en cours de chaîne laisse les mois déjà créés en base (clos) ; le rejeu repart du dernier mois existant (idempotent).
+- **R9** : si le dernier budget d'un écart > 24 mois est encore actif, il reste actif (non clos, pas de report d'opérations).
+
+### Preuves
+`mvn clean install -Dmaven.test.failure.ignore=true` (racine) : BUILD SUCCESS. communs 186 tests (4 erreurs `MongoTimeoutException` sans Docker : `TestMigrationRepository` 1, `TestMigrationRepositoryPersistence` 3, préexistantes), parametrages 35, utilisateurs 36, comptes 112, operations 108 : 0 échec / 0 erreur hors communs.
+`git diff --name-only 24e359f HEAD` : `communs/.../MongoMigrationRunner.java`, `operations/.../BudgetService.java`, `.../IOperationsRepository.java`, `.../OperationDatabaseAdaptor.java`, `.../BudgetServiceTest.java`.
+
+## Ajustement Gate #2 (5e passage)
+
+Gate #2 : AJUSTER (décision 👤). Commit `37988e6` `fix(operations)`, non poussé.
+
+### Points traités
+1. **Écrasement concurrent de M-1** : `cloreBudgetSiActif` relit M-1 par id (`chargeBudgetMensuel(id)`) juste avant la clôture, applique PREVUE -> REPORTEE sur la version relue, recalcule et l'enregistre (comme l'ancien `setBudgetActif`). Si la version relue est déjà close, elle n'est pas réécrite. Choix : relecture + sauvegarde plutôt que `$set` ciblé. Un `$set` ciblé sur `listeOperations` écraserait lui aussi une opération ajoutée entre-temps, car la clôture modifie l'état de toutes les opérations prévues ; il aurait aussi exigé une nouvelle méthode sur le port. La relecture ne laisse que la fenêtre lecture-écriture de la clôture, comme toute écriture du service. Test : une opération ajoutée entre l'instantané et la clôture est conservée, reportée, et reprise dans le nouveau budget.
+2. **`mois` null** : nouvelle `DonneeCorrompueException` (communs), mappée en **500** dans `AbstractAPIExceptionsHandler`. Aucune exception existante ne mappe vers 500 : `AbstractBusinessException` donne 503 (fallback), les autres 400/404/406/401/403. Plus petite exception possible : une classe de 10 lignes et une branche du mapping. Gardes : `recalculSoldeAFinMoisPrecedent` (M existant), `initialiserDepuisDernierBudget` (écart), `creerMoisIntermediaires` (précédent, puis version clôturée), `cloreBudgetSiActif` (instantané, puis version relue active).
+3. **NPE du log de debug** : `OperationDatabaseAdaptor` : helper `logReceptionBudget` conditionné à `isDebugEnabled()` et null-safe sur `getListeOperations()`, utilisé par les deux `chargeBudgetMensuel`.
+4. **Erreur passagère sur M-1 à l'affichage de M** (décision 👤) : toute erreur autre que `BudgetNotFoundException` est loggée en ERROR ; M est servi avec le `soldeAtFinMoisPrecedent` stocké et **n'est pas enregistré** (indicateur `ChargementBudget.aSauvegarder`). L'absence de M-1 reste « premier mois » et M est enregistré. Effet de bord : pour le compte de destination d'un virement, `ecrireOperationVirementCible` enregistre le budget après ajout de l'opération, avec le solde stocké : pas de corruption, solde de M-1 simplement non rafraîchi.
+5. **R5** (décision 👤) : `chargeBudgetMensuel(String)` ne lève `BudgetNotFoundException` (404) que sur absence (`firstResult` null) ; les erreurs Mongo remontent. Callers vérifiés (`setBudgetActif`, `getBudgetMensuel(id)`, `isBudgetActif`, `getBudgetAndCompteActif`) : aucun `recover` sur toute erreur, le seul `onFailure(BudgetNotFoundException.class)` restant est celui de `chargerBudgetMensuelSurCompteActif` (M absent) et de `recalculSoldeAFinMoisPrecedent` (M-1 absent). Contrat documenté dans `IOperationsRepository`.
+6. **Écart > 24 mois** : inchangé (reprise du solde seul).
+
+### Codes HTTP par cas
+| Cas | HTTP |
+|---|---|
+| Budget absent par id (`getBudgetMensuel(id)`, `isBudgetActif`, `setBudgetActif`) | 404 |
+| Erreur Mongo par id : `MongoConfigurationException`, `MongoTimeoutException`, `MongoServerUnavailableException` | 503 |
+| Erreur Mongo par id : `MongoClientException` générique | 500 (branche par défaut de `AbstractBDDExceptionsHandler`) |
+| Erreur Mongo hors `MongoClientException` (`MongoSocketReadTimeoutException`, `MongoCommandException`...) | 500 (aucun mapper) |
+| `mois` null (budget lu, dernier budget, relu) | 500 (`DonneeCorrompueException`) |
+| Erreur technique sur M-1 à l'affichage de M existant | 200, M servi sans enregistrement, log ERROR |
+
+### Décompte des appels au dépôt (initialisation du mois M absent, après relecture)
+| Cas | Lectures | Écritures |
+|---|---|---|
+| Aucun budget antérieur | 2 | 1 (M) |
+| Écart 0, M-1 actif | 3 (`chargeBudgetMensuel(M)`, `chargeDernierBudgetAvant(M-1)`, relecture de M-1 par id) | 2 (clôture M-1, M) |
+| Écart k (1 ≤ k ≤ 24), dernier budget actif | 3 | k + 2 |
+| Écart k, dernier budget déjà clos | 2 | k + 1 |
+| Écart 3 (test) | 3 | 5 |
+| Écart 24 (test) | 3 | 26 |
+| Écart > 24 | 2 | 1 (M) |
+| Affichage de M existant, M-1 lu | 2 | 1 |
+| Affichage de M existant, erreur technique sur M-1 | 2 | 0 |
+
+### Tests (`BudgetServiceTest`, 118 tests au module, 0 échec)
+Adaptés : écarts de 3 et 24 mois (1 relecture par id du dernier budget). Remplacé : erreur technique sur M-1 (M servi, 0 sauvegarde, trace ERROR capturée). Ajoutés : relecture avant clôture (opération ajoutée conservée et reportée, instantané non enregistré) ; version relue déjà close (pas de réécriture) ; `mois` null sur M existant, sur le dernier budget, sur la version relue active, sur la version relue close (chacun : `DonneeCorrompueException`, statut 500 via `APIExceptionsHandler`, 0 sauvegarde) ; R5 : absence -> `BudgetNotFoundException` 404 et erreur Mongo propagée (503 via `SPIExceptionsHandler`) sur `getBudgetMensuel(id)`, `isBudgetMensuelActif`, `setBudgetActif`. `communs` : test du mapping 500.
+
+### Risques
+- **R10** : un `MongoClientException` générique et toute `MongoException` hors `MongoClientException` (dont `MongoSocketReadTimeoutException`, levée par le read-timeout du driver) donnent 500 et non 503. Non élargi, signalé.
+- **R11** : si M-1 est absent à la relecture avant clôture (suppression concurrente), l'initialisation de M échoue en 404.
+- **R12** : les tests de `chargeBudgetMensuel(String)` au niveau adaptateur (absence -> 404, erreur -> propagée) ne sont pas exécutables sans Docker ; couverts au niveau service avec dépôt mocké.
+
+### Preuves
+`mvn clean install -Dmaven.test.failure.ignore=true` (racine) : BUILD SUCCESS. communs 187 tests (4 erreurs `MongoTimeoutException` sans Docker : `TestMigrationRepository` 1, `TestMigrationRepositoryPersistence` 3, préexistantes), parametrages 35, utilisateurs 36, comptes 112, operations 118 : 0 échec / 0 erreur hors communs.
+`git diff --name-only 9c4a85d HEAD` (avant le commit docs) : `communs/.../AbstractAPIExceptionsHandler.java`, `communs/.../DonneeCorrompueException.java`, `communs/.../TestAbstractAPIExceptionsHandlerComplement.java`, `operations/.../BudgetService.java`, `.../IOperationsRepository.java`, `.../OperationDatabaseAdaptor.java`, `.../BudgetServiceTest.java`.

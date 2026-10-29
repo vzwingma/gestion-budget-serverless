@@ -73,7 +73,12 @@ Règles :
 ### Limites connues
 - **Risque R2 accepté — soldes et totaux de la compensation** : la compensation du virement réécrit `soldes`, `totauxParCategories`, `totauxParSSCategories`, `totauxParTypeCategories` et `dateMiseAJour` avec l'instantané en mémoire, recalculé après retrait ou restauration de l'opération. Si une écriture concurrente touche une **autre opération du même budget** entre l'écriture source et la compensation, sa ligne est conservée dans `listeOperations`, mais elle n'apparaît pas dans les soldes et totaux stockés tant qu'aucun recalcul n'a eu lieu.
 - **Décision 👤 du 2026-10-29** (Gate #2, 2e passage, plan 004) : risque accepté et documenté, **sans contrôle optimiste sur `dateMiseAJour`**. À réévaluer si le problème est observé.
-- **Compensation ciblée** (commit `012dee5`) : `$pull` de la ligne en cas de création ; en cas de modification, `$set listeOperations.$[op]` avec `arrayFilters` (ou `$push` si la ligne a disparu, correctif en cours). Le budget entier n'est plus réécrit.
+- **Compensation ciblée** (commit `012dee5`) : `$pull` de la ligne en cas de création ; en cas de modification, `$set listeOperations.$[op]` avec `arrayFilters` (ou `$push` si la ligne a disparu, voir ci-dessous). Le budget entier n'est plus réécrit.
+- **Réinsertion par `$push` conservée** — décision 👤 du 2026-10-29 (Gate #2, Phase 1, plan 004). Si la ligne d'origine ne se trouve plus dans `listeOperations` au moment de la compensation, elle est réinsérée par `$push` avec `$position`, à son rang d'origine (en fin de liste si ce rang est inconnu), et uniquement si aucune ligne de même id n'est présente.
+  - Cas résiduel accepté : une suppression concurrente de cette ligne, faite entre l'écriture source et la compensation, est alors annulée (la ligne revient). Un `WARN` est loggé.
+  - Depuis la garde 400 sur `etat == null`, appliquée avant toute écriture, ce chemin ne s'exécute plus que dans ce cas concurrent.
+- **Virement interne avec `etat == null`** — décision 👤 du 2026-10-29 (Gate #2, Phase 1, plan 004) : refusé en 400 (`BadParametersException`) avant toute écriture.
+- **Compte destination inconnu** — décision 👤 du 2026-10-29 (Gate #2, Phase 1, plan 004) : un 404 du client REST est traduit en `DataNotFoundException` (404).
 
 ### Neutres
 - Mise à jour de la documentation d'API (wiki serverless, `Conception-globale.md`) et de `docs/ARCHITECTURE.md` si le contrat de réponse du virement est modifié.
