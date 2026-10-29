@@ -88,7 +88,18 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                 .onItem().ifNull().failWith(() -> new BudgetNotFoundException("Budget introuvable pour le compte " + compte.getId() + " du mois " + mois + " de l'année " + annee))
                 .onFailure(e -> !(e instanceof BudgetNotFoundException))
                 .invoke(e -> LOGGER.error("Erreur technique lors du chargement du budget {}", idBudget, e))
-                .invoke(budget -> LOGGER.debug("-> Réception du budget {}. {} opérations", budget.getId(), budget.getListeOperations().size()));
+                .invoke(budget -> logReceptionBudget(budget));
+    }
+
+    /**
+     * Log de debug de réception d'un budget : le calcul du nombre d'opérations n'est fait que si DEBUG est actif,
+     * et la liste des opérations peut être absente (donnée non conforme).
+     */
+    private static void logReceptionBudget(BudgetMensuel budget) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("-> Réception du budget {}. {} opérations", budget.getId(),
+                    budget.getListeOperations() != null ? budget.getListeOperations().size() : 0);
+        }
     }
 
     /**
@@ -217,6 +228,13 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     }
 
     /**
+     * Charge un budget par son identifiant ({@code _id}).
+     * <ul>
+     *     <li>document absent : {@link BudgetNotFoundException} (404 côté HTTP) ;</li>
+     *     <li>toute autre erreur (MongoException, timeout...) : elle remonte telle quelle, sans être confondue avec une absence
+     *     (statut HTTP selon {@code AbstractBDDExceptionsHandler}).</li>
+     * </ul>
+     *
      * @param idBudget identifiant du budget
      * @return budget mensuel correspondant à l'identifiant
      */
@@ -225,14 +243,11 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
 
         LOGGER.info("Chargement du budget ");
         return find(ATTRIBUT_BUDGET_ID + "=?1", idBudget)
-                .singleResultOptional()
-                .onItem().transform(Optional::orElseThrow)
-                .onFailure()
-                .transform(e -> {
-                    LOGGER.error("Erreur lors du chargement du budget {}", idBudget, e);
-                    return new BudgetNotFoundException("Erreur lors du chargement du budget " + idBudget);
-                })
-                .invoke(budget -> LOGGER.debug("-> Réception du budget {}. {} opérations", budget.getId(), budget.getListeOperations().size()));
+                .firstResult()
+                .onItem().ifNull().failWith(() -> new BudgetNotFoundException("Budget introuvable " + idBudget))
+                .onFailure(e -> !(e instanceof BudgetNotFoundException))
+                .invoke(e -> LOGGER.error("Erreur technique lors du chargement du budget {}", idBudget, e))
+                .invoke(budget -> logReceptionBudget(budget));
     }
 
 

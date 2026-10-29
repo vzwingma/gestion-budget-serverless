@@ -22,10 +22,10 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategori
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
-import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.AbstractBusinessException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DonneeCorrompueException;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -189,14 +189,36 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                 .transformToUni(budgetExistant -> budgetExistant.isPresent()
                         // rechargement du solde mois précédent (s'il a changé), uniquement pour un budget existant
                         ? recalculSoldeAFinMoisPrecedent(budgetExistant.get(), compteBancaire)
-                        // un budget nouvellement initialisé porte déjà le solde de fin du mois précédent
-                        : initNewBudget(compteBancaire, mois, annee))
-                .invoke(budgetMensuel -> LOGGER.debug("Budget mensuel chargé : {}", budgetMensuel))
+                        // un budget nouvellement initialisé porte déjà le solde de fin du mois précédent, et doit être enregistré
+                        : initNewBudget(compteBancaire, mois, annee).map(budgetInitialise -> new ChargementBudget(budgetInitialise, true)))
+                .invoke(chargement -> LOGGER.debug("Budget mensuel chargé : {}", chargement.budget()))
                 // recalcul de tous les soldes du budget courant
                 .onItem().ifNotNull()
-                .invoke(this::recalculSoldes)
-                // Sauvegarde du budget
-                .call(this::sauvegardeBudget);
+                .invoke(chargement -> recalculSoldes(chargement.budget()))
+                // Sauvegarde du budget (sauf si le solde du mois précédent n'a pas pu être relu : budget servi tel que stocké)
+                .call(chargement -> chargement.aSauvegarder() ? sauvegardeBudget(chargement.budget()) : Uni.createFrom().voidItem())
+                .map(ChargementBudget::budget);
+    }
+
+    /**
+     * Budget chargé et indicateur de sauvegarde.
+     *
+     * @param budget       budget à servir
+     * @param aSauvegarder {@code false} si le budget doit être servi sans être enregistré
+     */
+    private record ChargementBudget(BudgetMensuel budget, boolean aSauvegarder) {
+    }
+
+    /**
+     * Garde : le mois d'un budget doit être renseigné pour calculer les mois précédent, suivant et l'écart.
+     * Un mois absent est une donnée corrompue (500), pas une indisponibilité (503).
+     *
+     * @return l'exception à retourner en échec si le mois est absent, {@code null} sinon
+     */
+    private static DonneeCorrompueException erreurSiMoisAbsent(BudgetMensuel budget, String contexte) {
+        return budget.getMois() == null
+                ? new DonneeCorrompueException("Le budget " + budget.getId() + " n'a pas de mois : " + contexte)
+                : null;
     }
 
 
@@ -233,14 +255,25 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
 
     /**
      * Recalcul du solde à la fin du mois précédent
+     * <ul>
+     *     <li>M-1 lu : le solde de fin de M-1 est reporté sur M, M sera enregistré ;</li>
+     *     <li>M-1 absent ({@link BudgetNotFoundException}) : premier mois du compte, solde stocké inchangé, M sera enregistré ;</li>
+     *     <li>erreur technique sur M-1 : loggée en ERROR, M est servi avec le solde stocké et n'est pas enregistré
+     *     (l'erreur ne fait pas échouer l'affichage d'un budget existant) ;</li>
+     *     <li>mois de M absent : {@link DonneeCorrompueException} (500).</li>
+     * </ul>
      *
      * @param budgetMensuel  budget mensuel
      * @param compteBancaire compte
-     * @return budget mensuel recalculé
+     * @return budget mensuel recalculé et indicateur de sauvegarde
      */
-    private Uni<BudgetMensuel> recalculSoldeAFinMoisPrecedent(final BudgetMensuel budgetMensuel, CompteBancaire compteBancaire) {
+    private Uni<ChargementBudget> recalculSoldeAFinMoisPrecedent(final BudgetMensuel budgetMensuel, CompteBancaire compteBancaire) {
         // Maj du budget ssi budget actif
         if (budgetMensuel != null && budgetMensuel.isActif()) {
+            final DonneeCorrompueException moisAbsent = erreurSiMoisAbsent(budgetMensuel, "impossible de déterminer le mois précédent");
+            if (moisAbsent != null) {
+                return Uni.createFrom().failure(moisAbsent);
+            }
             // Recalcul du résultat du mois précédent
             Month moisPrecedent = budgetMensuel.getMois().minus(1);
             int anneePrecedente = Month.DECEMBER.equals(moisPrecedent) ? budgetMensuel.getAnnee() - 1 : budgetMensuel.getAnnee();
@@ -249,16 +282,23 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
 
             return this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, moisPrecedent, anneePrecedente)
                     .invoke(budgetPrecedent -> budgetMensuel.getSoldes().setSoldeAtFinMoisPrecedent(budgetPrecedent.getSoldes().getSoldeAtFinMoisCourant()))
-                    .replaceWith(budgetMensuel)
+                    .map(budgetPrecedent -> new ChargementBudget(budgetMensuel, true))
                     // Premier mois du compte (budget précédent absent) : solde du mois précédent inchangé (0 pour un budget vierge), pas d'échec
                     .onFailure(BudgetNotFoundException.class)
                     .recoverWithItem(e -> {
                         LOGGER.debug("Pas de budget précédent {}/{} pour le compte {} : solde du mois précédent inchangé", moisPrecedent, anneePrecedente, compteBancaire.getId());
-                        return budgetMensuel;
+                        return new ChargementBudget(budgetMensuel, true);
+                    })
+                    // Erreur technique (différente de l'absence) : le budget M existe, il est servi avec son solde stocké, sans être enregistré
+                    .onFailure()
+                    .recoverWithItem(e -> {
+                        LOGGER.error("Erreur technique lors du chargement du budget précédent {}/{} du compte {} : le budget {} est servi avec le solde stocké du mois précédent, sans enregistrement",
+                                moisPrecedent, anneePrecedente, compteBancaire.getId(), budgetMensuel.getId(), e);
+                        return new ChargementBudget(budgetMensuel, false);
                     });
         } else {
             LOGGER.debug("Budget inactif, pas de recalcul du solde à partir du budget du mois précédent du compte actif {}", compteBancaire);
-            return Uni.createFrom().item(budgetMensuel);
+            return Uni.createFrom().item(new ChargementBudget(budgetMensuel, true));
         }
 
     }
@@ -315,15 +355,16 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     }
 
     /**
-     * Initialise le nouveau budget à partir du dernier budget connu (&le; M-1), sans relire la base.
+     * Initialise le nouveau budget à partir du dernier budget connu (&le; M-1), sans relire les mois intermédiaires.
      * <ul>
      *     <li>aucun budget connu (nouveau compte) : budget vierge à solde 0</li>
      *     <li>écart de k mois (0 &le; k &le; {@value #MAX_MOIS_REMPLISSAGE}) : les k mois intermédiaires sont créés en mémoire à partir
-     *     du dernier budget puis sauvegardés (1 écriture par mois créé, déjà clos), le dernier budget est clos s'il est actif ; aucune relecture</li>
+     *     du dernier budget puis sauvegardés (1 écriture par mois créé, déjà clos), le dernier budget, relu par id juste avant sa clôture, est clos s'il est encore actif</li>
      *     <li>écart &gt; {@value #MAX_MOIS_REMPLISSAGE} : WARN, mois intermédiaires non créés, le solde du dernier budget connu est repris</li>
      * </ul>
      * Appels au dépôt pour initialiser M (hors lecture et écriture de M par l'appelant) : 1 lecture {@code chargeDernierBudgetAvant},
-     * puis au plus k + 1 écritures (k mois créés + clôture du dernier budget).
+     * puis, si le dernier budget est actif, 1 relecture par id ({@code chargeBudgetMensuel(id)}) avant sa clôture, et au plus
+     * k + 1 écritures (k mois créés + clôture du dernier budget).
      */
     private Uni<BudgetMensuel> initialiserDepuisDernierBudget(CompteBancaire compteBancaire, BudgetMensuel budgetInitVide,
                                                               BudgetMensuel dernierBudget, Month moisPrecedent, int anneePrecedente) {
@@ -332,9 +373,10 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
             return Uni.createFrom().item(budgetInitVide);
         }
         // Garde : le mois d'un budget lu doit être renseigné pour calculer l'écart (donnée non conforme sinon)
-        if (dernierBudget.getMois() == null) {
-            return Uni.createFrom().failure(new AbstractBusinessException("Le budget " + dernierBudget.getId() + " du compte " + compteBancaire.getId()
-                    + " n'a pas de mois : impossible de déterminer l'écart avec " + moisPrecedent + "/" + anneePrecedente));
+        final DonneeCorrompueException moisAbsent = erreurSiMoisAbsent(dernierBudget, "impossible de déterminer l'écart avec "
+                + moisPrecedent + "/" + anneePrecedente + " (compte " + compteBancaire.getId() + ")");
+        if (moisAbsent != null) {
+            return Uni.createFrom().failure(moisAbsent);
         }
         final int ecartMois = (anneePrecedente * 12 + moisPrecedent.getValue()) - (dernierBudget.getAnnee() * 12 + dernierBudget.getMois().getValue());
         if (ecartMois > MAX_MOIS_REMPLISSAGE) {
@@ -357,7 +399,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     /**
      * Crée, en mémoire puis en base, les {@code restants} budgets suivant {@code precedent}, et renvoie le dernier (clos).
      * Chaque budget intermédiaire est créé clos (#115 : opérations prévues reportées) et sauvegardé une seule fois ; aucune lecture.
-     * Le budget {@code precedent} est clos et sauvegardé s'il est encore actif (#115).
+     * Le budget {@code precedent} est relu puis clos et sauvegardé s'il est encore actif (#115, voir {@link #cloreBudgetSiActif}).
      *
      * @param compteBancaire compte
      * @param precedent      dernier budget connu ou budget intermédiaire déjà créé
@@ -365,10 +407,19 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      * @return le budget du mois M-1, clos
      */
     private Uni<BudgetMensuel> creerMoisIntermediaires(CompteBancaire compteBancaire, BudgetMensuel precedent, int restants) {
+        final DonneeCorrompueException moisAbsent = erreurSiMoisAbsent(precedent, "impossible de créer le mois suivant (compte " + compteBancaire.getId() + ")");
+        if (moisAbsent != null) {
+            return Uni.createFrom().failure(moisAbsent);
+        }
         return cloreBudgetSiActif(precedent)
                 .onItem().transformToUni(precedentClos -> {
                     if (restants <= 0) {
                         return Uni.createFrom().item(precedentClos);
+                    }
+                    // La version relue à la clôture a le même identifiant : son mois est vérifié aussi
+                    final DonneeCorrompueException moisClosAbsent = erreurSiMoisAbsent(precedentClos, "impossible de créer le mois suivant (compte " + compteBancaire.getId() + ")");
+                    if (moisClosAbsent != null) {
+                        return Uni.createFrom().<BudgetMensuel>failure(moisClosAbsent);
                     }
                     final Month moisSuivant = precedentClos.getMois().plus(1);
                     final int anneeSuivante = Month.JANUARY.equals(moisSuivant) ? precedentClos.getAnnee() + 1 : precedentClos.getAnnee();
@@ -381,15 +432,37 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     }
 
     /**
-     * Clôture automatique (#115) d'un budget encore actif : opérations prévues reportées, recalcul et sauvegarde, sans relecture.
+     * Clôture automatique (#115) d'un budget encore actif : le budget est <strong>relu par id juste avant la clôture</strong>
+     * (comme {@link #setBudgetActif(String, boolean)}), pour ne pas écraser une écriture concurrente survenue depuis la lecture
+     * initiale (ajout, modification ou suppression d'opération sur le mois précédent). Les opérations prévues sont reportées
+     * sur la version relue, puis recalcul et sauvegarde. Un budget déjà clos (instantané ou version relue) n'est pas réécrit.
+     * <p>
+     * Coût : 1 lecture par id supplémentaire, uniquement quand une clôture est nécessaire (au plus une par initialisation de budget).
+     * La fenêtre de concurrence est réduite à l'intervalle lecture-écriture de la clôture, comme pour toute écriture du service.
+     * Une absence du budget à la relecture donne une {@link BudgetNotFoundException} (404), une erreur technique remonte.
      */
     private Uni<BudgetMensuel> cloreBudgetSiActif(BudgetMensuel budget) {
         if (!budget.isActif()) {
             return Uni.createFrom().item(budget);
         }
-        appliquerEtatBudget(budget, false);
-        recalculSoldes(budget);
-        return sauvegardeBudget(budget).replaceWith(budget);
+        final DonneeCorrompueException moisAbsent = erreurSiMoisAbsent(budget, "impossible de le clore");
+        if (moisAbsent != null) {
+            return Uni.createFrom().failure(moisAbsent);
+        }
+        return dataOperationsProvider.chargeBudgetMensuel(budget.getId())
+                .onItem().transformToUni(budgetRelu -> {
+                    if (!budgetRelu.isActif()) {
+                        // clos entre-temps par un autre appel : rien à réécrire
+                        return Uni.createFrom().item(budgetRelu);
+                    }
+                    final DonneeCorrompueException moisReluAbsent = erreurSiMoisAbsent(budgetRelu, "impossible de le clore");
+                    if (moisReluAbsent != null) {
+                        return Uni.createFrom().<BudgetMensuel>failure(moisReluAbsent);
+                    }
+                    appliquerEtatBudget(budgetRelu, false);
+                    recalculSoldes(budgetRelu);
+                    return sauvegardeBudget(budgetRelu).replaceWith(budgetRelu);
+                });
     }
 
     /**

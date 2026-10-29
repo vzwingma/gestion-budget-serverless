@@ -13,7 +13,10 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.test.da
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
-import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.AbstractBusinessException;
+import io.github.vzwingma.finances.budget.serverless.services.operations.api.override.APIExceptionsHandler;
+import io.github.vzwingma.finances.budget.serverless.services.operations.spi.SPIExceptionsHandler;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DonneeCorrompueException;
+import jakarta.ws.rs.core.Response;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
@@ -31,10 +34,14 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionException;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -304,7 +311,7 @@ class BudgetServiceTest {
 
     /**
      * F4 : écart de 3 mois (février, mars, avril à créer entre janvier et mai).
-     * Appels au dépôt : lectures constantes (1 lecture du mois M, 1 "dernier budget &le; M-1", aucune relecture par id),
+     * Appels au dépôt : 1 lecture du mois M, 1 "dernier budget &le; M-1", 1 relecture par id du dernier budget avant sa clôture,
      * écritures : 1 clôture de janvier + 3 mois créés (déjà clos) + 1 sauvegarde de M = 5.
      */
     @Test
@@ -324,7 +331,9 @@ class BudgetServiceTest {
         assertTrue(base.get("C1_2022_05").isActif());
         verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt());
         verify(mockOperationDataProvider, times(1)).chargeDernierBudgetAvant(eq("C1"), eq(Month.APRIL), eq(2022));
-        verify(mockOperationDataProvider, never()).chargeBudgetMensuel(anyString());
+        // Une relecture par id : le dernier budget (janvier) est relu juste avant sa clôture
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(eq("C1_2022_01"));
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(anyString());
         verify(mockOperationDataProvider, times(5)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
@@ -347,7 +356,8 @@ class BudgetServiceTest {
         assertFalse(base.get("C1_2022_01").isActif());
         verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt());
         verify(mockOperationDataProvider, times(1)).chargeDernierBudgetAvant(eq("C1"), eq(Month.JANUARY), eq(2022));
-        verify(mockOperationDataProvider, never()).chargeBudgetMensuel(anyString());
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(eq("C1_2020_01"));
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(anyString());
         // 1 clôture de janvier 2020 + 24 mois créés + 1 sauvegarde de M
         verify(mockOperationDataProvider, times(26)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
@@ -410,28 +420,83 @@ class BudgetServiceTest {
     }
 
     /**
-     * Erreur technique sur la lecture de M-1 dans le recalcul du solde : propagée (≠ premier mois), aucune sauvegarde
+     * Erreur technique sur la lecture de M-1 à l'affichage d'un budget M existant : elle ne fait pas échouer le chargement de M.
+     * M est servi avec le solde stocké du mois précédent, n'est pas enregistré, et l'erreur est loggée en ERROR.
      */
     @Test
-    void testGetBudgetSurCompteActif_erreurTechniqueSurMoisPrecedent_propageeSansSauvegarde() {
+    void testGetBudgetSurCompteActif_erreurTechniqueSurMoisPrecedent_budgetServiSansSauvegarde() {
 
+        BudgetMensuel janvier = MockDataBudgets.getBudgetActifCompteC1et1operationPrevue();
+        janvier.getSoldes().setSoldeAtFinMoisPrecedent(777D);
         when(mockCompteServiceProvider.getCompteById(anyString()))
                 .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
         when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.JANUARY), eq(2022)))
-                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
+                .thenReturn(Uni.createFrom().item(janvier));
         when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.DECEMBER), eq(2021)))
                 .thenReturn(Uni.createFrom().failure(new MongoTimeoutException("timeout")));
 
-        assertThrows(MongoTimeoutException.class, () -> budgetAppProvider.getBudgetMensuel("C1", Month.JANUARY, 2022).await().indefinitely());
+        final List<LogRecord> logs = new ArrayList<>();
+        final Handler capture = new Handler() {
+            @Override
+            public void publish(LogRecord record) {
+                logs.add(record);
+            }
 
+            @Override
+            public void flush() {
+                // rien à vider
+            }
+
+            @Override
+            public void close() {
+                // rien à fermer
+            }
+        };
+        final java.util.logging.Logger loggerService = java.util.logging.Logger.getLogger(BudgetService.class.getName());
+        loggerService.addHandler(capture);
+        BudgetMensuel budgetCharge;
+        try {
+            budgetCharge = budgetAppProvider.getBudgetMensuel("C1", Month.JANUARY, 2022).await().indefinitely();
+        } finally {
+            loggerService.removeHandler(capture);
+        }
+
+        assertNotNull(budgetCharge);
+        assertEquals("C1_2022_01", budgetCharge.getId());
+        assertEquals(777D, budgetCharge.getSoldes().getSoldeAtFinMoisPrecedent(), "Le solde stocké du mois précédent est conservé");
+        // Les soldes du mois restent recalculés en mémoire
+        assertEquals(777D + 123D, budgetCharge.getSoldes().getSoldeAtFinMoisCourant());
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+        assertTrue(logs.stream().anyMatch(l -> l.getLevel().intValue() >= Level.SEVERE.intValue()
+                        && l.getMessage() != null && l.getMessage().contains("Erreur technique lors du chargement du budget précédent")),
+                "Une trace ERROR est attendue pour l'erreur sur M-1");
+    }
+
+    /**
+     * Mois absent sur le budget M existant (recalcul du solde de fin de mois précédent) : donnée corrompue, 500 typé, aucune lecture de M-1 ni sauvegarde
+     */
+    @Test
+    void testGetBudgetSurCompteActif_budgetSansMois_donneeCorrompue500() {
+
+        BudgetMensuel sansMois = MockDataBudgets.getBudgetActifCompteC1et1operationPrevue();
+        sansMois.setMois(null);
+        when(mockCompteServiceProvider.getCompteById(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.JANUARY), eq(2022)))
+                .thenReturn(Uni.createFrom().item(sansMois));
+
+        CompletionException exception = assertThrows(CompletionException.class,
+                () -> budgetAppProvider.getBudgetMensuel("C1", Month.JANUARY, 2022).await().indefinitely());
+        assertDonneeCorrompue500(exception.getCause());
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt());
         verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
     }
 
     /**
-     * Dernier budget connu sans mois : exception métier claire, aucune sauvegarde
+     * Dernier budget connu sans mois (calcul de l'écart) : donnée corrompue, 500 typé, aucune sauvegarde
      */
     @Test
-    void testGetBudgetSurCompteActif_dernierBudgetSansMois_exceptionMetier() {
+    void testGetBudgetSurCompteActif_dernierBudgetSansMois_donneeCorrompue500() {
 
         BudgetMensuel sansMois = budgetC1(Month.JANUARY, 2022, true);
         sansMois.setMois(null);
@@ -444,9 +509,162 @@ class BudgetServiceTest {
 
         CompletionException exception = assertThrows(CompletionException.class,
                 () -> budgetAppProvider.getBudgetMensuel("C1", Month.MARCH, 2022).await().indefinitely());
-        assertEquals(AbstractBusinessException.class, exception.getCause().getClass());
-        assertTrue(((AbstractBusinessException) exception.getCause()).getLibelle().contains("n'a pas de mois"));
+        assertDonneeCorrompue500(exception.getCause());
+        assertTrue(((DonneeCorrompueException) exception.getCause()).getLibelle().contains("n'a pas de mois"));
+        verify(mockOperationDataProvider, never()).chargeBudgetMensuel(anyString());
         verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
+
+    /**
+     * Clôture du dernier budget : la version relue (active) n'a pas de mois : donnée corrompue, 500 typé, la version relue n'est pas enregistrée
+     */
+    @Test
+    void testGetBudgetSurCompteActif_clotureBudgetReluSansMois_donneeCorrompue500() {
+
+        initBaseBudgetsFictive(budgetC1(Month.JANUARY, 2022, true));
+        BudgetMensuel reluSansMois = budgetC1(Month.JANUARY, 2022, true);
+        reluSansMois.setMois(null);
+        when(mockOperationDataProvider.chargeBudgetMensuel(eq("C1_2022_01"))).thenReturn(Uni.createFrom().item(reluSansMois));
+
+        CompletionException exception = assertThrows(CompletionException.class,
+                () -> budgetAppProvider.getBudgetMensuel("C1", Month.FEBRUARY, 2022).await().indefinitely());
+        assertDonneeCorrompue500(exception.getCause());
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
+
+    /**
+     * Création des mois intermédiaires : la version relue du dernier budget, déjà close, n'a pas de mois : donnée corrompue, 500 typé
+     */
+    @Test
+    void testGetBudgetSurCompteActif_creationMoisIntermediairesSurBudgetReluSansMois_donneeCorrompue500() {
+
+        initBaseBudgetsFictive(budgetC1(Month.JANUARY, 2022, true));
+        BudgetMensuel recluSansMois = budgetC1(Month.JANUARY, 2022, false);
+        recluSansMois.setMois(null);
+        when(mockOperationDataProvider.chargeBudgetMensuel(eq("C1_2022_01"))).thenReturn(Uni.createFrom().item(recluSansMois));
+
+        // M-1 = février 2022 : écart de 1 mois avec janvier 2022, un mois intermédiaire à créer
+        CompletionException exception = assertThrows(CompletionException.class,
+                () -> budgetAppProvider.getBudgetMensuel("C1", Month.MARCH, 2022).await().indefinitely());
+        assertDonneeCorrompue500(exception.getCause());
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
+
+    /**
+     * Le dernier budget est relu par id juste avant sa clôture : une opération ajoutée entre-temps est conservée
+     * (reportée), et c'est la version relue qui est enregistrée, pas l'instantané lu au début.
+     */
+    @Test
+    void testGetBudgetSurCompteActif_clotureRelitLeMoisPrecedent_operationAjouteeEntreTempsConservee() {
+
+        BudgetMensuel instantane = budgetC1(Month.JANUARY, 2022, true);
+        Map<String, BudgetMensuel> base = initBaseBudgetsFictive(instantane);
+        // Version en base au moment de la clôture : une opération prévue a été ajoutée depuis la lecture de l'instantané
+        BudgetMensuel relu = MockDataBudgets.getBudgetActifCompteC1et1operationPrevue();
+        assertTrue(instantane.getListeOperations().isEmpty());
+        when(mockOperationDataProvider.chargeBudgetMensuel(eq("C1_2022_01"))).thenReturn(Uni.createFrom().item(relu));
+
+        BudgetMensuel budgetCharge = budgetAppProvider.getBudgetMensuel("C1", Month.FEBRUARY, 2022)
+                .await().indefinitely();
+
+        assertEquals("C1_2022_02", budgetCharge.getId());
+        // La version relue est celle enregistrée, close, avec l'opération PREVUE -> REPORTEE
+        assertSame(relu, base.get("C1_2022_01"));
+        assertFalse(relu.isActif());
+        assertEquals(1, relu.getListeOperations().size());
+        assertEquals(OperationEtatEnum.REPORTEE, relu.getListeOperations().getFirst().getEtat());
+        assertTrue(instantane.getListeOperations().isEmpty(), "L'instantané initial n'est pas enregistré");
+        // L'opération reportée est bien reprise dans le nouveau budget
+        assertEquals(1, budgetCharge.getListeOperations().size());
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(eq("C1_2022_01"));
+    }
+
+    /**
+     * Le dernier budget a été clos entre-temps par un autre appel : la version relue n'est pas réécrite
+     */
+    @Test
+    void testGetBudgetSurCompteActif_clotureReluDejaClos_pasDeReecriture() {
+
+        initBaseBudgetsFictive(budgetC1(Month.JANUARY, 2022, true));
+        BudgetMensuel reluClos = budgetC1(Month.JANUARY, 2022, false);
+        when(mockOperationDataProvider.chargeBudgetMensuel(eq("C1_2022_01"))).thenReturn(Uni.createFrom().item(reluClos));
+
+        BudgetMensuel budgetCharge = budgetAppProvider.getBudgetMensuel("C1", Month.FEBRUARY, 2022)
+                .await().indefinitely();
+
+        assertEquals("C1_2022_02", budgetCharge.getId());
+        // Seule la sauvegarde de M : le budget de janvier (relu clos) n'est pas réécrit
+        verify(mockOperationDataProvider, times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(reluClos);
+    }
+
+    /**
+     * R5 : budget absent par id : BudgetNotFoundException (404)
+     */
+    @Test
+    void testGetBudgetMensuelById_absent_budgetNotFound404() {
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+                .thenReturn(Uni.createFrom().failure(new BudgetNotFoundException("Budget introuvable")));
+
+        CompletionException exception = assertThrows(CompletionException.class,
+                () -> budgetAppProvider.getBudgetMensuel("C1_2022_01").await().indefinitely());
+        assertInstanceOf(BudgetNotFoundException.class, exception.getCause());
+        assertEquals(404, new APIExceptionsHandler().toResponse((BudgetNotFoundException) exception.getCause()).getStatus());
+    }
+
+    /**
+     * R5 : erreur Mongo sur la lecture par id : propagée (jamais transformée en 404), 503 pour un timeout
+     */
+    @Test
+    void testGetBudgetMensuelById_erreurMongo_propagee503() {
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+                .thenReturn(Uni.createFrom().failure(new MongoTimeoutException("timeout")));
+
+        assertThrows(MongoTimeoutException.class, () -> budgetAppProvider.getBudgetMensuel("C1_2022_01").await().indefinitely());
+        try (Response response = new SPIExceptionsHandler().toResponse(new MongoTimeoutException("timeout"))) {
+            assertEquals(503, response.getStatus());
+        }
+    }
+
+    /**
+     * R5 : budget absent sur l'état actif : BudgetNotFoundException (404)
+     */
+    @Test
+    void testIsBudgetActif_absent_budgetNotFound404() {
+        when(mockOperationDataProvider.isBudgetActif(anyString()))
+                .thenReturn(Uni.createFrom().failure(new BudgetNotFoundException("Budget introuvable")));
+
+        CompletionException exception = assertThrows(CompletionException.class,
+                () -> budgetAppProvider.isBudgetMensuelActif("C1_2022_01").await().indefinitely());
+        assertInstanceOf(BudgetNotFoundException.class, exception.getCause());
+    }
+
+    /**
+     * R5 : erreur Mongo sur l'état actif : propagée (503 pour un timeout)
+     */
+    @Test
+    void testIsBudgetActif_erreurMongo_propagee() {
+        when(mockOperationDataProvider.isBudgetActif(anyString()))
+                .thenReturn(Uni.createFrom().failure(new MongoTimeoutException("timeout")));
+
+        assertThrows(MongoTimeoutException.class, () -> budgetAppProvider.isBudgetMensuelActif("C1_2022_01").await().indefinitely());
+    }
+
+    /**
+     * R5 : erreur Mongo à la lecture dans setBudgetActif : propagée, aucune sauvegarde
+     */
+    @Test
+    void testSetBudgetActif_erreurMongo_propageeSansSauvegarde() {
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+                .thenReturn(Uni.createFrom().failure(new MongoTimeoutException("timeout")));
+
+        assertThrows(MongoTimeoutException.class, () -> budgetAppProvider.setBudgetActif("C1_2022_01", false).await().indefinitely());
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
+
+    private static void assertDonneeCorrompue500(Throwable cause) {
+        assertInstanceOf(DonneeCorrompueException.class, cause);
+        assertEquals(500, new APIExceptionsHandler().toResponse((DonneeCorrompueException) cause).getStatus());
     }
 
     private static BudgetMensuel budgetC1(Month mois, int annee, boolean actif) {

@@ -68,10 +68,13 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
 
 
     /**
-     * Chargement du budget par id
+     * Chargement du budget par id.
+     * <p>
+     * Contrat : seule l'absence réelle du document donne une {@code BudgetNotFoundException}. Toute erreur technique
+     * (Mongo, timeout...) remonte telle quelle et ne doit jamais être interprétée comme une absence.
      *
      * @param idBudget identifiant du budget
-     * @return budget mensuel
+     * @return budget mensuel, ou en échec {@code BudgetNotFoundException} s'il est absent
      */
     Uni<BudgetMensuel> chargeBudgetMensuel(String idBudget);
 
