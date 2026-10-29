@@ -1039,4 +1039,79 @@ class BudgetServiceTest {
         verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
         verify(mockOperationDataProvider, never()).compenseOperation(any(), any(), any(), anyInt());
     }
+
+    /**
+     * Virement interne : erreur technique sur M-1 du compte destination. Le mode dégradé est réservé à l'affichage :
+     * l'écriture échoue (503 via SPIExceptionsHandler), la source est compensée, le budget M de la destination n'est pas enregistré.
+     */
+    @Test
+    void testVirementInterne_erreurTechniqueSurMoisPrecedentDestination_echecEtCompensationSource() {
+
+        BudgetMensuel budgetSource = MockDataBudgets.getBudgetActifCompteC1et1operationPrevue();
+        BudgetMensuel budgetDestination = MockDataBudgets.getBudgetActifCompteC2et0operationPrevue();
+        when(mockCompteServiceProvider.getCompteById("C1")).thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+        when(mockCompteServiceProvider.getCompteById("C2")).thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC2()));
+        when(mockOperationDataProvider.chargeBudgetMensuel(budgetSource.getId())).thenReturn(Uni.createFrom().item(budgetSource));
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.JANUARY), eq(2022)))
+                .thenReturn(Uni.createFrom().item(budgetDestination));
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.DECEMBER), eq(2021)))
+                .thenReturn(Uni.createFrom().failure(new MongoTimeoutException("timeout")));
+        when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class)))
+                .thenAnswer(invocation -> Uni.createFrom().item((BudgetMensuel) invocation.getArgument(0)));
+        when(mockOperationDataProvider.compenseOperation(any(), any(), any(), anyInt())).thenReturn(Uni.createFrom().voidItem());
+
+        LigneOperation virement = MockDataOperations.getOperationIntercompte();
+        virement.setEtat(OperationEtatEnum.PREVUE);
+
+        MongoTimeoutException exception = assertThrows(MongoTimeoutException.class,
+                () -> budgetAppProvider.createOperationsVirementInterne(budgetSource.getId(), virement, "C2", "userTest").await().indefinitely());
+
+        assertEquals(503, new SPIExceptionsHandler().toResponse(exception).getStatus());
+        // Seule la source est enregistrée (écriture initiale) ; aucune sauvegarde du budget de la destination
+        verify(mockOperationDataProvider, times(1)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(budgetDestination);
+        // La source est compensée
+        verify(mockOperationDataProvider, times(1)).compenseOperation(any(BudgetMensuel.class), eq(virement.getId()), isNull(), anyInt());
+    }
+
+    /**
+     * NPE / donnée corrompue sur M-1 (soldes absents) à l'affichage : pas de mode dégradé, DonneeCorrompueException (500), aucune sauvegarde
+     */
+    @Test
+    void testGetBudgetSurCompteActif_moisPrecedentSansSoldes_donneeCorrompue500() {
+
+        BudgetMensuel janvier = MockDataBudgets.getBudgetActifCompteC1et1operationPrevue();
+        BudgetMensuel decembre = MockDataBudgets.getBudgetPrecedentCompteC1();
+        decembre.setSoldes(null);
+        when(mockCompteServiceProvider.getCompteById(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.JANUARY), eq(2022)))
+                .thenReturn(Uni.createFrom().item(janvier));
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.DECEMBER), eq(2021)))
+                .thenReturn(Uni.createFrom().item(decembre));
+
+        CompletionException exception = assertThrows(CompletionException.class,
+                () -> budgetAppProvider.getBudgetMensuel("C1", Month.JANUARY, 2022).await().indefinitely());
+
+        assertDonneeCorrompue500(exception.getCause());
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
+
+    /**
+     * Exception non Mongo sur M-1 à l'affichage (ici NPE) : remontée telle quelle, pas de mode dégradé, aucune sauvegarde
+     */
+    @Test
+    void testGetBudgetSurCompteActif_exceptionNonMongoSurMoisPrecedent_remontee() {
+
+        when(mockCompteServiceProvider.getCompteById(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.JANUARY), eq(2022)))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
+        when(mockOperationDataProvider.chargeBudgetMensuel(any(CompteBancaire.class), eq(Month.DECEMBER), eq(2021)))
+                .thenReturn(Uni.createFrom().failure(new NullPointerException("npe")));
+
+        assertThrows(NullPointerException.class, () -> budgetAppProvider.getBudgetMensuel("C1", Month.JANUARY, 2022).await().indefinitely());
+
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
 }

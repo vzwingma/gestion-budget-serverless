@@ -1,6 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business;
 
 
+import com.mongodb.MongoException;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.ProjectionBudgetSoldes;
@@ -106,7 +107,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                 .onItem().ifNotNull()
                 .transformToUni(compte -> {
                     if (Boolean.TRUE.equals(compte.isActif())) {
-                        return chargerBudgetMensuelSurCompteActif(compte, mois, annee);
+                        return chargerBudgetMensuelSurCompteActif(compte, mois, annee, ModeChargement.AFFICHAGE);
                     } else {
                         return chargerBudgetMensuelSurCompteInactif(compte, mois, annee);
                     }
@@ -174,9 +175,10 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      * @param compteBancaire compte
      * @param mois           mois
      * @param annee          année
+     * @param mode           {@link ModeChargement#AFFICHAGE} (mode dégradé toléré sur M-1) ou {@link ModeChargement#ECRITURE} (échec sur M-1)
      * @return budget mensuel chargé et initialisé à partir des données précédentes
      */
-    private Uni<BudgetMensuel> chargerBudgetMensuelSurCompteActif(CompteBancaire compteBancaire, Month mois, int annee) {
+    private Uni<BudgetMensuel> chargerBudgetMensuelSurCompteActif(CompteBancaire compteBancaire, Month mois, int annee, ModeChargement mode) {
         LOGGER.debug("Chargement du budget de {}/{} sur compte actif ", mois, annee);
 
         return this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, mois, annee)
@@ -188,7 +190,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                 .onItem()
                 .transformToUni(budgetExistant -> budgetExistant.isPresent()
                         // rechargement du solde mois précédent (s'il a changé), uniquement pour un budget existant
-                        ? recalculSoldeAFinMoisPrecedent(budgetExistant.get(), compteBancaire)
+                        ? recalculSoldeAFinMoisPrecedent(budgetExistant.get(), compteBancaire, mode)
                         // un budget nouvellement initialisé porte déjà le solde de fin du mois précédent, et doit être enregistré
                         : initNewBudget(compteBancaire, mois, annee).map(budgetInitialise -> new ChargementBudget(budgetInitialise, true)))
                 .invoke(chargement -> LOGGER.debug("Budget mensuel chargé : {}", chargement.budget()))
@@ -198,6 +200,18 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                 // Sauvegarde du budget (sauf si le solde du mois précédent n'a pas pu être relu : budget servi tel que stocké)
                 .call(chargement -> chargement.aSauvegarder() ? sauvegardeBudget(chargement.budget()) : Uni.createFrom().voidItem())
                 .map(ChargementBudget::budget);
+    }
+
+    /**
+     * Usage du chargement d'un budget sur compte actif.
+     * <ul>
+     *     <li>{@link #AFFICHAGE} : lecture seule (GET budget). Une erreur technique sur M-1 est tolérée : M est servi avec son solde stocké, sans enregistrement ;</li>
+     *     <li>{@link #ECRITURE} : le budget chargé va être modifié puis enregistré (ex. virement interne, compte destination).
+     *     Une erreur technique sur M-1 fait échouer le chargement : un solde de report périmé ne doit jamais être enregistré.</li>
+     * </ul>
+     */
+    private enum ModeChargement {
+        AFFICHAGE, ECRITURE
     }
 
     /**
@@ -258,16 +272,19 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      * <ul>
      *     <li>M-1 lu : le solde de fin de M-1 est reporté sur M, M sera enregistré ;</li>
      *     <li>M-1 absent ({@link BudgetNotFoundException}) : premier mois du compte, solde stocké inchangé, M sera enregistré ;</li>
-     *     <li>erreur technique sur M-1 : loggée en ERROR, M est servi avec le solde stocké et n'est pas enregistré
+     *     <li>erreur Mongo sur M-1 en {@link ModeChargement#AFFICHAGE} : loggée en ERROR, M est servi avec le solde stocké et n'est pas enregistré
      *     (l'erreur ne fait pas échouer l'affichage d'un budget existant) ;</li>
-     *     <li>mois de M absent : {@link DonneeCorrompueException} (500).</li>
+     *     <li>erreur Mongo sur M-1 en {@link ModeChargement#ECRITURE} : l'erreur est propagée (503), rien n'est enregistré ;</li>
+     *     <li>mois de M absent, ou soldes de M ou de M-1 absents : {@link DonneeCorrompueException} (500), jamais de mode dégradé ;</li>
+     *     <li>toute autre exception (hors {@link MongoException}) est propagée.</li>
      * </ul>
      *
      * @param budgetMensuel  budget mensuel
      * @param compteBancaire compte
+     * @param mode           mode de chargement
      * @return budget mensuel recalculé et indicateur de sauvegarde
      */
-    private Uni<ChargementBudget> recalculSoldeAFinMoisPrecedent(final BudgetMensuel budgetMensuel, CompteBancaire compteBancaire) {
+    private Uni<ChargementBudget> recalculSoldeAFinMoisPrecedent(final BudgetMensuel budgetMensuel, CompteBancaire compteBancaire, ModeChargement mode) {
         // Maj du budget ssi budget actif
         if (budgetMensuel != null && budgetMensuel.isActif()) {
             final DonneeCorrompueException moisAbsent = erreurSiMoisAbsent(budgetMensuel, "impossible de déterminer le mois précédent");
@@ -281,16 +298,16 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
             LOGGER.debug("Recalcul du solde à partir du budget du mois précédent du compte actif {} : {}/{}", compteBancaire, moisPrecedent, anneePrecedente);
 
             return this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, moisPrecedent, anneePrecedente)
-                    .invoke(budgetPrecedent -> budgetMensuel.getSoldes().setSoldeAtFinMoisPrecedent(budgetPrecedent.getSoldes().getSoldeAtFinMoisCourant()))
-                    .map(budgetPrecedent -> new ChargementBudget(budgetMensuel, true))
+                    .chain(budgetPrecedent -> reporterSoldeMoisPrecedent(budgetMensuel, budgetPrecedent))
                     // Premier mois du compte (budget précédent absent) : solde du mois précédent inchangé (0 pour un budget vierge), pas d'échec
                     .onFailure(BudgetNotFoundException.class)
                     .recoverWithItem(e -> {
                         LOGGER.debug("Pas de budget précédent {}/{} pour le compte {} : solde du mois précédent inchangé", moisPrecedent, anneePrecedente, compteBancaire.getId());
                         return new ChargementBudget(budgetMensuel, true);
                     })
-                    // Erreur technique (différente de l'absence) : le budget M existe, il est servi avec son solde stocké, sans être enregistré
-                    .onFailure()
+                    // Erreur Mongo (technique) en affichage : le budget M existe, il est servi avec son solde stocké, sans être enregistré.
+                    // En écriture, ou pour toute autre exception (donnée corrompue, NPE...), l'erreur remonte.
+                    .onFailure(e -> mode == ModeChargement.AFFICHAGE && e instanceof MongoException)
                     .recoverWithItem(e -> {
                         LOGGER.error("Erreur technique lors du chargement du budget précédent {}/{} du compte {} : le budget {} est servi avec le solde stocké du mois précédent, sans enregistrement",
                                 moisPrecedent, anneePrecedente, compteBancaire.getId(), budgetMensuel.getId(), e);
@@ -301,6 +318,22 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
             return Uni.createFrom().item(new ChargementBudget(budgetMensuel, true));
         }
 
+    }
+
+    /**
+     * Report du solde de fin de M-1 sur M.
+     *
+     * @return budget M à enregistrer, ou échec {@link DonneeCorrompueException} (500) si les soldes de M ou de M-1 sont absents
+     */
+    private static Uni<ChargementBudget> reporterSoldeMoisPrecedent(BudgetMensuel budgetMensuel, BudgetMensuel budgetPrecedent) {
+        if (budgetPrecedent == null || budgetPrecedent.getSoldes() == null) {
+            return Uni.createFrom().failure(new DonneeCorrompueException("Le budget précédent du budget " + budgetMensuel.getId() + " n'a pas de soldes : impossible de reporter le solde de fin de mois"));
+        }
+        if (budgetMensuel.getSoldes() == null) {
+            return Uni.createFrom().failure(new DonneeCorrompueException("Le budget " + budgetMensuel.getId() + " n'a pas de soldes : impossible de reporter le solde de fin du mois précédent"));
+        }
+        budgetMensuel.getSoldes().setSoldeAtFinMoisPrecedent(budgetPrecedent.getSoldes().getSoldeAtFinMoisCourant());
+        return Uni.createFrom().item(new ChargementBudget(budgetMensuel, true));
     }
 
     /**
@@ -800,7 +833,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      */
     private Uni<BudgetMensuel> ecrireOperationVirementCible(CompteBancaire compteDestination, String idCompteSource, Month mois, int annee,
                                                             LigneOperation ligneOperation, String libelleOperation, String auteur) {
-        return chargerBudgetMensuelSurCompteActif(compteDestination, mois, annee)
+        return chargerBudgetMensuelSurCompteActif(compteDestination, mois, annee, ModeChargement.ECRITURE)
                 .invoke(budgetCible -> {
                     BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, budgetCible.getId()).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource);
                     String libelleOperationCible = "[depuis " + idCompteSource + "] " + libelleOperation;
