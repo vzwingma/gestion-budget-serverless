@@ -68,8 +68,8 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
      * <ul>
      *     <li>document absent : {@link BudgetNotFoundException} (404 côté HTTP) ;</li>
      *     <li>toute autre erreur (MongoException, timeout...) : elle remonte telle quelle, sans être confondue avec une absence.
-     *     Les {@code MongoClientException} (timeout, configuration, serveur indisponible) sont mappées en 503 par
-     *     {@code AbstractBDDExceptionsHandler}, les autres erreurs Mongo donnent un 500. Le service ne doit jamais
+     *     Les {@code MongoException} (client, socket, commande, timeout...) sont toutes mappées en 503 par
+     *     {@code AbstractBDDExceptionsHandler}. Le service ne doit jamais
      *     initialiser un budget vierge sur une erreur technique.</li>
      * </ul>
      *

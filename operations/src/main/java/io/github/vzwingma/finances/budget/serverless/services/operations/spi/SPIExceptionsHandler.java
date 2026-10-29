@@ -1,6 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
-import com.mongodb.MongoClientException;
+import com.mongodb.MongoException;
 import io.github.vzwingma.finances.budget.services.communs.spi.AbstractBDDExceptionsHandler;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
@@ -12,7 +12,7 @@ import jakarta.ws.rs.ext.Provider;
 public class SPIExceptionsHandler extends AbstractBDDExceptionsHandler {
 
     @Override
-    public Response toResponse(MongoClientException e) {
+    public Response toResponse(MongoException e) {
         return super.toResponse(e);
     }
 }
