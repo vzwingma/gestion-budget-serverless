@@ -347,13 +347,12 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                     return appliquerCompensation(filtreLigneAbsente,
                             Updates.pushEach(ATTRIBUT_LISTE_OPERATIONS, List.of(operationOriginale), optionsPush),
                             champsCalcules, new UpdateOptions(), idBudget)
-                            .onItem().transformToUni(reinseree -> Boolean.TRUE.equals(reinseree) ? Uni.createFrom().<Void>voidItem() : echecBudgetIntrouvable(idBudget));
+                            .onItem().transformToUni(reinseree -> Boolean.TRUE.equals(reinseree) ? Uni.createFrom().<Void>voidItem() : echecReinsertion(idBudget, idOperation));
                 });
     }
 
     /**
-     * Applique une mise à jour de compensation et contrôle la cohérence du résultat (ERROR si {@code matched} ou
-     * {@code modified} est incohérent).
+     * Applique une mise à jour de compensation et contrôle la cohérence du résultat .
      *
      * @return {@code true} si un document a été trouvé, {@code false} si le filtre n'a rien sélectionné
      */
@@ -364,15 +363,28 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
         return mongoCollection()
                 .updateOne(filtre, Updates.combine(misesAJour), options)
                 .map(resultat -> {
-                    if (resultat.getMatchedCount() > 1 || (resultat.getMatchedCount() == 1 && resultat.getModifiedCount() != 1)) {
-                        LOGGER.error("Compensation du budget {} : résultat incohérent (matched={}, modified={})", idBudget, resultat.getMatchedCount(), resultat.getModifiedCount());
-                    }
+                    // matched == 1 && modified == 0 : no-op légitime (état déjà conforme) ; matched > 1 impossible avec updateOne
                     return resultat.getMatchedCount() > 0;
                 });
     }
 
+    /**
+     * Le {@code $push} n'a rien sélectionné : soit le budget a disparu, soit la ligne est réapparue entre-temps
+     * (filtre {@code $ne} sur l'id). Les deux causes sont distinguées par une lecture du budget.
+     */
+    private Uni<Void> echecReinsertion(String idBudget, String idOperation) {
+        return count(ATTRIBUT_BUDGET_ID + "=?1", idBudget)
+                .onItem().transformToUni(nb -> {
+                    if (nb != null && nb > 0) {
+                        LOGGER.error("Compensation du budget {} : ré-insertion de l'opération {} non effectuée, la ligne est réapparue dans le budget (écriture concurrente)", idBudget, idOperation);
+                        return Uni.createFrom().<Void>failure(new IllegalStateException("Compensation impossible : l'opération " + idOperation + " est réapparue dans le budget " + idBudget + " (écriture concurrente)"));
+                    }
+                    return echecBudgetIntrouvable(idBudget);
+                });
+    }
+
     private static Uni<Void> echecBudgetIntrouvable(String idBudget) {
-        LOGGER.error("Compensation du budget {} impossible : budget introuvable, ou ligne déjà présente", idBudget);
+        LOGGER.error("Compensation du budget {} impossible : budget introuvable", idBudget);
         return Uni.createFrom().failure(new BudgetNotFoundException("Compensation impossible : budget " + idBudget + " introuvable"));
     }
 

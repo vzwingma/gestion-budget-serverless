@@ -13,6 +13,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.test.da
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.quarkus.test.junit.QuarkusTest;
@@ -519,5 +520,23 @@ class BudgetServiceTest {
     @Test
     void testGetSigningKeyReadRepository() {
         assertNull(budgetAppProvider.getSigningKeyReadRepository());
+    }
+
+    @Test
+    void testVirementInterneEtatNull_refuse400AvantToutAcces() {
+        LigneOperation operation = new LigneOperation();
+        operation.setLibelle("Virement sans état");
+        LigneOperation.SsCategorie ssCategorie = new LigneOperation.SsCategorie();
+        ssCategorie.setId(io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum.SS_CAT_VIREMENT_INTERNE.getId());
+        operation.setSsCategorie(ssCategorie);
+        operation.setEtat(null);
+
+        Uni<BudgetMensuel> resultat = budgetAppProvider.createOperationsVirementInterne("C1_2022_1", operation, "C2", "userTest");
+
+        CompletionException erreur = assertThrows(CompletionException.class, () -> resultat.await().indefinitely());
+        assertInstanceOf(BadParametersException.class, erreur.getCause());
+        verify(mockCompteServiceProvider, never()).getCompteById(anyString());
+        verify(mockOperationDataProvider, never()).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+        verify(mockOperationDataProvider, never()).compenseOperation(any(), any(), any(), anyInt());
     }
 }

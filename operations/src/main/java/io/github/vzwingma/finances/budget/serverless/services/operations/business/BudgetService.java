@@ -503,7 +503,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      * est propagée. Un échec de la compensation est loggé en ERROR (identifiants source et destination) et n'écrase pas
      * l'erreur d'origine.
      * <p>
-     * Gardes avant toute écriture : source = destination (400), compte destination introuvable (404),
+     * Gardes avant toute écriture : opération non virement ou état absent (400), source = destination (400), compte destination introuvable (404),
      * compte destination clos (406).
      *
      * @param idBudget            identifiant du budget source
@@ -522,6 +522,11 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
             if (ligneOperation.getSsCategorie() == null || !IdsCategoriesEnum.SS_CAT_VIREMENT_INTERNE.getId().equals(ligneOperation.getSsCategorie().getId())) {
                 LOGGER.error("L'opération {} n'est pas un virement interne. L'opération est annulée", ligneOperation.getLibelle());
                 return Uni.createFrom().failure(new BadParametersException("L'opération " + ligneOperation + " n'est pas un virement interne"));
+            }
+            // Garde : état absent -> 400 (addOperationVirementInterne fait un switch sur l'état : NPE/500 et compensation systématique)
+            if (ligneOperation.getEtat() == null) {
+                LOGGER.error("Virement interne refusé : état de l'opération {} absent", ligneOperation.getLibelle());
+                return Uni.createFrom().failure(new BadParametersException("Virement interne impossible : l'état de l'opération est obligatoire"));
             }
             // Garde (Q4) : virement vers le même compte -> 400 (BadParametersException, comme les autres paramètres invalides)
             if (idCompteSource.equals(idCompteDestination)) {
@@ -657,17 +662,16 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                         this.operationsAppProvider.deleteOperation(budget.getListeOperations(), idOperation);
                     } else {
                         List<LigneOperation> operations = budget.getListeOperations();
-                        boolean restauree = false;
-                        for (int i = 0; i < operations.size(); i++) {
-                            if (idOperation.equals(operations.get(i).getId())) {
-                                operations.set(i, operationOriginale);
-                                restauree = true;
-                            }
-                        }
-                        // Ligne supprimée par l'écriture source (etat == null) : ré-insertion à son rang d'origine
-                        // (l'ordre de la liste est visible de l'utilisateur), en fin de liste si le rang dépasse la taille
-                        if (!restauree) {
-                            operations.add(Math.min(Math.max(rangOriginal, 0), operations.size()), operationOriginale);
+                        final int indexExistant = IntStream.range(0, operations.size())
+                                .filter(i -> idOperation.equals(operations.get(i).getId()))
+                                .findFirst().orElse(-1);
+                        if (indexExistant >= 0) {
+                            operations.set(indexExistant, operationOriginale);
+                        } else {
+                            // Ligne supprimée par l'écriture source (etat == null) : ré-insertion à son rang d'origine
+                            // (l'ordre de la liste est visible de l'utilisateur) ; rang inconnu (négatif) ou hors liste : en fin de liste, comme en base
+                            final int rang = rangOriginal >= 0 && rangOriginal <= operations.size() ? rangOriginal : operations.size();
+                            operations.add(rang, operationOriginale);
                         }
                     }
                     recalculSoldes(budget);
