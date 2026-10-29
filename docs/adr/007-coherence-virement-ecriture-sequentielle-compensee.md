@@ -32,6 +32,7 @@ Règles :
 - **Compensation** : si l'écriture cible échoue, l'opération source est retirée.
 - **Échec de compensation** : log `ERROR` portant les **2 identifiants** (opération source et opération cible) pour reprise manuelle.
 - **Erreurs propagées** à l'appelant (plus d'erreur avalée) ; **un seul appel** `getCompteById` pour le compte destination.
+- **Mode dégradé réservé à l'affichage** : à l'affichage d'un budget M existant (GET budget), une erreur Mongo sur M-1 est loggée en `ERROR` et M est servi avec son solde stocké, sans enregistrement. Sur un chemin d'**écriture** (chargement du budget du compte destination du virement), une erreur technique sur M-1 **fait échouer** l'opération (503) et déclenche la compensation de la source : un solde de report périmé n'est jamais enregistré. Les exceptions non Mongo sur M-1 (donnée corrompue : 500, NPE) remontent dans les deux modes.
 - **Gardes** : **406** si le compte destination est clos ; **400** si source = destination. Ces gardes sont une décision 👤 ; leur **impact IHM est à tracer dans un plan IHM**.
 
 ---
@@ -79,6 +80,8 @@ Règles :
   - Depuis la garde 400 sur `etat == null`, appliquée avant toute écriture, ce chemin ne s'exécute plus que dans ce cas concurrent.
 - **Virement interne avec `etat == null`** — décision 👤 du 2026-10-29 (Gate #2, Phase 1, plan 004) : refusé en 400 (`BadParametersException`) avant toute écriture.
 - **Compte destination inconnu** — décision 👤 du 2026-10-29 (Gate #2, Phase 1, plan 004) : un 404 du client REST est traduit en `DataNotFoundException` (404).
+
+- **R2 bis — écriture concurrente sur M-1 lors de la clôture** — décision 👤 du 2026-10-29 (Gate #2, 6e passage, plan 004) : la clôture de M-1 relit le document juste avant de le clore, puis l'enregistre en entier (sans champ de version). Une écriture concurrente sur M-1 entre la relecture et l'enregistrement reste possible et serait écrasée. Fenêtre réduite, risque accepté. Correction prévue par un verrou optimiste en Phase 4 / T4.2.
 
 ### Neutres
 - Mise à jour de la documentation d'API (wiki serverless, `Conception-globale.md`) et de `docs/ARCHITECTURE.md` si le contrat de réponse du virement est modifié.

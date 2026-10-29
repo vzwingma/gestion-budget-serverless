@@ -194,3 +194,37 @@ Adaptés : écarts de 3 et 24 mois (1 relecture par id du dernier budget). Rempl
 ### Preuves
 `mvn clean install -Dmaven.test.failure.ignore=true` (racine) : BUILD SUCCESS. communs 187 tests (4 erreurs `MongoTimeoutException` sans Docker : `TestMigrationRepository` 1, `TestMigrationRepositoryPersistence` 3, préexistantes), parametrages 35, utilisateurs 36, comptes 112, operations 118 : 0 échec / 0 erreur hors communs.
 `git diff --name-only 9c4a85d HEAD` (avant le commit docs) : `communs/.../AbstractAPIExceptionsHandler.java`, `communs/.../DonneeCorrompueException.java`, `communs/.../TestAbstractAPIExceptionsHandlerComplement.java`, `operations/.../BudgetService.java`, `.../IOperationsRepository.java`, `.../OperationDatabaseAdaptor.java`, `.../BudgetServiceTest.java`.
+
+## Ajustement Gate #2 (6e passage)
+
+Gate #2 : AJUSTER (décision 👤). Commits `fix(operations)` et `fix(communs)`, non poussés. Le fichier non suivi `_nouveaux_tests.txt` n'est ni modifié ni commité.
+
+### Points traités
+1. **Mode dégradé réservé à l'affichage.** Appelants de `chargerBudgetMensuelSurCompteActif` : `getBudgetMensuel(idCompte, mois, annee)` (GET, affichage) et `ecrireOperationVirementCible` (écriture, compte destination du virement). Aucun autre chemin d'écriture n'utilise ce chargement (les autres écritures passent par `getBudgetAndCompteActif`, qui lit par id sans recalcul de M-1). Choix : **paramètre** `ModeChargement { AFFICHAGE, ECRITURE }` plutôt qu'une méthode distincte : le pipeline (lecture de M, init, recalcul, sauvegarde conditionnelle) est identique, seule la tolérance d'erreur sur M-1 change ; une seconde méthode dupliquerait ~20 lignes et pourrait diverger. Un enum plutôt qu'un booléen pour la lisibilité aux sites d'appel. En `ECRITURE`, l'erreur sur M-1 remonte ; `virementInterneSequentiel` la rattrape déjà (`recoverWithUni`), compense la source, puis propage l'erreur d'origine.
+2. **Rattrapage restreint.** `recalculSoldeAFinMoisPrecedent` ne rattrape (mode `AFFICHAGE` seulement) que `com.mongodb.MongoException` et ses sous-classes. `DonneeCorrompueException`, NPE et autres exceptions remontent. Soldes de M ou de M-1 absents (ou M-1 nul) : `DonneeCorrompueException` (500) au lieu d'une NPE.
+3. **R10.** `AbstractBDDExceptionsHandler` devient `ExceptionMapper<MongoException>` : toute `MongoException` donne 503 (ordre inchangé : configuration, timeout, serveur indisponible, puis repli 503). Les `SPIExceptionsHandler` des 4 modules sont adaptés à la nouvelle signature.
+4. **Repli de `AbstractAPIExceptionsHandler`.** Le log disait `[500]` pour un statut 503. Trois tests existants (`APIExceptionsHandlerTest` de comptes, parametrages, utilisateurs) et `TestAbstractAPIExceptionsHandlerComplement` imposent 503 : le **statut 503 est conservé et le log est aligné sur `[503]`**. Aucune exception de production ne tombe dans ce repli (les 7 sous-classes d'`AbstractBusinessException` sont mappées explicitement). Aucun changement de code HTTP de ce côté.
+
+### Codes HTTP modifiés (observables par l'IHM)
+| Cas | Avant | Après |
+|---|---|---|
+| `MongoException` hors `MongoClientException` (`MongoSocketReadException`, `MongoSocketReadTimeoutException`, `MongoCommandException`...) | 500 (aucun mapper) | 503 |
+| `MongoClientException` générique | 500 | 503 |
+| Virement : erreur Mongo sur M-1 du compte destination | 200 (M enregistré avec solde périmé) | 503, source compensée |
+| M ou M-1 sans soldes | NPE (500 non typé) | 500 (`DonneeCorrompueException`) |
+| Affichage, erreur Mongo sur M-1 | 200 (M servi, non enregistré) | inchangé |
+| Repli `AbstractBusinessException` | 503 | 503 (log aligné) |
+
+L'IHM (`ClientHTTP.service.ts`) ne traite que 403 et « non 2xx » : 500 -> 503 n'a pas d'effet visible sur elle.
+
+### Tests
+`BudgetServiceTest` (46 tests) : virement avec erreur technique sur M-1 de la destination (échec 503, `compenseOperation` appelé une fois, une seule sauvegarde = la source, aucune sauvegarde de M destination) ; M-1 sans soldes -> 500, aucune sauvegarde ; NPE sur M-1 remontée, pas de mode dégradé. Test existant d'affichage dégradé inchangé. `communs` : `TestAbstractBDDExceptionsHandler` (`MongoSocketReadException`, `MongoCommandException`, `MongoClientException` générique, configuration, timeout -> 503) ; tests SPI des 4 modules : générique 500 -> 503. Repli : `testFallback503` inchangé.
+
+### Risques
+- **R2 bis** (accepté, 👤) : écriture concurrente sur M-1 entre la relecture et l'enregistrement de la clôture écrasée ; correction par verrou optimiste en Phase 4 / T4.2. Documenté dans l'ADR-007.
+- Un `MongoException` en écriture sur le compte destination est maintenant bloquant pour le virement (comportement voulu) : un incident passager sur M-1 refuse le virement au lieu de l'enregistrer avec un solde périmé.
+- Le texte de réponse d'une `MongoException` générique n'est plus le message d'origine mais « Erreur d'accès à la base de données » (pas de fuite de détail interne).
+
+
+### Preuves
+`mvn clean install -Dmaven.test.failure.ignore=true` (racine) : BUILD SUCCESS. communs 191 tests (4 erreurs `MongoTimeoutException` sans Docker : `TestMigrationRepository` 1, `TestMigrationRepositoryPersistence` 3, préexistantes), parametrages 35, utilisateurs 36, comptes 112, operations 121 : 0 échec / 0 erreur hors communs.
