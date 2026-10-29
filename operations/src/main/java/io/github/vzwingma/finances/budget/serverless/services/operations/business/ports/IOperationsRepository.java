@@ -2,6 +2,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.busine
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.ProjectionBudgetSoldes;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.admin.LibelleAvantApres;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
@@ -67,6 +68,18 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
      * @return résultat de la sauvegarde: id du budget
      */
     Uni<BudgetMensuel> sauvegardeBudgetMensuel(BudgetMensuel budget);
+
+    /**
+     * Compensation ciblée d'une écriture d'opération : retire (création) ou restaure (modification) une seule
+     * opération dans {@code listeOperations}, sans réécrire le budget entier, et met à jour les soldes et totaux
+     * stockés depuis le budget recalculé en mémoire.
+     *
+     * @param budgetRecalcule    budget en mémoire, déjà compensé et recalculé
+     * @param idOperation        identifiant de l'opération à retirer ou restaurer
+     * @param operationOriginale ligne d'origine à restaurer ; {@code null} pour retirer l'opération (cas d'une création)
+     * @return complétion ; échec si le budget n'existe plus
+     */
+    Uni<Void> compenseOperation(BudgetMensuel budgetRecalcule, String idOperation, LigneOperation operationOriginale);
 
     /**
      * Liste des libellés bruts des opérations d'un compte, regroupés côté MongoDB avec leur nombre d'occurrences

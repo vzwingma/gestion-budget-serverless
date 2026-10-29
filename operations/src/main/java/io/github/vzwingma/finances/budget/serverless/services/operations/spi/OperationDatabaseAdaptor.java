@@ -2,6 +2,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.ProjectionBudgetSoldes;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.admin.LibelleAvantApres;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.ports.IOperationsRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
@@ -9,17 +10,23 @@ import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTr
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.security.SecurityUtils;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.Updates;
+import io.quarkus.mongodb.AggregateOptions;
 import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Service de données en MongoDB fournissant les opérations.
@@ -42,6 +49,17 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     private static final String ATTRIBUT_MOIS = "mois";
     private static final String ATTRIBUT_MIN_DATE = "minDate";
     private static final String ATTRIBUT_MAX_DATE = "maxDate";
+    private static final String ATTRIBUT_LISTE_OPERATIONS = "listeOperations";
+    private static final String ATTRIBUT_ID_OPERATION = "_id";
+    private static final String FILTRE_OPERATION = "op";
+
+    /**
+     * Durée maximale d'exécution côté serveur de l'agrégation des libellés ({@code $unwind}/{@code $group} sur tous
+     * les budgets d'un compte). Volontairement inférieure au {@code quarkus.mongodb.read-timeout} (8 s) : MongoDB
+     * interrompt alors lui-même l'agrégation (erreur {@code MaxTimeMSExpired}) au lieu de la laisser consommer des
+     * ressources après la déconnexion du client.
+     */
+    static final long LIBELLES_MAX_TIME_SECONDES = 7;
 
 
     /**
@@ -256,7 +274,53 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                                                         .append("ssCategorieId", listeOperations + ".ssCategorie._id"))
                                                 .append("n", new Document("$sum", 1)))
                         )
-                        , Document.class);
+                        , Document.class, new AggregateOptions().maxTime(LIBELLES_MAX_TIME_SECONDES, TimeUnit.SECONDS));
+    }
+
+    /**
+     * Compensation ciblée d'une écriture d'opération dans un budget : met à jour uniquement {@code listeOperations}
+     * (et les champs calculés listés ci-dessous), jamais le document entier.
+     * <ul>
+     *     <li>{@code operationOriginale == null} (création) : {@code $pull} de l'opération par id</li>
+     *     <li>{@code operationOriginale != null} (modification) : {@code $set} positionnel filtré par id
+     *     ({@code listeOperations.$[op]} avec {@code op._id == idOperation}) qui restaure la ligne d'origine</li>
+     * </ul>
+     * Sont également réécrits depuis {@code budgetRecalcule} : {@code soldes}, {@code totauxParCategories},
+     * {@code totauxParSSCategories}, {@code totauxParTypeCategories} et {@code dateMiseAJour}. Ces valeurs sont
+     * calculées sur le snapshot mémoire du budget : une écriture concurrente sur une <em>autre</em> opération du même
+     * budget n'est pas écrasée dans {@code listeOperations}, mais n'est pas prise en compte dans ces totaux jusqu'au
+     * prochain recalcul.
+     *
+     * @param budgetRecalcule   budget en mémoire, déjà compensé et recalculé (source des soldes et totaux)
+     * @param idOperation       identifiant de l'opération à retirer ou restaurer
+     * @param operationOriginale ligne d'origine à restaurer, {@code null} en cas de création
+     * @return complétion, ou échec si le budget n'existe plus
+     */
+    @Override
+    public Uni<Void> compenseOperation(BudgetMensuel budgetRecalcule, String idOperation, LigneOperation operationOriginale) {
+        LOGGER.info("Compensation ciblée de l'opération {} dans le budget {} ({})", idOperation, budgetRecalcule.getId(), operationOriginale == null ? "retrait" : "restauration");
+        List<Bson> misesAJour = new ArrayList<>();
+        UpdateOptions options = new UpdateOptions();
+        if (operationOriginale == null) {
+            misesAJour.add(Updates.pull(ATTRIBUT_LISTE_OPERATIONS, new Document(ATTRIBUT_ID_OPERATION, idOperation)));
+        } else {
+            misesAJour.add(Updates.set(ATTRIBUT_LISTE_OPERATIONS + ".$[" + FILTRE_OPERATION + "]", operationOriginale));
+            options.arrayFilters(List.of(new Document(FILTRE_OPERATION + "." + ATTRIBUT_ID_OPERATION, idOperation)));
+        }
+        misesAJour.add(Updates.set("soldes", budgetRecalcule.getSoldes()));
+        misesAJour.add(Updates.set("totauxParCategories", budgetRecalcule.getTotauxParCategories()));
+        misesAJour.add(Updates.set("totauxParSSCategories", budgetRecalcule.getTotauxParSSCategories()));
+        misesAJour.add(Updates.set("totauxParTypeCategories", budgetRecalcule.getTotauxParTypeCategories()));
+        misesAJour.add(Updates.set("dateMiseAJour", budgetRecalcule.getDateMiseAJour() != null ? budgetRecalcule.getDateMiseAJour() : LocalDateTime.now()));
+
+        return mongoCollection()
+                .updateOne(new Document(ATTRIBUT_BUDGET_ID, budgetRecalcule.getId()), Updates.combine(misesAJour), options)
+                .onItem().transformToUni(resultat -> {
+                    if (resultat.getMatchedCount() == 0) {
+                        return Uni.createFrom().<Void>failure(new BudgetNotFoundException("Compensation impossible : budget " + budgetRecalcule.getId() + " introuvable"));
+                    }
+                    return Uni.createFrom().<Void>voidItem();
+                });
     }
 
     /**

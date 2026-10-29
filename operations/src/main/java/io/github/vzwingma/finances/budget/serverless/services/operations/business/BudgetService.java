@@ -30,6 +30,8 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -529,7 +531,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
             // Lecture du budget et du compte source (actif), et un seul appel de lecture du compte de destination
             return Uni.combine().all().unis(
                             getBudgetAndCompteActif(idBudget).map(Tuple2::getItem1),
-                            this.comptesService.getCompteById(idCompteDestination))
+                            getCompteDestination(idCompteDestination))
                     .asTuple()
                     .chain(tuple -> {
                         CompteBancaire compteDestination = tuple.getItem2();
@@ -553,6 +555,22 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     }
 
     /**
+     * Lecture du compte de destination. Un 404 distant du service comptes (le client REST lève une
+     * {@link WebApplicationException} de statut 404 pour un compte inconnu) est traduit en {@link DataNotFoundException}
+     * (404 côté API) ; toute autre erreur est propagée inchangée.
+     */
+    private Uni<CompteBancaire> getCompteDestination(String idCompteDestination) {
+        return this.comptesService.getCompteById(idCompteDestination)
+                .onFailure(erreur -> erreur instanceof WebApplicationException wae
+                        && wae.getResponse() != null
+                        && wae.getResponse().getStatus() == Response.Status.NOT_FOUND.getStatusCode())
+                .transform(erreur -> {
+                    LOGGER.error("Virement interne refusé : compte de destination {} introuvable (404 du service comptes)", idCompteDestination);
+                    return new DataNotFoundException("Compte de destination " + idCompteDestination + " introuvable");
+                });
+    }
+
+    /**
      * Écritures séquentielles du virement interne : source, puis cible, avec compensation de la source si la cible échoue.
      *
      * @return budget source sauvegardé
@@ -561,6 +579,11 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                                                          String idBudget, Month mois, int annee, LigneOperation ligneOperation, String auteur) {
         final String libelleOperation = ligneOperation.getLibelle();
         final String idOperation = ligneOperation.getId();
+        // Ligne d'origine (modification d'une opération existante), capturée avant l'écriture source : null en cas de création.
+        // addOrReplaceOperation remplace la ligne dans la liste sans modifier l'objet d'origine.
+        final LigneOperation operationOriginale = budgetSource.getListeOperations().stream()
+                .filter(op -> idOperation != null && idOperation.equals(op.getId()))
+                .findFirst().orElse(null);
 
         // 1. Écriture source
         return ecrireOperationVirementSource(budgetSource, compteDestination, idBudget, ligneOperation, libelleOperation, auteur)
@@ -569,7 +592,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                         .replaceWith(budgetSourceSauvegarde)
                         .onFailure().recoverWithUni(erreur -> {
                             LOGGER.error("Echec de l'écriture du virement sur le compte {} : compensation de l'opération {} du compte {}", compteDestination.getId(), idOperation, idCompteSource, erreur);
-                            return compenserVirementSource(budgetSourceSauvegarde, idOperation, idCompteSource, compteDestination.getId())
+                            return compenserVirementSource(budgetSourceSauvegarde, idOperation, operationOriginale, idCompteSource, compteDestination.getId())
                                     .chain(() -> Uni.createFrom().<BudgetMensuel>failure(erreur));
                         }));
     }
@@ -612,19 +635,31 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     }
 
     /**
-     * Compensation : retire l'opération de virement du budget source et le sauvegarde. Un échec de compensation est
-     * loggé en ERROR avec les identifiants source et destination, et n'est pas propagé.
+     * Compensation ciblée de l'écriture source (ADR-007) : création -> l'opération est retirée ; modification -> la ligne
+     * d'origine est restaurée. Seule {@code listeOperations} est modifiée en base (pas de réécriture du budget entier),
+     * avec les soldes et totaux recalculés sur le snapshot mémoire. Un échec de compensation est loggé en ERROR avec les
+     * identifiants source et destination, et n'est pas propagé.
      */
-    private Uni<Void> compenserVirementSource(BudgetMensuel budgetSource, String idOperation, String idCompteSource, String idCompteDestination) {
+    private Uni<Void> compenserVirementSource(BudgetMensuel budgetSource, String idOperation, LigneOperation operationOriginale,
+                                              String idCompteSource, String idCompteDestination) {
         return Uni.createFrom().item(budgetSource)
                 .invoke(budget -> {
-                    this.operationsAppProvider.deleteOperation(budget.getListeOperations(), idOperation);
+                    if (operationOriginale == null) {
+                        this.operationsAppProvider.deleteOperation(budget.getListeOperations(), idOperation);
+                    } else {
+                        List<LigneOperation> operations = budget.getListeOperations();
+                        for (int i = 0; i < operations.size(); i++) {
+                            if (idOperation.equals(operations.get(i).getId())) {
+                                operations.set(i, operationOriginale);
+                            }
+                        }
+                    }
                     recalculSoldes(budget);
+                    budget.setDateMiseAJour(LocalDateTime.now(clock));
                 })
-                .chain(this::sauvegardeBudget)
-                .replaceWithVoid()
+                .chain(budget -> dataOperationsProvider.compenseOperation(budget, idOperation, operationOriginale))
                 .onFailure().recoverWithUni(erreurCompensation -> {
-                    LOGGER.error("ECHEC de la compensation du virement interne : l'opération {} reste dans le budget du compte source {} alors que le virement vers {} a échoué. Intervention manuelle nécessaire",
+                    LOGGER.error("ECHEC de la compensation du virement interne : l'opération {} reste modifiée/ajoutée dans le budget du compte source {} alors que le virement vers {} a échoué. Intervention manuelle nécessaire",
                             idOperation, idCompteSource, idCompteDestination, erreurCompensation);
                     return Uni.createFrom().voidItem();
                 });
