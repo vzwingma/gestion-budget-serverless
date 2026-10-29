@@ -127,40 +127,43 @@ public class MigrationRepository implements ReactivePanacheMongoRepositoryBase<M
     }
 
     /**
-     * Finalise une migration en succès. Sans effet (WARN) si la réservation a été reprise par un autre runner.
+     * Finalise une migration en succès.
      *
      * @param version version exécutée
      * @param owner   identifiant du runner ayant réservé la version
-     * @return {@link Uni} terminé une fois le statut persisté
+     * @return {@code true} si le statut est persisté ; {@code false} si aucun document ne correspond (réservation
+     * reprise par un autre runner après expiration du bail) : la chaîne ne doit alors pas se poursuivre
      */
-    public Uni<Void> finaliserSucces(String version, String owner) {
+    public Uni<Boolean> finaliserSucces(String version, String owner) {
         return finaliser(version, owner, MigrationRecord.MigrationStatutEnum.SUCCES);
     }
 
     /**
      * Finalise une migration en échec (traçabilité — la version reste réservable : une nouvelle tentative
-     * est possible au prochain démarrage, y compris vers {@code SUCCES}).
+     * est possible au prochain démarrage, y compris vers {@code SUCCES}). Le résultat n'est pas exploité par
+     * l'appelant : la chaîne est de toute façon arrêtée sur échec, un WARN suffit si la réservation a été reprise.
      *
      * @param version version en échec
      * @param owner   identifiant du runner ayant réservé la version
      * @return {@link Uni} terminé une fois le statut persisté
      */
     public Uni<Void> finaliserEchec(String version, String owner) {
-        return finaliser(version, owner, MigrationRecord.MigrationStatutEnum.ECHEC);
+        return finaliser(version, owner, MigrationRecord.MigrationStatutEnum.ECHEC).replaceWithVoid();
     }
 
-    private Uni<Void> finaliser(String version, String owner, MigrationRecord.MigrationStatutEnum statut) {
+    private Uni<Boolean> finaliser(String version, String owner, MigrationRecord.MigrationStatutEnum statut) {
         Bson filtre = Filters.and(Filters.eq(ATTRIBUT_ID, version), Filters.eq(ATTRIBUT_OWNER, owner));
         Bson miseAJour = Updates.combine(
                 Updates.set(ATTRIBUT_STATUT, statut.name()),
                 Updates.set(ATTRIBUT_DATE_EXECUTION, LocalDateTime.now(clock)));
         return mongoCollection().updateOne(filtre, miseAJour)
-                .invoke(resultat -> {
+                .map(resultat -> {
                     if (resultat.getMatchedCount() == 0) {
                         LOG.warn("[MIGRATIONS] Finalisation {} ignorée pour {} : réservation reprise par un autre runner", statut, version);
+                        return false;
                     }
-                })
-                .replaceWithVoid();
+                    return true;
+                });
     }
 
     /**

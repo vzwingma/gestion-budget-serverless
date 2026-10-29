@@ -143,12 +143,18 @@ public class MongoMigrationRunner {
      * Finalise la migration en {@code SUCCES}. Un échec d'écriture est loggé en ERROR sans marquer {@code ECHEC} :
      * la migration a bien été exécutée, la version reste {@code EN_COURS} jusqu'à expiration du bail.
      *
-     * @return {@code true} si la finalisation est persistée, {@code false} sinon (la chaîne doit alors s'arrêter)
+     * @return {@code true} si la finalisation est persistée, {@code false} sinon (échec d'écriture, ou réservation
+     * reprise par un autre runner : aucun document finalisé) — la chaîne doit alors s'arrêter
      */
     private Uni<Boolean> finaliserSucces(IMongoMigration migration) {
         return migrationRepository.finaliserSucces(migration.version(), owner)
-                .invoke(() -> LOG.info("[MIGRATIONS] Migration {} appliquée avec succès", migration.version()))
-                .replaceWith(Boolean.TRUE)
+                .invoke(finalisee -> {
+                    if (Boolean.TRUE.equals(finalisee)) {
+                        LOG.info("[MIGRATIONS] Migration {} appliquée avec succès", migration.version());
+                    } else {
+                        LOG.warn("[MIGRATIONS] Migration {} exécutée mais finalisation non persistée (réservation reprise par un autre runner) : arrêt de la chaîne", migration.version());
+                    }
+                })
                 .onFailure().recoverWithUni(erreur -> {
                     LOG.error("[MIGRATIONS] Migration {} exécutée mais finalisation SUCCES impossible : la version reste EN_COURS jusqu'à expiration du bail ({}). Arrêt de la chaîne",
                             migration.version(), MigrationRepository.BAIL, erreur);

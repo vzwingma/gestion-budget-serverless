@@ -92,7 +92,7 @@ class TestMongoMigrationRunner {
         when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
         when(migrationRepository.finaliserSucces(anyString(), anyString()))
-                .thenReturn(Uni.createFrom().voidItem());
+                .thenReturn(Uni.createFrom().item(true));
 
         // Act
         runner.onStart(null);
@@ -149,7 +149,7 @@ class TestMongoMigrationRunner {
         when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
         when(migrationRepository.finaliserSucces(anyString(), anyString()))
-                .thenReturn(Uni.createFrom().voidItem());
+                .thenReturn(Uni.createFrom().item(true));
 
         List<String> ordreExecution = new java.util.ArrayList<>();
         doAnswer(inv -> {
@@ -190,7 +190,7 @@ class TestMongoMigrationRunner {
         when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of()));
         when(migrationRepository.finaliserSucces(anyString(), anyString()))
-                .thenReturn(Uni.createFrom().voidItem());
+                .thenReturn(Uni.createFrom().item(true));
         when(migrationRepository.finaliserEchec(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
@@ -230,7 +230,7 @@ class TestMongoMigrationRunner {
         when(migrationRepository.listerVersionsAppliquees()).thenReturn(Uni.createFrom().item(List.of()));
         when(migrationRepository.reserver(eq("V001"), anyString(), anyString())).thenReturn(Uni.createFrom().item(false));
         when(migrationRepository.estAppliquee("V001")).thenReturn(Uni.createFrom().item(true));
-        when(migrationRepository.finaliserSucces(anyString(), anyString())).thenReturn(Uni.createFrom().voidItem());
+        when(migrationRepository.finaliserSucces(anyString(), anyString())).thenReturn(Uni.createFrom().item(true));
 
         assertDoesNotThrow(() -> runner.onStart(null));
 
@@ -308,7 +308,7 @@ class TestMongoMigrationRunner {
         when(migrationRepository.listerVersionsAppliquees())
                 .thenReturn(Uni.createFrom().item(List.of("V001")));
         when(migrationRepository.finaliserSucces(anyString(), anyString()))
-                .thenReturn(Uni.createFrom().voidItem());
+                .thenReturn(Uni.createFrom().item(true));
         when(migrationRepository.finaliserEchec(anyString(), anyString()))
                 .thenReturn(Uni.createFrom().voidItem());
 
@@ -322,5 +322,21 @@ class TestMongoMigrationRunner {
         verify(migrationRepository, never()).finaliserSucces(eq("V001"), anyString());
         verify(migrationRepository, times(1)).finaliserSucces(eq("V002"), anyString());
         verify(migrationRepository, times(1)).finaliserEchec(eq("V003"), anyString());
+    }
+
+    @Test
+    void testFinalisationSuccesSansDocument_arreteLaChaine() {
+        // Bail repris par un autre runner : finaliserSucces ne trouve aucun document (false) -> chaîne arrêtée
+        IMongoMigration v001 = migrationSucces("V001", "Finalisation sans document");
+        IMongoMigration v002 = migrationSucces("V002", "Ne doit pas etre jouee");
+        setMigrations(v001, v002);
+        when(migrationRepository.listerVersionsAppliquees()).thenReturn(Uni.createFrom().item(List.of()));
+        when(migrationRepository.finaliserSucces(eq("V001"), anyString())).thenReturn(Uni.createFrom().item(false));
+
+        assertDoesNotThrow(() -> runner.onStart(null));
+
+        verify(v001, times(1)).migrate();
+        verify(migrationRepository, never()).finaliserEchec(anyString(), anyString());
+        verify(v002, never()).migrate();
     }
 }
