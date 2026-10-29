@@ -92,7 +92,7 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
      * @param idOperation        identifiant de l'opération à retirer ou restaurer (obligatoire, non vide)
      * @param operationOriginale ligne d'origine à restaurer ; {@code null} pour retirer l'opération (cas d'une création)
      * @param rangOriginal       position d'origine de la ligne dans {@code listeOperations}, utilisée si la ligne a
-     *                           disparu de la liste (suppression par {@code etat == null}) et doit être ré-insérée ;
+     *                           disparu de la liste (par exemple suppression concurrente) et doit être ré-insérée ;
      *                           valeur négative = inconnue (insertion en fin de liste)
      * @return complétion ; échec si le budget n'existe plus ou si l'identifiant est absent
      */

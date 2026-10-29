@@ -685,9 +685,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
         // Ligne d'origine (modification d'une opération existante) et son rang, capturés avant l'écriture source : null / -1 en cas de création.
         // addOrReplaceOperation remplace ou supprime la ligne sans modifier l'objet d'origine.
         final List<LigneOperation> operationsSource = budgetSource.getListeOperations();
-        final int rangOriginal = IntStream.range(0, operationsSource.size())
-                .filter(i -> idOperation.equals(operationsSource.get(i).getId()))
-                .findFirst().orElse(-1);
+        final int rangOriginal = indexOperation(operationsSource, idOperation);
         final LigneOperation operationOriginale = rangOriginal >= 0 ? operationsSource.get(rangOriginal) : null;
 
         // 1. Écriture source
@@ -740,8 +738,20 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     }
 
     /**
+     * Rang d'une opération dans la liste, recherchée par identifiant.
+     *
+     * @return l'index de l'opération, ou {@code -1} si absente
+     */
+    private static int indexOperation(List<LigneOperation> operations, String idOperation) {
+        return IntStream.range(0, operations.size())
+                .filter(i -> idOperation.equals(operations.get(i).getId()))
+                .findFirst().orElse(-1);
+    }
+
+    /**
      * Compensation ciblée de l'écriture source (ADR-007) : création -> l'opération est retirée ; modification -> la ligne
-     * d'origine est restaurée (ré-insérée à son rang d'origine si l'écriture source l'avait supprimée, cas {@code etat == null}). Seule {@code listeOperations} est modifiée en base (pas de réécriture du budget entier),
+     * d'origine est restaurée (ré-insérée à son rang d'origine si la ligne a disparu de la liste, par exemple suppression concurrente).
+     * Seule {@code listeOperations} est modifiée en base (pas de réécriture du budget entier),
      * avec les soldes et totaux recalculés sur le snapshot mémoire. Un échec de compensation est loggé en ERROR avec les
      * identifiants source et destination, et n'est pas propagé.
      */
@@ -753,13 +763,11 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                         this.operationsAppProvider.deleteOperation(budget.getListeOperations(), idOperation);
                     } else {
                         List<LigneOperation> operations = budget.getListeOperations();
-                        final int indexExistant = IntStream.range(0, operations.size())
-                                .filter(i -> idOperation.equals(operations.get(i).getId()))
-                                .findFirst().orElse(-1);
+                        final int indexExistant = indexOperation(operations, idOperation);
                         if (indexExistant >= 0) {
                             operations.set(indexExistant, operationOriginale);
                         } else {
-                            // Ligne supprimée par l'écriture source (etat == null) : ré-insertion à son rang d'origine
+                            // Ligne absente de la liste (suppression concurrente) : ré-insertion à son rang d'origine
                             // (l'ordre de la liste est visible de l'utilisateur) ; rang inconnu (négatif) ou hors liste : en fin de liste, comme en base
                             final int rang = rangOriginal >= 0 && rangOriginal <= operations.size() ? rangOriginal : operations.size();
                             operations.add(rang, operationOriginale);

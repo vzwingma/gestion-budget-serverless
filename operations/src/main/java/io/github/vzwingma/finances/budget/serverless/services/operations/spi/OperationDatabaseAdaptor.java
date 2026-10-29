@@ -314,7 +314,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
      *     <li>{@code operationOriginale == null} (création) : {@code $pull} de l'opération par id</li>
      *     <li>{@code operationOriginale != null} (modification) : {@code $set} positionnel filtré par id
      *     ({@code listeOperations.$[op]} avec {@code op._id == idOperation}) qui restaure la ligne d'origine ;
-     *     si la ligne a disparu de la liste en base (modification en suppression, {@code etat == null}), elle est
+     *     si la ligne a disparu de la liste en base (par exemple suppression concurrente), elle est
      *     ré-insérée par {@code $push} à son rang d'origine ({@code $position}, ou en fin de liste si le rang est
      *     inconnu ou dépasse la taille courante), uniquement si aucune ligne de même id n'est présente</li>
      * </ul>
@@ -350,7 +350,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
         if (operationOriginale == null) {
             return appliquerCompensation(new Document(ATTRIBUT_BUDGET_ID, idBudget),
                     Updates.pull(ATTRIBUT_LISTE_OPERATIONS, new Document(ATTRIBUT_ID_OPERATION, idOperation)),
-                    champsCalcules, new UpdateOptions(), idBudget)
+                    champsCalcules, new UpdateOptions())
                     .onItem().transformToUni(trouve -> Boolean.TRUE.equals(trouve) ? Uni.createFrom().<Void>voidItem() : echecBudgetIntrouvable(idBudget));
         }
         // 1. Restauration en place si la ligne est encore dans la liste
@@ -360,7 +360,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                 .arrayFilters(List.of(new Document(FILTRE_OPERATION + "." + ATTRIBUT_ID_OPERATION, idOperation)));
         return appliquerCompensation(filtreLignePresente,
                 Updates.set(ATTRIBUT_LISTE_OPERATIONS + ".$[" + FILTRE_OPERATION + "]", operationOriginale),
-                champsCalcules, optionsPositionnel, idBudget)
+                champsCalcules, optionsPositionnel)
                 .onItem().transformToUni(restauree -> {
                     if (Boolean.TRUE.equals(restauree)) {
                         return Uni.createFrom().<Void>voidItem();
@@ -375,17 +375,21 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                     }
                     return appliquerCompensation(filtreLigneAbsente,
                             Updates.pushEach(ATTRIBUT_LISTE_OPERATIONS, List.of(operationOriginale), optionsPush),
-                            champsCalcules, new UpdateOptions(), idBudget)
+                            champsCalcules, new UpdateOptions())
                             .onItem().transformToUni(reinseree -> Boolean.TRUE.equals(reinseree) ? Uni.createFrom().<Void>voidItem() : echecReinsertion(idBudget, idOperation));
                 });
     }
 
     /**
-     * Applique une mise à jour de compensation et contrôle la cohérence du résultat .
+     * Applique une mise à jour de compensation : la modification de {@code listeOperations} combinée à la réécriture des champs calculés.
      *
+     * @param filtre         sélection du budget (et, selon le cas, de la ligne)
+     * @param miseAJourListe modification de {@code listeOperations} ({@code $pull}, {@code $set} positionnel ou {@code $push})
+     * @param champsCalcules soldes, totaux et date de mise à jour à réécrire
+     * @param options        options de mise à jour (filtres de tableau pour le {@code $set} positionnel)
      * @return {@code true} si un document a été trouvé, {@code false} si le filtre n'a rien sélectionné
      */
-    private Uni<Boolean> appliquerCompensation(Bson filtre, Bson miseAJourListe, List<Bson> champsCalcules, UpdateOptions options, String idBudget) {
+    private Uni<Boolean> appliquerCompensation(Bson filtre, Bson miseAJourListe, List<Bson> champsCalcules, UpdateOptions options) {
         final List<Bson> misesAJour = new ArrayList<>();
         misesAJour.add(miseAJourListe);
         misesAJour.addAll(champsCalcules);
@@ -399,17 +403,12 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
 
     /**
      * Le {@code $push} n'a rien sélectionné : soit le budget a disparu, soit la ligne est réapparue entre-temps
-     * (filtre {@code $ne} sur l'id). Les deux causes sont distinguées par une lecture du budget.
+     * (filtre {@code $ne} sur l'id, écriture concurrente). Le type d'erreur n'est pas exploité par l'appelant
+     * (échec de compensation loggé, non propagé) : aucune lecture supplémentaire pour distinguer les deux causes.
      */
-    private Uni<Void> echecReinsertion(String idBudget, String idOperation) {
-        return count(ATTRIBUT_BUDGET_ID + "=?1", idBudget)
-                .onItem().transformToUni(nb -> {
-                    if (nb != null && nb > 0) {
-                        LOGGER.error("Compensation du budget {} : ré-insertion de l'opération {} non effectuée, la ligne est réapparue dans le budget (écriture concurrente)", idBudget, idOperation);
-                        return Uni.createFrom().<Void>failure(new IllegalStateException("Compensation impossible : l'opération " + idOperation + " est réapparue dans le budget " + idBudget + " (écriture concurrente)"));
-                    }
-                    return echecBudgetIntrouvable(idBudget);
-                });
+    private static Uni<Void> echecReinsertion(String idBudget, String idOperation) {
+        LOGGER.error("Compensation du budget {} : ré-insertion de l'opération {} non effectuée (budget introuvable ou ligne réapparue : écriture concurrente)", idBudget, idOperation);
+        return Uni.createFrom().failure(new IllegalStateException("Compensation impossible : ré-insertion de l'opération " + idOperation + " non effectuée dans le budget " + idBudget + " (budget introuvable ou ligne réapparue)"));
     }
 
     private static Uni<Void> echecBudgetIntrouvable(String idBudget) {
@@ -418,8 +417,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     }
 
     /**
-     * g
-     * sauvegarde ou mise à jour du budget
+     * Sauvegarde ou mise à jour du budget
      *
      * @param budget budget à sauvegarder
      * @return budget sauvegardé
