@@ -43,6 +43,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -80,6 +81,11 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
 
     @Inject
     IJwtSigningKeyReadRepository iJwtSigningKeyReadRepository;
+
+    /**
+     * Nombre maximal de mois intermédiaires sans budget créés pour un compte actif (F4)
+     */
+    static final int MAX_MOIS_REMPLISSAGE = 24;
 
     Clock clock = Clock.systemUTC();
     /**
@@ -173,13 +179,17 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
         LOGGER.debug("Chargement du budget de {}/{} sur compte actif ", mois, annee);
 
         return this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, mois, annee)
-                // Budget introuvable - init d'un nouveau budget
+                .onItem().transform(Optional::of)
+                // Budget introuvable : init d'un nouveau budget (Optional vide)
                 .onFailure()
-                .recoverWithUni(() -> initNewBudget(compteBancaire, mois, annee))
-                .invoke(budgetMensuel -> LOGGER.debug("Budget mensuel chargé : {}", budgetMensuel))
-                // rechargement du solde mois précédent (s'il a changé)
+                .recoverWithItem(() -> Optional.<BudgetMensuel>empty())
                 .onItem()
-                .transformToUni(budgetMensuel -> recalculSoldeAFinMoisPrecedent(budgetMensuel, compteBancaire))
+                .transformToUni(budgetExistant -> budgetExistant.isPresent()
+                        // rechargement du solde mois précédent (s'il a changé), uniquement pour un budget existant
+                        ? recalculSoldeAFinMoisPrecedent(budgetExistant.get(), compteBancaire)
+                        // un budget nouvellement initialisé porte déjà le solde de fin du mois précédent
+                        : initNewBudget(compteBancaire, mois, annee))
+                .invoke(budgetMensuel -> LOGGER.debug("Budget mensuel chargé : {}", budgetMensuel))
                 // recalcul de tous les soldes du budget courant
                 .onItem().ifNotNull()
                 .invoke(this::recalculSoldes)
@@ -200,16 +210,9 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     private Uni<BudgetMensuel> chargerBudgetMensuelSurCompteInactif(CompteBancaire compteBancaire, Month mois, int annee) {
         LOGGER.debug(" Chargement du budget sur compte inactif de {}/{}", mois, annee);
 
-        // Calcul de paramètres pour le recovery
-        Month moisPrecedent = mois.minus(1);
-        int anneePrecedente = Month.DECEMBER.equals(moisPrecedent) ? annee - 1 : annee;
-
-        // Chargement du budget précédent
-        return this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, mois, annee)
-                .onItem()
-                // Si le budget n'existe pas, on recherche le dernier
-                .ifNull()
-                .switchTo(() -> chargerBudgetMensuelSurCompteInactif(compteBancaire, moisPrecedent, anneePrecedente))
+        // F3 : une seule requête, "dernier budget <= M" (le budget du mois M s'il existe, sinon le plus récent avant)
+        return this.dataOperationsProvider.chargeDernierBudgetAvant(compteBancaire.getId(), mois, annee)
+                .onItem().ifNull().failWith(() -> new BudgetNotFoundException("Aucun budget trouvé pour le compte inactif " + compteBancaire.getId() + " jusqu'à " + mois + "/" + annee))
                 .onItem()
                 .transform(budgetMensuel -> {
                     // On reporte l'état inactif du compte sur les anciens budgets
@@ -242,12 +245,15 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
 
             LOGGER.debug("Recalcul du solde à partir du budget du mois précédent du compte actif {} : {}/{}", compteBancaire, moisPrecedent, anneePrecedente);
 
-            return Uni.combine().all().unis(
-                            Uni.createFrom().item(budgetMensuel),
-                            this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, moisPrecedent, anneePrecedente)
-                    ).asTuple()
-                    .invoke(tuple -> tuple.getItem1().getSoldes().setSoldeAtFinMoisPrecedent(tuple.getItem2().getSoldes().getSoldeAtFinMoisCourant()))
-                    .map(Tuple2::getItem1);
+            return this.dataOperationsProvider.chargeBudgetMensuel(compteBancaire, moisPrecedent, anneePrecedente)
+                    .invoke(budgetPrecedent -> budgetMensuel.getSoldes().setSoldeAtFinMoisPrecedent(budgetPrecedent.getSoldes().getSoldeAtFinMoisCourant()))
+                    .replaceWith(budgetMensuel)
+                    // Premier mois du compte (budget précédent absent) : solde du mois précédent inchangé (0 pour un budget vierge), pas d'échec
+                    .onFailure(BudgetNotFoundException.class)
+                    .recoverWithItem(e -> {
+                        LOGGER.debug("Pas de budget précédent {}/{} pour le compte {} : solde du mois précédent inchangé", moisPrecedent, anneePrecedente, compteBancaire.getId());
+                        return budgetMensuel;
+                    });
         } else {
             LOGGER.debug("Budget inactif, pas de recalcul du solde à partir du budget du mois précédent du compte actif {}", compteBancaire);
             return Uni.createFrom().item(budgetMensuel);
@@ -304,20 +310,53 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
         // MAJ Calculs à partir du mois précédent
         // Recherche du budget précédent
         // Si impossible : on retourne le budget initialisé
-        String idBudgetPrecedent = BudgetMensuel.getBudgetId(compteBancaire.getId(), mois.minus(1), Month.DECEMBER.equals(mois.minus(1)) ? annee - 1 : annee);
-        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudgetPrecedent);
-        LOGGER.debug("Chargement du budget précédent pour initialisation");
-        return getBudgetMensuel(idBudgetPrecedent)
-                .onFailure()
-                .recoverWithUni(() -> chargerBudgetMensuelSurCompteActif(compteBancaire, mois.minus(1), Month.DECEMBER.equals(mois.minus(1)) ? annee - 1 : annee))
+        // F4 : une seule requête préalable "dernier budget <= M-1" (plus de récursion mois par mois pour le découvrir)
+        final Month moisPrecedent = mois.minus(1);
+        final int anneePrecedente = Month.DECEMBER.equals(moisPrecedent) ? annee - 1 : annee;
+        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, BudgetMensuel.getBudgetId(compteBancaire.getId(), moisPrecedent, anneePrecedente));
+        LOGGER.debug("Recherche du dernier budget précédent pour initialisation");
+        return this.dataOperationsProvider.chargeDernierBudgetAvant(compteBancaire.getId(), moisPrecedent, anneePrecedente)
+                .onItem()
+                .transformToUni(dernierBudget -> chargerBudgetPrecedentPourInit(compteBancaire, dernierBudget, moisPrecedent, anneePrecedente))
                 .onItem()
                 .transformToUni(budgetPrecedent -> {
+                    if (budgetPrecedent == null) {
+                        LOGGER.debug("Aucun budget précédent : budget vierge");
+                        return Uni.createFrom().item((BudgetMensuel) null);
+                    }
                     LOGGER.debug("Budget précédent trouvé : {}. Actif ? : {}", budgetPrecedent, budgetPrecedent.isActif());
                     // #115 : Cloture automatique du mois précédent
                     return budgetPrecedent.isActif() ? setBudgetActif(budgetPrecedent.getId(), false) : Uni.createFrom().item(budgetPrecedent);
                 })
                 .map(budgetPrecedent -> initBudgetFromBudgetPrecedent(budgetInitVide, budgetPrecedent));
         // La sauvegarde du budget initialisé est réalisée dans le flux suivant
+    }
+
+    /**
+     * Détermine le budget du mois précédent à partir du dernier budget connu (&le; M-1).
+     * <ul>
+     *     <li>aucun budget connu : {@code null} (budget vierge, sans récursion)</li>
+     *     <li>dernier budget = M-1 : utilisé tel quel</li>
+     *     <li>écart de k mois (k &le; {@value #MAX_MOIS_REMPLISSAGE}) : les k budgets intermédiaires sont créés (comme avant) par
+     *     récursion sur M-1, chaque niveau n'effectuant qu'une requête "dernier budget"</li>
+     *     <li>écart &gt; {@value #MAX_MOIS_REMPLISSAGE} : WARN et budget vierge</li>
+     * </ul>
+     */
+    private Uni<BudgetMensuel> chargerBudgetPrecedentPourInit(CompteBancaire compteBancaire, BudgetMensuel dernierBudget, Month moisPrecedent, int anneePrecedente) {
+        if (dernierBudget == null) {
+            return Uni.createFrom().item((BudgetMensuel) null);
+        }
+        final int ecartMois = (anneePrecedente * 12 + moisPrecedent.getValue()) - (dernierBudget.getAnnee() * 12 + dernierBudget.getMois().getValue());
+        if (ecartMois <= 0) {
+            return Uni.createFrom().item(dernierBudget);
+        }
+        if (ecartMois > MAX_MOIS_REMPLISSAGE) {
+            LOGGER.warn("Compte {} : {} mois sans budget avant {}/{} (limite {}). Dernier budget connu : {}. Budget vierge, mois intermédiaires non créés",
+                    compteBancaire.getId(), ecartMois, moisPrecedent, anneePrecedente, MAX_MOIS_REMPLISSAGE, dernierBudget.getId());
+            return Uni.createFrom().item((BudgetMensuel) null);
+        }
+        LOGGER.info("Compte {} : {} mois intermédiaire(s) à créer jusqu'à {}/{}", compteBancaire.getId(), ecartMois, moisPrecedent, anneePrecedente);
+        return chargerBudgetMensuelSurCompteActif(compteBancaire, moisPrecedent, anneePrecedente);
     }
 
     /**
