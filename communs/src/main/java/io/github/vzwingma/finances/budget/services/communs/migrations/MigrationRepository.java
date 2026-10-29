@@ -114,6 +114,19 @@ public class MigrationRepository implements ReactivePanacheMongoRepositoryBase<M
     }
 
     /**
+     * Relit le statut d'une version après une clé dupliquée à la réservation : permet de distinguer une version
+     * passée en {@code SUCCES} par un autre runner entre la lecture initiale et la réservation (la chaîne peut
+     * continuer) d'une version {@code EN_COURS} chez un autre runner (la chaîne doit s'arrêter).
+     *
+     * @param version version à contrôler
+     * @return {@code true} si la version est en {@code SUCCES}
+     */
+    public Uni<Boolean> estAppliquee(String version) {
+        return findById(version)
+                .map(record -> record != null && MigrationRecord.MigrationStatutEnum.SUCCES.equals(record.getStatut()));
+    }
+
+    /**
      * Finalise une migration en succès. Sans effet (WARN) si la réservation a été reprise par un autre runner.
      *
      * @param version version exécutée
