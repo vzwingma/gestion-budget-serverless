@@ -310,6 +310,31 @@ class BudgetServiceTest {
     }
 
     /**
+     * F4 : écart de 1 mois (février à créer entre janvier et mars). Mêmes lectures que pour tout écart (1 lecture de M,
+     * 1 "dernier budget &le; M-1", 1 relecture par id du dernier budget), écritures : 1 clôture + 1 mois créé + 1 sauvegarde de M = 3.
+     */
+    @Test
+    void testGetBudgetSurCompteActif_ecartDe1Mois_creeLeMoisIntermediaire() {
+
+        Map<String, BudgetMensuel> base = initBaseBudgetsFictive(budgetC1(Month.JANUARY, 2022, true));
+
+        BudgetMensuel budgetCharge = budgetAppProvider.getBudgetMensuel("C1", Month.MARCH, 2022)
+                .await().indefinitely();
+
+        assertEquals("C1_2022_03", budgetCharge.getId());
+        assertEquals(3, base.size());
+        assertTrue(base.containsKey("C1_2022_02"));
+        assertFalse(base.get("C1_2022_01").isActif());
+        assertFalse(base.get("C1_2022_02").isActif());
+        assertTrue(base.get("C1_2022_03").isActif());
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(any(CompteBancaire.class), any(Month.class), anyInt());
+        verify(mockOperationDataProvider, times(1)).chargeDernierBudgetAvant(eq("C1"), eq(Month.FEBRUARY), eq(2022));
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(eq("C1_2022_01"));
+        verify(mockOperationDataProvider, times(1)).chargeBudgetMensuel(anyString());
+        verify(mockOperationDataProvider, times(3)).sauvegardeBudgetMensuel(any(BudgetMensuel.class));
+    }
+
+    /**
      * F4 : écart de 3 mois (février, mars, avril à créer entre janvier et mai).
      * Appels au dépôt : 1 lecture du mois M, 1 "dernier budget &le; M-1", 1 relecture par id du dernier budget avant sa clôture,
      * écritures : 1 clôture de janvier + 3 mois créés (déjà clos) + 1 sauvegarde de M = 5.
