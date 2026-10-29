@@ -76,17 +76,95 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
      */
     @Override
     public Uni<BudgetMensuel> chargeBudgetMensuel(CompteBancaire compte, Month mois, int annee) {
-        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, BudgetMensuel.getBudgetId(compte.getId(), mois, annee));
+        final String idBudget = BudgetMensuel.getBudgetId(compte.getId(), mois, annee);
+        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
         LOGGER.info("Chargement du budget {}/{} du compte {} ", mois, annee, compte.getId());
-        return find(ATTRIBUT_COMPTE_ID + " = ?1 and " + ATTRIBUT_MOIS + " = ?2 and " + ATTRIBUT_ANNEE + " = ?3", compte.getId(), mois.toString(), annee)
-                .singleResultOptional()
-                .onItem().transform(Optional::orElseThrow)
-                .onFailure()
+        // Lecture par _id (index natif) ; repli défensif sur l'ancien filtre par champs si l'_id n'est pas conforme
+        return find(ATTRIBUT_BUDGET_ID + " = ?1", idBudget)
+                .firstResult()
+                .onItem().ifNull().switchTo(() -> chargeBudgetParChamps(compte.getId(), mois, annee, idBudget))
+                .onItem().ifNull().failWith(() -> new BudgetNotFoundException("Budget introuvable pour le compte " + compte.getId() + " du mois " + mois + " de l'année " + annee))
+                .invoke(budget -> LOGGER.debug("-> Réception du budget {}. {} opérations", budget.getId(), budget.getListeOperations().size()))
+                .onFailure(e -> !(e instanceof BudgetNotFoundException))
                 .transform(e -> {
                     LOGGER.error("Erreur lors du chargement du budget", e);
                     return new BudgetNotFoundException("Erreur lors du chargement du budget pour le compte " + compte.getId() + " du mois " + mois + " de l'année " + annee);
-                })
-                .invoke(budget -> LOGGER.debug("-> Réception du budget {}. {} opérations", budget.getId(), budget.getListeOperations().size()));
+                });
+    }
+
+    /**
+     * Repli défensif : lecture par les champs fonctionnels (compte, mois, année) quand la lecture par {@code _id} ne trouve rien.
+     *
+     * @return le budget, ou {@code null} si absent
+     */
+    private Uni<BudgetMensuel> chargeBudgetParChamps(String idCompte, Month mois, int annee, String idBudgetAttendu) {
+        return find(ATTRIBUT_COMPTE_ID + " = ?1 and " + ATTRIBUT_MOIS + " = ?2 and " + ATTRIBUT_ANNEE + " = ?3", idCompte, mois.toString(), annee)
+                .singleResultOptional()
+                .map(budget -> budget.orElse(null))
+                .invoke(budget -> {
+                    if (budget != null) {
+                        LOGGER.info("Budget {} trouvé par les champs (compte/mois/année) mais pas par _id : donnée historique non conforme (_id réel : {})", idBudgetAttendu, budget.getId());
+                    }
+                });
+    }
+
+    /**
+     * Dernier budget &le; (mois, année) en une seule requête indexée sur {@code _id}.
+     * <p>
+     * L'{@code _id} a le format {@code <idCompte>_<AAAA>_<MM>} : {@code AAAA} et {@code MM} sont de longueur fixe, donc le tri
+     * lexical de l'{@code _id} d'un même compte est chronologique. Filtre :
+     * <ul>
+     *     <li>{@code idCompteBancaire == idCompte} (égalité exacte : un compte {@code a} et un compte {@code a_1} peuvent partager
+     *     un préfixe d'{@code _id}, la borne seule ne suffit pas)</li>
+     *     <li>{@code _id <= <idCompte>_<AAAA>_<MM>} et {@code _id >= <idCompte>_} (borne basse du préfixe du compte)</li>
+     * </ul>
+     * tri {@code _id} décroissant, premier résultat. Aucune hypothèse n'est faite sur l'absence de {@code _} dans l'id du compte.
+     * <p>
+     * Repli défensif si rien n'est trouvé (voir {@link #chargeDernierBudgetAvantParChamps}).
+     */
+    @Override
+    public Uni<BudgetMensuel> chargeDernierBudgetAvant(String idCompte, Month mois, int annee) {
+        final String idBorneHaute = BudgetMensuel.getBudgetId(idCompte, mois, annee);
+        final String idBorneBasse = idCompte + "_";
+        LOGGER.info("Chargement du dernier budget <= {}/{} du compte {}", mois, annee, idCompte);
+        final Document filtre = new Document(ATTRIBUT_COMPTE_ID, idCompte)
+                .append(ATTRIBUT_BUDGET_ID, new Document("$lte", idBorneHaute).append("$gte", idBorneBasse));
+        return find(filtre, new Document(ATTRIBUT_BUDGET_ID, -1))
+                .firstResult()
+                .onItem().ifNull().switchTo(() -> chargeDernierBudgetAvantParChamps(idCompte, mois, annee))
+                .onFailure().invoke(e -> LOGGER.error("Erreur lors du chargement du dernier budget <= {} du compte {}", idBorneHaute, idCompte, e))
+                .invoke(budget -> LOGGER.debug("-> Dernier budget <= {} : {}", idBorneHaute, budget != null ? budget.getId() : null));
+    }
+
+    /**
+     * Repli défensif de {@link #chargeDernierBudgetAvant} : sélection par champs, hors {@code _id}.
+     * <p>
+     * {@code mois} est stocké en texte ({@code "JANUARY"}) : un tri Mongo sur ce champ serait alphabétique, donc faux.
+     * Mongo ne fait que filtrer les candidats (compte, {@code annee < A} ou {@code annee = A} et mois &le; M, via {@code $in} sur les
+     * libellés) ; le plus récent est ensuite choisi en Java sur (année, {@code Month.getValue()}). Ce chemin ne s'exécute que
+     * lorsque la requête par {@code _id} ne trouve rien : l'ensemble des candidats est alors vide (cas normal, requête peu
+     * coûteuse) ou ne contient que des documents à {@code _id} non conforme.
+     *
+     * @return le dernier budget, ou {@code null} si aucun
+     */
+    private Uni<BudgetMensuel> chargeDernierBudgetAvantParChamps(String idCompte, Month mois, int annee) {
+        final List<String> moisAutorises = Arrays.stream(Month.values())
+                .filter(m -> m.getValue() <= mois.getValue())
+                .map(Month::name)
+                .toList();
+        final Document filtre = new Document(ATTRIBUT_COMPTE_ID, idCompte)
+                .append("$or", List.of(
+                        new Document(ATTRIBUT_ANNEE, new Document("$lt", annee)),
+                        new Document(ATTRIBUT_ANNEE, annee).append(ATTRIBUT_MOIS, new Document("$in", moisAutorises))));
+        return find(filtre).list()
+                .map(candidats -> candidats.stream()
+                        .max(Comparator.comparingInt(BudgetMensuel::getAnnee).thenComparingInt(b -> b.getMois().getValue()))
+                        .orElse(null))
+                .invoke(budget -> {
+                    if (budget != null) {
+                        LOGGER.info("Dernier budget <= {}/{} du compte {} trouvé par les champs mais pas par _id : donnée historique non conforme (_id réel : {})", mois, annee, idCompte, budget.getId());
+                    }
+                });
     }
 
 

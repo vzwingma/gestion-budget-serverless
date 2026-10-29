@@ -31,6 +31,18 @@ public interface IOperationsRepository extends ReactivePanacheMongoRepository<Bu
      * @return Un objet Uni contenant le budget mensuel si trouvé.
      */
     Uni<BudgetMensuel> chargeBudgetMensuel(CompteBancaire compte, Month mois, int annee);
+
+    /**
+     * Charge le dernier budget d'un compte dont le mois est inférieur ou égal au mois demandé (le mois demandé inclus),
+     * en une seule requête.
+     *
+     * @param idCompte identifiant du compte
+     * @param mois     mois borne haute (inclus)
+     * @param annee    année borne haute (incluse)
+     * @return le dernier budget &le; (mois, annee), ou un {@code Uni} à valeur {@code null} si le compte n'a aucun budget antérieur
+     */
+    Uni<BudgetMensuel> chargeDernierBudgetAvant(String idCompte, Month mois, int annee);
+
     /**
      * Retourne le solde et les totaux par catégorie pour un budget mensuel (ou la liste des budgets mensuels) pour un compte et une année donnée
      * @param idCompte identifiant du compte
