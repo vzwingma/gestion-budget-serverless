@@ -72,6 +72,8 @@ Mécanisme (option A3) :
 - **Conséquence** : les migrations doivent rester courtes et idempotentes. Les opérations longues (ex. construction d'index sur une grosse collection) sont lancées sans attendre la fin côté client, ou avec un timeout dédié à l'opération.
 - **Ordre garanti** : si une version est réservée par un autre runner, la chaîne s'arrête pour ce démarrage, au lieu de sauter à la version suivante. La reprise se fait au démarrage à froid suivant.
 - **Échec d'écriture du statut final** : un échec d'écriture du statut `SUCCES` n'est pas confondu avec un échec de la migration elle-même. La version reste `EN_COURS` jusqu'à expiration du bail ; elle est ensuite reprise, d'où l'exigence d'idempotence.
+- **Arrêt et poursuite de la chaîne** : la chaîne s'arrête sur un `ECHEC` de migration ou sur un échec de finalisation (correctif en cours de mise en œuvre). Elle continue si la version a été passée en `SUCCES` par un autre runner (E11000 sur une version `SUCCES` : rien à exécuter, passage à la version suivante). Une version `EN_COURS` chez un autre runner arrête la chaîne (voir ci-dessus).
+- **Timeout de V002 (construction d'index)** : la construction des index de V002 reste bornée par `quarkus.mongodb.read-timeout=8S`. Si le délai est dépassé, la migration passe en `ECHEC` et est rejouée au démarrage suivant. Elle est idempotente : un index existant de même clé est ignoré. Côté serveur, la construction peut se poursuivre en arrière-plan. **Décision 👤 du 2026-10-29** (Gate #2, 2e passage, plan 004) : accepté, pas de timeout dédié.
 - **Décision 👤 du 2026-10-26** (Gate #2 de la Phase 1, plan 004) : documenter la limite, sans implémenter de renouvellement. À réévaluer si une migration longue apparaît.
 
 ### Neutres

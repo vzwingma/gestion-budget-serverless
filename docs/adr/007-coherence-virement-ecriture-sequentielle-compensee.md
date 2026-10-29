@@ -70,6 +70,11 @@ Règles :
 - Nouveaux codes de retour (406, 400) : **impact IHM** (gestion des erreurs, messages) à traiter dans un plan IHM dédié.
 - Latence légèrement accrue (écritures séquentielles au lieu de parallèles).
 
+### Limites connues
+- **Risque R2 accepté — soldes et totaux de la compensation** : la compensation du virement réécrit `soldes`, `totauxParCategories`, `totauxParSSCategories`, `totauxParTypeCategories` et `dateMiseAJour` avec l'instantané en mémoire, recalculé après retrait ou restauration de l'opération. Si une écriture concurrente touche une **autre opération du même budget** entre l'écriture source et la compensation, sa ligne est conservée dans `listeOperations`, mais elle n'apparaît pas dans les soldes et totaux stockés tant qu'aucun recalcul n'a eu lieu.
+- **Décision 👤 du 2026-10-29** (Gate #2, 2e passage, plan 004) : risque accepté et documenté, **sans contrôle optimiste sur `dateMiseAJour`**. À réévaluer si le problème est observé.
+- **Compensation ciblée** (commit `012dee5`) : `$pull` de la ligne en cas de création ; en cas de modification, `$set listeOperations.$[op]` avec `arrayFilters` (ou `$push` si la ligne a disparu, correctif en cours). Le budget entier n'est plus réécrit.
+
 ### Neutres
 - Mise à jour de la documentation d'API (wiki serverless, `Conception-globale.md`) et de `docs/ARCHITECTURE.md` si le contrat de réponse du virement est modifié.
 
