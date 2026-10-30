@@ -4,14 +4,12 @@ import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoTimeoutException;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.UpdateResult;
-import com.mongodb.reactivestreams.client.AggregatePublisher;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
-import io.quarkus.mongodb.AggregateOptions;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.panache.common.Sort;
@@ -31,7 +29,6 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -42,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -392,14 +388,13 @@ class OperationDatabaseAdaptorTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    void testGetLibellesOperations_pipelineGroupEtMaxTime7Secondes() {
-        when(collection.aggregate(any(List.class), eq(Document.class), any(AggregateOptions.class))).thenReturn(Multi.createFrom().empty());
+    void testGetLibellesOperations_pipelineGroup() {
+        when(collection.aggregate(any(List.class), eq(Document.class))).thenReturn(Multi.createFrom().empty());
 
         adaptor.getLibellesOperations("C1").collect().asList().await().indefinitely();
 
         ArgumentCaptor<List<? extends Bson>> pipeline = ArgumentCaptor.forClass(List.class);
-        ArgumentCaptor<AggregateOptions> options = ArgumentCaptor.forClass(AggregateOptions.class);
-        verify(collection).aggregate(pipeline.capture(), eq(Document.class), options.capture());
+        verify(collection).aggregate(pipeline.capture(), eq(Document.class));
 
         List<? extends Bson> etapes = pipeline.getValue();
         assertEquals(3, etapes.size());
@@ -411,31 +406,5 @@ class OperationDatabaseAdaptorTest {
         assertTrue(group.contains("\"categorieId\": \"$listeOperations.categorie._id\""), group);
         assertTrue(group.contains("\"ssCategorieId\": \"$listeOperations.ssCategorie._id\""), group);
         assertTrue(group.contains("\"n\": {\"$sum\": 1}"), "Compteur d'occurrences : " + group);
-
-        assertEquals(7, OperationDatabaseAdaptor.LIBELLES_MAX_TIME_SECONDES);
-    }
-
-    /**
-     * Intention de l'AP004 T1.2d (point 6, R4) : l'agrégation des libellés est interrompue côté serveur après 7 s
-     * ({@code maxTimeMS}). BUG constaté : {@code io.quarkus.mongodb.AggregateOptions#apply} (quarkus-mongodb-client 3.40.1)
-     * traduit {@code maxTime(7, SECONDS)} en {@code AggregatePublisher.maxAwaitTime(7, SECONDS)} (le champ maxTime
-     * n'est jamais envoyé via {@code maxTime}) : aucun {@code maxTimeMS} n'est transmis au serveur, la limite de 7 s
-     * est donc inopérante (seul le {@code read-timeout} client de 8 s s'applique). Test écrit et désactivé, à réactiver
-     * après correction.
-     */
-    @org.junit.jupiter.api.Disabled("BUG AP004 T1.3 — AggregateOptions.maxTime est appliqué comme maxAwaitTime par Quarkus : aucun maxTimeMS envoyé au serveur (agrégation des libellés non bornée côté serveur)")
-    @SuppressWarnings("unchecked")
-    @Test
-    void testGetLibellesOperations_maxTimeServeurEffectivement7Secondes() {
-        when(collection.aggregate(any(List.class), eq(Document.class), any(AggregateOptions.class))).thenReturn(Multi.createFrom().empty());
-        adaptor.getLibellesOperations("C1").collect().asList().await().indefinitely();
-        ArgumentCaptor<AggregateOptions> options = ArgumentCaptor.forClass(AggregateOptions.class);
-        verify(collection).aggregate(any(List.class), eq(Document.class), options.capture());
-
-        AggregatePublisher<Document> publisher = mock(AggregatePublisher.class);
-        when(publisher.maxTime(anyLong(), any(TimeUnit.class))).thenReturn(publisher);
-        when(publisher.maxAwaitTime(anyLong(), any(TimeUnit.class))).thenReturn(publisher);
-        options.getValue().apply(publisher);
-        verify(publisher).maxTime(7L, TimeUnit.SECONDS);
     }
 }

@@ -49,11 +49,12 @@ import static org.mockito.Mockito.when;
  * compensation ciblée ({@code $pull}, {@code $set} avec {@code arrayFilters}, {@code $push}/{@code $position}, encodage
  * BSON des POJO) et agrégation des libellés ({@code $group}).
  * <p>
- * <b>Dev Services dans {@code operations}</b> : le module ne déclare {@code quarkus.mongodb.connection-string} que sous le
- * profil {@code %dev.}, donc Dev Services démarre un conteneur MongoDB en profil test sans aucune configuration
- * supplémentaire. Le {@link TestProfile} ci-dessous ne fait qu'isoler la base ({@code operations-it}), sans toucher aux
- * {@code application.properties} partagés. Nommage {@code *Test} (et non {@code *IT}) : seul surefire est configuré pour
- * les modules (failsafe n'existe que dans le profil {@code native}), un {@code *IT} ne serait jamais exécuté par la CI.
+ * <b>MongoDB de test</b> : {@link MongoDbTestResource} (Testcontainers) fournit la chaîne de connexion et Dev Services est
+ * désactivé par le {@link TestProfile} ci-dessous. Raison : le profil Maven {@code native} (CI « native snapshot apps »)
+ * embarque {@code prod/application.properties}, qui définit {@code quarkus.mongodb.connection-string} et empêche Dev Services
+ * de démarrer ; le test tapait alors {@code localhost:27017} (MongoTimeoutException). Le test est ainsi indépendant du profil
+ * Maven. Nommage {@code *Test} (et non {@code *IT}) : seul surefire est configuré pour les modules (failsafe n'existe que
+ * dans le profil {@code native}), un {@code *IT} ne serait jamais exécuté par la CI.
  * <p>
  * Chaque test utilise un identifiant de compte unique : aucun nettoyage, aucune dépendance entre tests.
  *
@@ -63,11 +64,17 @@ import static org.mockito.Mockito.when;
 @TestProfile(OperationDatabaseAdaptorMongoTest.ProfilBaseDediee.class)
 class OperationDatabaseAdaptorMongoTest {
 
-    /** Isole la base de ces tests (Dev Services reste actif : la chaîne de connexion n'est pas définie en profil test) */
+    /** Isole la base de ces tests, désactive Dev Services et branche le MongoDB Testcontainers */
     public static class ProfilBaseDediee implements QuarkusTestProfile {
         @Override
         public Map<String, String> getConfigOverrides() {
-            return Map.of("quarkus.mongodb.database", "operations-it");
+            return Map.of("quarkus.mongodb.database", "operations-it",
+                    "quarkus.mongodb.devservices.enabled", "false");
+        }
+
+        @Override
+        public List<TestResourceEntry> testResources() {
+            return List.of(new TestResourceEntry(MongoDbTestResource.class));
         }
     }
 

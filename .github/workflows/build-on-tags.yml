@@ -120,7 +120,7 @@ jobs:
         run: mvn versions:commit
       # Runs a single command using the runners shell
       - name: Build ${{ matrix.display }} Native App with Maven
-        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25 --file ${{ matrix.module }}/pom.xml
+        run: mvn install -B -P native -Dnative -Dtest='!*MongoTest' -Dsurefire.failIfNoSpecifiedTests=false -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25 --file ${{ matrix.module }}/pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot

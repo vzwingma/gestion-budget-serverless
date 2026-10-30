@@ -345,6 +345,10 @@ Chaque phase : Gate #2 (code) → Gate #3 (tests) ; Gate #4 global en fin de pla
 | Q5 | 2026-10-29 | Format des `_id` en PROD (requête 👤) | ℹ️ Résultat | `mois` stocké en texte ; 1023 budgets, tous `_id` string ; ex. `inglivretA_2014_12` ; 0 `_id` hors `/^.+_[0-9]{4}_[0-9]{2}$/` (1re requête `$facet` non concluante, refaite plus simple). **T1.1b-ID et T1.1c débloqués** |
 | #2 (Phase 1) | 2026-10-29 | 4e passage (inclut T1.1b-ID + T1.1c) | 🔁 AJUSTER | Absence ≠ erreur technique (jamais de budget vierge sur erreur Mongo), lectures constantes pour un écart de k mois, garde `mois` null. Décisions 👤 : **repli défensif par champs retiré** ; écart > 24 mois → **solde du dernier budget repris** (vierge à 0 si nouveau compte) ; réinsertion `$push` **conservée** (cas résiduel documenté dans ADR-007) |
 
+### ⚠️ Limites connues (Phase 1)
+
+- **Agrégation des libellés (`OperationDatabaseAdaptor.getLibellesOperations`) bornée par le `quarkus.mongodb.read-timeout=8S` du client uniquement** : aucune limite côté serveur (`maxTime` retiré, car `AggregateOptions.maxTime` est appliqué comme `maxAwaitTime` par quarkus-mongodb-client 3.40.1 et n'envoie aucun `maxTimeMS`). Décision 👤 post-T1.3.
+
 ### ⚠️ Limites connues (Phase 0)
 
 - **JWKS / discovery Google injoignable → HTTP 500** (pas 401). Le refus est appliqué et rien ne bloque (~2 s), mais l'IHM ne se déconnecte pas sur ce code. Décision 👤 Gate #3 : conservé, sans `ExceptionMapper`. À observer en QUA (logs, fréquence) et à réévaluer en Phase 4.
