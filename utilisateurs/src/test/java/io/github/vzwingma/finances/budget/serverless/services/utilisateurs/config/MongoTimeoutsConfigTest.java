@@ -12,7 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Lecture au runtime des timeouts et du pool du client MongoDB (AP004 T1.2c) : garde-fou contre la disparition ou la
  * dérive des clés d'`application.properties`. Tous les timeouts doivent rester inférieurs au timeout Lambda (15 s),
- * et le {@code read-timeout} supérieur au {@code maxTime} de 7 s de l'agrégation des libellés.
+ * et le {@code read-timeout} (8 s) supérieur à 7 s. Le {@code maxTime} de 7 s sur l'agrégation des libellés a été retiré
+ * (commit 2fba365) : l'agrégation n'est plus bornée que par ce read-timeout client.
  * <p>
  * `wait-queue-timeout` n'existe pas dans quarkus-mongodb-client 3.40.1 (voir rapport de phase 1) et n'est donc pas contrôlé.
  *
@@ -44,6 +45,6 @@ class MongoTimeoutsConfigTest {
             assertTrue(timeout.compareTo(TIMEOUT_LAMBDA) < 0, cle + " (" + timeout + ") doit rester inférieur au timeout Lambda de 15 s");
         }
         assertTrue(valeur("quarkus.mongodb.read-timeout", Duration.class).compareTo(Duration.ofSeconds(7)) > 0,
-                "read-timeout > 7 s (maxTime de l'agrégation des libellés)");
+                "read-timeout > 7 s (seule borne client de l'agrégation des libellés, plus de maxTime)");
     }
 }
