@@ -42,7 +42,7 @@ Client (IHM React)
         → Ressource REST (JAX-RS)
         → Service métier (Mutiny Uni<T>)
         → Repository MongoDB Panache
-        ← MongoDB Atlas / DocumentDB
+        ← MongoDB Atlas
     ← JSON
 ```
 
@@ -267,11 +267,67 @@ gestion-budget-serverless/
 
 ---
 
+## 🚦 Codes HTTP et gestion des erreurs
+
+Les exceptions sont traduites en HTTP par deux mappers du module `communs`, repris dans chaque service (`APIExceptionsHandler`, `SPIExceptionsHandler`).
+
+| Exception | Code | Mapper |
+|---|---|---|
+| `BadParametersException` | **400** | `AbstractAPIExceptionsHandler` |
+| `DataNotFoundException`, `BudgetNotFoundException` | **404** | `AbstractAPIExceptionsHandler` |
+| `CompteClosedException` | **406** | `AbstractAPIExceptionsHandler` |
+| `UserNotAuthorizedException` / `UserAccessForbiddenException` | 401 / 403 | `AbstractAPIExceptionsHandler` |
+| `DonneeCorrompueException` (ex. budget sans `mois`, soldes absents) | **500** | `AbstractAPIExceptionsHandler` |
+| Autre `AbstractBusinessException` (repli) | 503 | `AbstractAPIExceptionsHandler` |
+| **Toute `MongoException`** (configuration, timeout, serveur indisponible, socket, commande, écriture…) | **503** | `AbstractBDDExceptionsHandler` |
+
+Le 500 est réservé aux données corrompues : une indisponibilité de la base est toujours un 503. Le corps d'une `MongoException` est un message générique (« Erreur d'accès à la base de données »), sans détail interne.
+
+### Lecture d'un budget : absence ≠ erreur technique (R5)
+
+- Budget **absent** (lecture par `_id`, ou par compte/mois/année) → `BudgetNotFoundException` → **404**.
+- **Erreur Mongo** (timeout, indisponibilité) → remontée telle quelle → **503**. Une erreur technique n'est jamais confondue avec une absence, et **ne déclenche jamais l'initialisation d'un budget vierge** (seule l'absence réelle l'initialise).
+- Exceptions à ce principe, non modifiées par la Phase 1 : `chargeSoldesBudgetMensuel` et `chargeIntervalleBudgets` enveloppent encore toute erreur en `BudgetNotFoundException` (404).
+
+### Budget d'un compte (`GET /budgets/v2/query`)
+
+| Cas | Comportement |
+|---|---|
+| **F3** — compte **inactif**, budget du mois M absent | **200** avec le **dernier budget ≤ M** (mois antérieur), `actif=false`. Le mois et l'id du budget reçu peuvent donc différer de ceux demandés. Aucun budget du tout → 404. |
+| **F4** — compte actif **neuf** (aucun budget) | Budget vierge (solde précédent 0), enregistré. |
+| **F4** — écart de k mois (0 ≤ k ≤ **24**) entre M-1 et le dernier budget | Les k mois intermédiaires sont créés (déjà clos, opérations prévues reportées), le dernier budget est clos s'il est actif, puis M est créé. Lectures constantes (le dernier budget, plus une relecture par id avant sa clôture). |
+| **F4** — écart **> 24 mois** | Mois intermédiaires non créés, WARN, le **solde du dernier budget connu est repris** dans M ; le dernier budget n'est ni modifié ni clos. |
+| Budget M existant et actif, erreur Mongo sur M-1 (**mode dégradé, réservé à l'affichage**) | **200** : M est servi avec le `soldeAtFinMoisPrecedent` stocké, log ERROR, **sans enregistrement**. |
+
+Le mode dégradé ne s'applique qu'à l'affichage. Sur un chemin d'écriture (compte destination d'un virement), une erreur Mongo sur M-1 fait échouer l'opération (503) ; une donnée corrompue (500) ou une exception non Mongo remonte dans tous les cas.
+
+### Virement interne (`POST /budgets/v2/{idBudget}/operations/versCompte/{idCompte}`) — ADR-007
+
+Écritures **séquentielles avec compensation**, sans transaction MongoDB ([ADR-007](./adr/007-coherence-virement-ecriture-sequentielle-compensee.md)) : opération source, puis opération cible. Si la cible échoue, la source est compensée (`$pull` en création, `$set` positionnel `listeOperations.$[op]` en modification, `$push` si la ligne a disparu) et l'erreur d'origine est propagée. Un échec de compensation est loggé en ERROR (identifiants source, destination, opération) sans masquer l'erreur d'origine : reprise manuelle.
+
+Gardes, avant toute écriture :
+
+| Cas | Code |
+|---|---|
+| Opération qui n'est pas un virement interne, `etat` absent, ou compte source = compte destination | **400** |
+| Compte destination inconnu (404 du service `comptes` traduit en `DataNotFoundException`) | **404** |
+| Compte destination clos | **406** |
+| Erreur Mongo (y compris sur M-1 du compte destination) | **503**, source compensée |
+
+Limites acceptées : soldes et totaux de la compensation calculés sur l'instantané mémoire (R2) ; clôture de M-1 par relecture puis enregistrement du document entier, sans verrou optimiste (R2 bis, verrou prévu en Phase 4 / T4.2). Voir l'ADR-007.
+
+### Dernier accès utilisateur (`GET /utilisateurs/v2/lastaccessdate`)
+
+- Utilisateur inconnu → **404** (`DataNotFoundException`).
+- Le dernier accès est écrit par un `$set` ciblé sur `dernierAcces` (`majDernierAcces`), **chaîné avant l'émission de la réponse** (l'ancien `.subscribe()` « fire-and-forget » est supprimé). La valeur retournée est la date lue **avant** mise à jour. Un échec d'écriture est loggé en WARN et n'empêche pas la réponse 200.
+
+---
+
 ## 🔄 Intégrations Externes
 
 | Système | Type | Rôle |
 |---|---|---|
-| MongoDB Atlas / DocumentDB | NoSQL | Persistence des données (budgets, opérations, comptes) |
+| MongoDB Atlas | NoSQL | Persistence des données (budgets et leurs opérations, comptes, catégories, utilisateurs) |
 | AWS Lambda | FaaS | Exécution des microservices (binaires natifs) |
 | AWS API Gateway | HTTP | Point d'entrée, routage, X-Api-Key |
 | Google OIDC (discovery + JWKS) | JWT | Authentification utilisateurs, gérée par `quarkus-oidc` |
@@ -355,24 +411,79 @@ Les propriétés `auth-server-url` et timeouts sont limitées aux profils `%dev`
 | Collection | µService | Description |
 |---|---|---|
 | `comptes` | `comptes` | Comptes bancaires par utilisateur |
-| `budgets` | `operations` | Budgets mensuels |
-| `operations` | `operations` | Lignes d'opérations budgétaires |
+| `budgets` | `operations` | Budgets mensuels ; les opérations sont **embarquées** dans le champ `listeOperations` de chaque budget |
 | `categories` | `parametrages` | Catégories et sous-catégories d'opérations |
 | `utilisateurs` | `utilisateurs` | Profils et préférences utilisateurs |
 | `jwks_auth_signing_keys` | `communs` (tous) | Obsolète : clés JWKS Google, plus utilisée pour l'authentification (`quarkus-oidc`) ; drop par le 👤 en Phase 4 |
 | `_migrations` | `communs` (tous) | Suivi d'exécution des migrations MongoDB (voir section [Migrations MongoDB](#-migrations-mongodb)) |
 
+> ℹ️ Il n'existe **pas** de collection `operations` : une opération n'a pas de document propre, elle est une ligne de `budgets.listeOperations`. Les écritures d'opération (ajout, modification, suppression, compensation de virement) sont donc des mises à jour du document `budgets` du mois concerné.
+
+### Identifiant et lecture des budgets
+
+- L'`_id` d'un budget est une chaîne `<idCompte>_<AAAA>_<MM>` (ex. `inglivretA_2014_12`, année sur 4 chiffres, mois sur 2 chiffres) ; en base le champ `mois` est stocké en texte (`DECEMBER`).
+- **Lecture d'un budget** (compte, mois, année) : par `_id` (index natif), sans passer par les champs `idCompteBancaire` / `annee` / `mois`. Aucun repli par champs.
+- **Dernier budget ≤ M** (initialisation d'un mois absent, compte inactif) : une seule requête, égalité sur `idCompteBancaire` **plus** plage d'`_id` (`_id <= <idCompte>_<AAAA>_<MM>` et `_id >= <idCompte>_`), tri `_id` décroissant, premier résultat. L'égalité sur `idCompteBancaire` est nécessaire : deux comptes peuvent partager un préfixe d'`_id` (ex. `a` et `a_1`). Le tri lexical de l'`_id` d'un même compte est chronologique (année et mois de longueur fixe).
+- Les lectures de budgets d'un compte (soldes, surcharge des libellés) sont triées par `_id` croissant.
+- **Libellés connus** (`getLibellesOperations`) : agrégation `$match` → `$unwind $listeOperations` → `$group` côté MongoDB ; la normalisation des libellés reste côté Java.
+
+### Client MongoDB : timeouts et pool
+
+Définis dans le bloc Mongo des 8 `application.properties` (`{comptes,operations,parametrages,utilisateurs}/src/main/resources/{dev,prod}/`) :
+
+| Propriété | Valeur | Rôle |
+|---|---|---|
+| `quarkus.mongodb.server-selection-timeout` | `5S` | Attente maximale d'un serveur disponible |
+| `quarkus.mongodb.connect-timeout` | `3S` | Établissement de la connexion |
+| `quarkus.mongodb.read-timeout` | `8S` | Attente maximale d'une réponse sur la socket |
+| `quarkus.mongodb.max-pool-size` | `10` | Connexions maximales par instance Lambda |
+| `quarkus.mongodb.min-pool-size` | `0` | Aucune connexion maintenue au repos |
+| `quarkus.mongodb.max-connection-idle-time` | `60S` | Fermeture des connexions inactives |
+
+- **`wait-queue-timeout` n'est pas disponible** dans `quarkus-mongodb-client` (Quarkus 3.40.1) : une clé inconnue produit un warning de configuration, elle n'est donc pas posée. Alternative éventuelle : l'option d'URI `waitQueueTimeoutMS` dans la chaîne de connexion (variable d'environnement, hors dépôt).
+- **L'agrégation des libellés n'est bornée que par le `read-timeout` client (8 s)** : aucune limite côté serveur. Un `maxTime` y avait été posé puis retiré : `io.quarkus.mongodb.AggregateOptions.maxTime` est appliqué par `quarkus-mongodb-client` 3.40.1 comme `maxAwaitTime` et n'envoie aucun `maxTimeMS` au serveur (limite inopérante).
+- Le tier du cluster Atlas n'est pas précisé : le pool de 10 connexions est une valeur prudente, non dimensionnée sur un tier.
+
 ---
 
 ## 🔀 Migrations MongoDB
 
-Mécanisme maison (module `communs`, package `migrations/`) — voir [ADR-002](./adr/002-migrations-mongodb-maison.md) pour le détail du choix (Mongock écarté : risque incompatibilité GraalVM native-image).
+Mécanisme maison (module `communs`, package `migrations/`) — voir [ADR-002](./adr/002-migrations-mongodb-maison.md) pour le détail du choix (Mongock écarté : risque incompatibilité GraalVM native-image), complété par [ADR-006](./adr/006-reservation-atomique-migrations-mongodb.md) pour l'exécution concurrente (plusieurs Lambdas qui démarrent en même temps).
 
 - **Déclenchement** : automatique au démarrage de chaque microservice, via `MongoMigrationRunner` (`@ApplicationScoped`, `@Observes StartupEvent`). Migrations découvertes par injection CDI standard (`Instance<IMongoMigration>`), triées par version croissante, exécutées séquentiellement.
 - **Convention de nommage** : `V<numéro sur 3 chiffres>_<description courte>` (ex. `V001_InitMigrationsCollection`, `V002_AjoutIndexComptes`). Numéro unique, strictement croissant, jamais réutilisé ni modifié une fois publié.
 - **Où ajouter une migration** : nouvelle classe `@ApplicationScoped` implémentant `IMongoMigration` dans `communs/src/main/java/.../communs/migrations/scripts/`. `V001_InitMigrationsCollection.java` sert de gabarit.
 - **Idempotence** : obligatoire. Le runner garantit la non ré-exécution d'une migration déjà en statut `SUCCES` (suivi dans la collection `_migrations`), mais le code de chaque migration doit rester défensif (ex. vérifier l'existence d'un index avant de le créer).
-- **Traçabilité** : chaque exécution (succès ou échec) est enregistrée dans `_migrations` (`MigrationRecord` : version, description, date, statut). Une migration en échec est journalisée en erreur mais ne bloque ni le démarrage de l'application ni l'exécution des migrations suivantes.
+- **Traçabilité** : chaque exécution est enregistrée dans `_migrations` (`MigrationRecord` : version, description, date, statut, `owner`). Une migration en échec est journalisée en erreur et ne bloque pas le démarrage de l'application, mais **arrête la chaîne** (voir ci-dessous).
+
+### Réservation atomique par version (ADR-006)
+
+Les 4 services embarquent `communs` et lancent les migrations à chaque cold start : sans verrou, plusieurs Lambdas exécutaient la même version en parallèle, et une version en `ECHEC` ne pouvait plus passer en `SUCCES` (insert en clé dupliquée, rejeu à chaque démarrage).
+
+- **Réservation** : avant d'exécuter la version `V`, le runner la réserve par un `findOneAndUpdate` avec upsert sur `_migrations`. Le filtre ne correspond que si la version est absente, en `ECHEC`, ou en `EN_COURS` avec un bail périmé. Une version en `SUCCES`, ou `EN_COURS` avec un bail valide, produit une erreur de clé dupliquée (E11000) : elle est « déjà prise ».
+- **États** (`MigrationStatutEnum`) : `EN_COURS` (réservée), `SUCCES`, `ECHEC`. Le champ `owner` (UUID du runner, un par instance) identifie le détenteur de la réservation.
+- **Finalisation** : `updateOne({_id, owner})` vers `SUCCES` ou `ECHEC` ; seul le propriétaire peut clore la version. Aucun document trouvé (réservation reprise par un autre runner) → WARN, finalisation ignorée.
+- **Bail** : 5 minutes, calculé avec la `Clock` injectée ([ADR-004](./adr/004-clock-injection-convention.md)) sur `dateExecution`. Une Lambda figée ou interrompue libère donc sa version après 5 minutes.
+- **Arrêt de la chaîne** : les versions sont jouées dans l'ordre ; la chaîne s'arrête pour ce démarrage (les versions suivantes ne sont pas tentées, elles sont reprises au cold start suivant) dans trois cas :
+  1. la migration est en `ECHEC` (la version reste rejouable) ;
+  2. la finalisation `SUCCES` échoue ou ne trouve aucun document (la version reste `EN_COURS` jusqu'à expiration du bail, d'où l'exigence d'idempotence) ;
+  3. la version est tenue (`EN_COURS` valide) par un autre runner.
+
+  La chaîne **continue** si la version est déjà en `SUCCES` (déjà appliquée, ou passée en `SUCCES` par un autre runner entre la lecture initiale et la réservation).
+
+### Migrations existantes
+
+| Version | Contenu |
+|---|---|
+| `V001_InitMigrationsCollection` | No-op : valide le mécanisme et sert de gabarit |
+| `V002_AjoutIndexBudgetsUtilisateurs` | Index `budgets {idCompteBancaire, annee, mois}` et `utilisateurs {login}`, ce dernier **non unique** (un index unique ne sera ajouté qu'après contrôle des doublons en base) |
+
+V002 liste d'abord les index existants et ne crée l'index que si aucun index de même clé (champs, ordre, sens) n'existe, quel que soit son nom : un index créé à la main sur Atlas est reconnu.
+
+### Limites connues
+
+- **Bail non renouvelé** (pas de heartbeat) : une migration qui dure plus de 5 minutes, ou une Lambda figée plus de 5 minutes, permet à une autre instance de reprendre la version et de l'exécuter en parallèle ; le premier propriétaire voit sa finalisation ignorée (WARN). Les migrations doivent rester courtes et idempotentes. Décision 👤 : documenté, pas de renouvellement ; à réévaluer si une migration longue apparaît.
+- **V002 borné par le `read-timeout` (8 s)** : la construction des index n'a pas de timeout dédié. Au-delà de 8 s, la migration passe en `ECHEC` (message explicite) et est rejouée au démarrage suivant ; la construction peut se poursuivre côté serveur, et l'index est alors détecté (création ignorée) au rejeu. Décision 👤 : accepté.
 
 ---
 
@@ -382,7 +493,11 @@ Mécanisme maison (module `communs`, package `migrations/`) — voir [ADR-002](.
 |---|---|---|---|
 | Unitaires (service) | JUnit 5 + Mockito | `src/test/java/` | `mvn test` |
 | Intégration (REST) | @QuarkusTest + REST Assured | `src/test/java/` | `mvn test` |
+| Intégration Mongo (`*MongoTest`) | @QuarkusTest + MongoDB réel (Testcontainers `mongo:7.0`) | `operations`, `utilisateurs` (`src/test/java/`) | `mvn test` (Docker requis) |
+| Intégration Mongo (`communs`) | @QuarkusTest + Dev Services MongoDB | `communs/src/test/java/.../migrations/` | `mvn test` (Docker requis) |
 | Couverture | JaCoCo | `target/jacoco-report/` | `mvn verify -Psonar` |
+
+Les tests `*MongoTest` démarrent leur propre conteneur MongoDB (`MongoDbTestResource`, branché uniquement par le profil de test de la classe, `quarkus.mongodb.devservices.enabled=false`) : ils sont indépendants du profil Maven. Sans Docker, ils échouent (ils ne s'ignorent pas en silence) ; contournement en développement local : `-Dtest='!*MongoTest'`. Les tests Mongo de `communs` (réservation atomique, concurrence de N runners, bail, index V002) s'appuient sur Dev Services.
 
 ```bash
 # Tous les tests du projet
@@ -480,6 +595,8 @@ BusinessTraceContext.getclear()
 5. SonarCloud           → mvn verify -Psonar (sur master uniquement)
 ```
 
+> ℹ️ **Tests `*MongoTest` et builds natifs** : la commande `mvn install -B -P native` des workflows `build-on-master.yml` et `build-on-tags.yml` exclut les `*MongoTest` (`-Dtest='!*MongoTest' -Dsurefire.failIfNoSpecifiedTests=false`) : ils ne sont pas rejoués avant la compilation native. Ils restent exécutés par `build-on-all` et par le job Sonar. Les autres tests d'intégration Mongo de `communs` (`TestMigrationRepository*`) ne sont pas exclus.
+
 ```bash
 # Déploiement manuel (depuis communs/src/aws-deploy/)
 sam deploy --config-file samconfig.template.toml --parameter-overrides \
@@ -527,6 +644,8 @@ mvn clean package -Pnative -Dquarkus.native.container-build=true
 | [003](./adr/003-upgrade-java25-mandrel25.md) | Upgrade Java 25 + Mandrel 25 | Acceptée |
 | [004](./adr/004-clock-injection-convention.md) | Convention d'injection de `Clock` (remplace `.now()` direct) | Acceptée |
 | [005](./adr/005-authentification-jwt-extension-quarkus.md) | Authentification JWT via `quarkus-oidc` (remplace la validation maison) | Acceptée |
+| [006](./adr/006-reservation-atomique-migrations-mongodb.md) | Réservation atomique par version des migrations MongoDB (complète l'ADR-002) | Acceptée |
+| [007](./adr/007-coherence-virement-ecriture-sequentielle-compensee.md) | Cohérence du virement interne : écriture séquentielle compensée, sans transaction MongoDB | Acceptée |
 
 > 💡 Toute nouvelle décision architecturale majeure (nouveau framework, changement de pattern, décision de sécurité) doit faire l'objet d'un ADR délégué à l'agent 🟣 DOCly.
 
