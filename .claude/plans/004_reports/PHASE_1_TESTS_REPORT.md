@@ -101,3 +101,8 @@ Modification temporaire de `MongoMigrationRunner` ligne 136 (`finaliserEchec(...
 
 - **Aucune obligatoire** : avec `MongoDbTestResource`, le job « native snapshot apps » doit repasser vert tant que Docker est disponible sur `ubuntu-latest` (c'est le cas).
 - Optionnel : le job native (`mvn install -P native ...`) rejoue toute la suite unitaire + intégration avant la compilation native, en doublon avec `build-on-all`. Ajouter `-DskipTests` ou `-Dtest='!*MongoTest'` à cette commande gagnerait ~1-2 min par µS et supprimerait la dépendance Docker/Mongo de ce job. À arbitrer (ne pas le faire si on veut un test avant déploiement).
+
+## Décisions 👤 post-T1.3
+
+- **`maxTime` retiré** de `OperationDatabaseAdaptor.getLibellesOperations` (bug `AggregateOptions.maxTime` appliqué comme `maxAwaitTime`). Limite documentée : l'agrégation est bornée par le `quarkus.mongodb.read-timeout=8S` du client uniquement, aucune limite côté serveur. Test `@Disabled` `testGetLibellesOperations_maxTimeServeurEffectivement7Secondes` retiré ; `testGetLibellesOperations_pipelineGroup` adapté (appel sans `AggregateOptions`).
+- **Tests `*MongoTest` exclus des builds natifs** `build-on-master.yml` et `build-on-tags.yml` (commande `mvn install -B -P native` uniquement : `-Dtest='!*MongoTest' -Dsurefire.failIfNoSpecifiedTests=false`). Ils restent joués par `build-on-all` et Sonar. Le point « workflow optionnel » ci-dessus est donc traité pour `*MongoTest` ; les autres tests d'intégration Mongo de `communs` (`TestMigrationRepository*`) ne sont pas exclus.
