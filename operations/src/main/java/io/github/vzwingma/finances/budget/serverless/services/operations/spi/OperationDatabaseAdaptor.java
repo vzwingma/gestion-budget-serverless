@@ -13,7 +13,6 @@ import io.github.vzwingma.finances.budget.services.communs.utils.security.Securi
 import com.mongodb.client.model.PushOptions;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
-import io.quarkus.mongodb.AggregateOptions;
 import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -27,7 +26,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Service de données en MongoDB fournissant les opérations.
@@ -53,15 +51,6 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
     private static final String ATTRIBUT_LISTE_OPERATIONS = "listeOperations";
     private static final String ATTRIBUT_ID_OPERATION = "_id";
     private static final String FILTRE_OPERATION = "op";
-
-    /**
-     * Durée maximale d'exécution côté serveur de l'agrégation des libellés ({@code $unwind}/{@code $group} sur tous
-     * les budgets d'un compte). Volontairement inférieure au {@code quarkus.mongodb.read-timeout} (8 s) : MongoDB
-     * interrompt alors lui-même l'agrégation (erreur {@code MaxTimeMSExpired}) au lieu de la laisser consommer des
-     * ressources après la déconnexion du client.
-     */
-    static final long LIBELLES_MAX_TIME_SECONDES = 7;
-
 
     /**
      * Charge le budget mensuel d'un compte, un mois et une année donnés, par {@code _id} (index natif).
@@ -295,6 +284,10 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
      * <p>
      * Documents retournés : {@code {_id: {libelle, categorieId, ssCategorieId}, n: <nombre d'opérations>}}
      * (un champ absent de l'opération est absent de {@code _id}).
+     * <p>
+     * Limite connue : l'agrégation est bornée uniquement par le {@code quarkus.mongodb.read-timeout=8S} du client ;
+     * aucune limite d'exécution côté serveur (pas de {@code maxTimeMS} : {@code AggregateOptions.maxTime} de
+     * quarkus-mongodb-client 3.40.1 est appliqué comme {@code maxAwaitTime}).
      *
      * @param idCompte id du  compte
      * @return groupes de libellés bruts avec leur compteur
@@ -319,7 +312,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                                                         .append("ssCategorieId", listeOperations + ".ssCategorie._id"))
                                                 .append("n", new Document("$sum", 1)))
                         )
-                        , Document.class, new AggregateOptions().maxTime(LIBELLES_MAX_TIME_SECONDES, TimeUnit.SECONDS));
+                        , Document.class);
     }
 
     /**
