@@ -4,17 +4,18 @@ import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.busin
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 import org.bson.Document;
 import org.bson.types.ObjectId;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,21 +27,30 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * le {@code $set} ne modifie que {@code dernierAcces}, la date relue par le codec est égale à la date écrite, un login
  * inconnu ne crée aucun document.
  * <p>
- * <b>Contrainte Dev Services (module {@code utilisateurs})</b> : {@code src/main/resources/dev/application.properties} déclare
- * {@code quarkus.mongodb.connection-string=${QUARKUS_MONGODB_CONNECTION_STRING:mongodb://localhost:27017}} <em>sans préfixe
- * de profil</em> (contrairement à {@code operations} et {@code comptes} qui utilisent {@code %dev.}). Une chaîne de connexion
- * explicite désactive Quarkus Dev Services : aucun conteneur MongoDB n'est démarré en test. Les {@code application.properties}
- * de test étant partagés (non modifiables ici), ce test est <b>ignoré (assumption)</b> tant que la chaîne de connexion est la
- * valeur par défaut {@code mongodb://localhost:27017}, avec un message explicite. Il s'exécute dès que Dev Services est actif
- * (préfixer la clé par {@code %dev.} dans le fichier dev du module) ou si {@code QUARKUS_MONGODB_CONNECTION_STRING} pointe sur
- * un MongoDB de test.
+ * <b>MongoDB de test</b> : {@code src/main/resources/dev/application.properties} déclare {@code quarkus.mongodb.connection-string}
+ * <em>sans préfixe de profil</em> (contrairement à {@code operations}/{@code comptes} : {@code %dev.}), ce qui désactive Quarkus
+ * Dev Services : aucun conteneur, et le test était ignoré (assumption) en CI. {@link MongoDbTestResource} (Testcontainers)
+ * fournit désormais la chaîne de connexion, Dev Services est désactivé par le {@link TestProfile} : le test s'exécute
+ * réellement quel que soit le profil Maven (Docker requis, donc CI).
  *
  * @author QALvin
  */
 @QuarkusTest
+@TestProfile(UtilisateurDatabaseAdaptorMongoTest.ProfilMongoTestcontainers.class)
 class UtilisateurDatabaseAdaptorMongoTest {
 
-    private static final String CHAINE_PAR_DEFAUT = "mongodb://localhost:27017";
+    /** Désactive Dev Services et branche le MongoDB Testcontainers */
+    public static class ProfilMongoTestcontainers implements QuarkusTestProfile {
+        @Override
+        public Map<String, String> getConfigOverrides() {
+            return Map.of("quarkus.mongodb.devservices.enabled", "false");
+        }
+
+        @Override
+        public List<TestResourceEntry> testResources() {
+            return List.of(new TestResourceEntry(MongoDbTestResource.class));
+        }
+    }
 
     @Inject
     UtilisateurDatabaseAdaptor adaptor;
@@ -50,13 +60,6 @@ class UtilisateurDatabaseAdaptorMongoTest {
 
     @ConfigProperty(name = "quarkus.mongodb.database")
     String nomBase;
-
-    @BeforeEach
-    void verifierMongoDisponible() {
-        String chaine = ConfigProvider.getConfig().getOptionalValue("quarkus.mongodb.connection-string", String.class).orElse(CHAINE_PAR_DEFAUT);
-        Assumptions.assumeFalse(CHAINE_PAR_DEFAUT.equals(chaine),
-                "Dev Services MongoDB inactif dans utilisateurs (quarkus.mongodb.connection-string explicite sans préfixe %dev.) : test d'intégration ignoré");
-    }
 
     private ReactiveMongoCollection<Document> collection() {
         return mongoClient.getDatabase(nomBase).getCollection("utilisateurs");
