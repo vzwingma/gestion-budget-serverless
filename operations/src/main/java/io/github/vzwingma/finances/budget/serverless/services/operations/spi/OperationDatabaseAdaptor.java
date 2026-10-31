@@ -120,7 +120,12 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
 
 
     /**
-     * Retourne le solde et les totaux par catégorie pour un budget mensuel (ou la liste des budgets mensuels) pour un compte et une année donnée
+     * Retourne le solde et les totaux par catégorie pour un budget mensuel (ou la liste des budgets mensuels) pour un compte et une année donnée.
+     * <ul>
+     *     <li>aucun budget : flux vide (pas d'exception, 200 avec liste vide côté HTTP) ;</li>
+     *     <li>erreur technique (MongoException, timeout...) : elle remonte telle quelle, jamais convertie en {@link BudgetNotFoundException}
+     *     (503 côté HTTP via {@code AbstractBDDExceptionsHandler} pour les {@code MongoException}).</li>
+     * </ul>
      * @param idCompte identifiant du compte
      * @param mois mois (facultatif)
      * @param annee année
@@ -144,14 +149,16 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                 .project(ProjectionBudgetSoldes.class)
                 .stream()
                 .onFailure()
-                .transform(e -> {
-                    LOGGER.error("Erreur lors du chargement des budgets de {}", idCompte, e);
-                    return new BudgetNotFoundException("Erreur lors du chargement des budgets " + idCompte);
-                });
+                .invoke(e -> LOGGER.error("Erreur technique lors du chargement des soldes des budgets du compte {}", idCompte, e));
     }
 
     /**
-     * charger l'intervalle des budgets mensuels pour un compte
+     * charger l'intervalle des budgets mensuels pour un compte.
+     * <ul>
+     *     <li>aucun budget : tableau vide (pas d'exception) ;</li>
+     *     <li>erreur technique (MongoException, timeout...) : elle remonte telle quelle, jamais convertie en {@link BudgetNotFoundException}
+     *     (503 côté HTTP via {@code AbstractBDDExceptionsHandler} pour les {@code MongoException}).</li>
+     * </ul>
      * @param idCompte id du compte
      * @return intervalle des budgets mensuels pour un compte
      */
@@ -198,10 +205,7 @@ public class OperationDatabaseAdaptor implements IOperationsRepository {
                     return new Instant[]{minDate, maxDate};
                 })
                 .onFailure()
-                .transform(e -> {
-                    LOGGER.error("Erreur lors du chargement de l'intervalle des budgets du compte {}", idCompte, e);
-                    return new BudgetNotFoundException("Erreur lors du chargement de l'intervalle des budgets du compte " + idCompte);
-                });
+                .invoke(e -> LOGGER.error("Erreur technique lors du chargement de l'intervalle des budgets du compte {}", idCompte, e));
 
     }
 

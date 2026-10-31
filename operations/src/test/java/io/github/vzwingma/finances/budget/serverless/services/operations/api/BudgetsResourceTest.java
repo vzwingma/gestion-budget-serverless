@@ -185,6 +185,43 @@ class BudgetsResourceTest {
     }
 
 
+
+    @Test
+    void testGetBudgetSoldes_erreurMongo_503() {
+        when(budgetService.getSoldesBudgetMensuel(anyString(), any(), any()))
+                .thenReturn(Multi.createFrom().failure(new com.mongodb.MongoTimeoutException("timeout")));
+
+        given()
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
+                .when().get(OperationsAPIEnum.BUDGET_BASE + OperationsAPIEnum.BUDGET_SOLDES + "?idCompte=1&annee=2022")
+                .then()
+                .statusCode(503);
+    }
+
+    @Test
+    void testGetBudgetSoldes_aucunBudget_200() {
+        when(budgetService.getSoldesBudgetMensuel(anyString(), any(), any()))
+                .thenReturn(Multi.createFrom().empty());
+
+        given()
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
+                .when().get(OperationsAPIEnum.BUDGET_BASE + OperationsAPIEnum.BUDGET_SOLDES + "?idCompte=1&annee=2022")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    void testGetIntervalleBudgets_erreurMongo_503() {
+        when(budgetService.getiIntervalleBudgets(anyString()))
+                .thenReturn(Uni.createFrom().failure(new com.mongodb.MongoTimeoutException("timeout")));
+
+        given()
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
+                .when().get(OperationsAPIEnum.BUDGET_BASE + OperationsAPIEnum.BUDGET_INTERVALLES + "?idCompte=1")
+                .then()
+                .statusCode(503);
+    }
+
     @Test
     void testGetBudgetsUtilisateurByParamsKO() {
         // Test
