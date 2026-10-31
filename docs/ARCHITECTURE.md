@@ -287,7 +287,7 @@ Le 500 est réservé aux données corrompues : une indisponibilité de la base e
 
 - Budget **absent** (lecture par `_id`, ou par compte/mois/année) → `BudgetNotFoundException` → **404**.
 - **Erreur Mongo** (timeout, indisponibilité) → remontée telle quelle → **503**. Une erreur technique n'est jamais confondue avec une absence, et **ne déclenche jamais l'initialisation d'un budget vierge** (seule l'absence réelle l'initialise).
-- Exceptions à ce principe, non modifiées par la Phase 1 : `chargeSoldesBudgetMensuel` et `chargeIntervalleBudgets` enveloppent encore toute erreur en `BudgetNotFoundException` (404).
+- Soldes (`GET /budgets/v2/soldes`) et intervalle de budgets (`GET /budgets/v2/intervalles`) : une erreur Mongo remonte → **503** (autre erreur technique → 500) ; l'absence de budget reste un **200 avec une liste vide** (contrat inchangé). Aligné en T1.6 (plan 004), auparavant toute erreur y était renvoyée en 404.
 
 ### Budget d'un compte (`GET /budgets/v2/query`)
 
