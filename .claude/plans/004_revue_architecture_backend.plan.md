@@ -90,7 +90,7 @@ Branche `fix/securite-jwt-lot0` (dépôt serverless), non commitée.
 - **Déclencheur :** à planifier avant le déploiement PROD du Lot 0 (sinon un jeton expiré renvoie une erreur au lieu de déconnecter). Traçabilité : ce plan ou un plan IHM dédié, au choix du 👤.
 - **Acceptation :** `npm run lint`, `npm run typecheck`, `npx vitest run` verts ; couverture ≥ 80 % sur le service.
 
-## Phase 1 — Fiabilité fonctionnelle + MongoDB (Lots 1 et 2, option A) — 🔵 en cours (Gate #1 de phase GO 2026-10-26)
+## Phase 1 — Fiabilité fonctionnelle + MongoDB (Lots 1 et 2, option A) — ✅ clôturée (Gate #4 GO 2026-10-30, T1.6 GO 2026-10-31)
 
 ### Contexte
 Cadrage détaillé ARCos (2026-10-26) sur le code de `master` (e08db1f). Options retenues au Gate #1 de phase :
@@ -216,8 +216,14 @@ db.budgets.aggregate([
 - **ADR-006** « Réservation atomique par version des migrations MongoDB » (complète ADR-002) et **ADR-007** « Cohérence du virement : écriture séquentielle compensée » : créés en `Proposée` sur la branche de Phase 1 dès le lancement ; `Acceptée` au Gate #2 de phase si l'implémentation est conforme.
 - Après le merge de #220 : `docs/ARCHITECTURE.md` (§ Migrations : `EN_COURS`, bail ; § Mongo : timeouts ; correction de la collection `operations` inexistante, les opérations étant stockées dans `budgets.listeOperations`). Mention DocumentDB corrigée **seulement après confirmation 👤** (Q7).
 
-#### T1.5 — Traçabilité IHM (MAINa)
+#### T1.5 — Traçabilité IHM (MAINa) ✅
 - Plan IHM dédié à créer (comme le plan 008) : F3 (404 → 200 avec un budget d'un mois antérieur, `actif=false`), virement (406 destination close, 400 vers soi-même), utilisateur inconnu (404). À synchroniser avec le plan IHM 008 (gestion du 401).
+- **Réalisé :** plan IHM `009_impacts_ihm_phase1_backend.plan.md` (worktree IHM, commit par le 👤), lignes I1 à I6 + I2b/I2c/I2c bis/I2d.
+
+#### T1.6 — Reliquat R5 : soldes et intervalle de budgets (DEVon) ✅
+- **Contexte :** relevé par DOCly en T1.4 — `chargeSoldesBudgetMensuel` et `chargeIntervalleBudgets` enveloppaient encore toute erreur en `BudgetNotFoundException` (404).
+- **Fichier(s) :** `operations/.../spi/OperationDatabaseAdaptor.java` + tests (adaptateur, `BudgetService`, `OperationsService`, `BudgetsResourceTest`).
+- **Réalisé (cfdf0a9, branche `fix/ap004-r5-erreurs-mongo`, PR #226) :** erreur Mongo → remontée → 503 ; autre erreur technique → 500 ; absence → 200 + liste vide (contrat inchangé, décision 👤). +14 tests.
 
 ### Ordre et parallélisation
 ```
@@ -349,6 +355,8 @@ Chaque phase : Gate #2 (code) → Gate #3 (tests) ; Gate #4 global en fin de pla
 | #2 (Phase 1) | 2026-10-30 | 7e passage | ✅ GO | BUILD SUCCESS ; revue sans régression ; `MongoClientException` générique → 503 et repli à 503 validés. Branche poussée par le 👤 |
 | #3 (Phase 1) | 2026-10-30 | Validation tests T1.3 | ✅ GO | Tests d'intégration Mongo réels en CI (Testcontainers `mongo:7.0`) : migrations 9+15+3, operations 19/19, utilisateurs 3/3. `maxTime` inopérant retiré (limite : read-timeout 8 s). `*MongoTest` exclus des builds natifs master/tags (décision 👤). Couverture `OperationDatabaseAdaptor` 77,8 % (Sonar, acceptée) ; autres classes ≥ 84 % |
 | — | 2026-10-30 | Merge et déploiement | ℹ️ | La PR #224 avait été mergée avant le correctif Testcontainers : le natif master était rouge et QUA non déployé. Corrigé par la PR #225 (Sonar OK ; #224 avait échoué sur `new_reliability_rating` = C). **Déploiement QUA anticipé** : la relance du job natif Utilisateurs en échec (`gh run rerun 41076750284 --failed`, échec passager de résolution Maven) a exécuté « Deploy Lambda on QUA » en success **avant le merge** de #225. Même code que celui mergé ensuite (cc787ba). Condition `if:` du job de déploiement à revoir. Q7 : MongoDB Atlas confirmé (tier non précisé) |
+| #4 (Phase 1) | 2026-10-30 | Documentation + clôture Phase 1 | ✅ GO | `ARCHITECTURE.md` (migrations, MongoDB Atlas, collection `operations` corrigée, codes HTTP, CI), ADR-006/007 → `Acceptée`, renvoi ADR-002 → ADR-006 (3da2da2). Wikis backend et IHM modifiés (commit par le 👤). Écart R5 relevé → T1.6 |
+| T1.6 | 2026-10-31 | Mini-gate reliquat R5 | ✅ GO | cfdf0a9 : `/soldes` et `/intervalles` erreur Mongo 404 → 503, autre erreur 404 → 500, absence 200 + `[]` conservée. BUILD SUCCESS, operations 178, 0 échec, +14 tests ; code-review low sans régression ; security : rien. PR #226 (merge par le 👤 après CI, avant la PR docs). **Phase 1 clôturée.** Contrôle QUA (logs `[MIGRATIONS]`, index) reporté par le 👤 |
 
 ### ⚠️ Limites connues (Phase 1)
 
