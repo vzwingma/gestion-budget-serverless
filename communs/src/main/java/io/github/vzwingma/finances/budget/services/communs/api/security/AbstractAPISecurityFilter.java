@@ -49,7 +49,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
             securityContext.setJwtValidatedToken(new JWTAuthToken(new JwtAuthHeader(), payload, true, credential != null ? credential.getToken() : null));
         }
         else {
-            logger.warn("Aucune identité authentifiée. Accès anonyme.");
+            logger.debug("Aucune identité authentifiée. Accès anonyme.");
         }
         if(apiKey == null || apiKey.isEmpty()){
             logger.warn("Clé API non trouvée");
