@@ -5,6 +5,7 @@ import com.mongodb.MongoTimeoutException;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.UpdateResult;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.ProjectionBudgetSoldes;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataOperations;
@@ -25,8 +26,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 
@@ -406,5 +409,84 @@ class OperationDatabaseAdaptorTest {
         assertTrue(group.contains("\"categorieId\": \"$listeOperations.categorie._id\""), group);
         assertTrue(group.contains("\"ssCategorieId\": \"$listeOperations.ssCategorie._id\""), group);
         assertTrue(group.contains("\"n\": {\"$sum\": 1}"), "Compteur d'occurrences : " + group);
+    }
+
+    // ====== R5 : absence vs erreur Mongo (soldes et intervalle des budgets) ======
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private ReactivePanacheQuery<BudgetMensuel> querySoldes(Multi<ProjectionBudgetSoldes> flux) {
+        ReactivePanacheQuery<BudgetMensuel> query = mock(ReactivePanacheQuery.class);
+        ReactivePanacheQuery<Object> projection = mock(ReactivePanacheQuery.class);
+        when(query.project(any())).thenReturn((ReactivePanacheQuery) projection);
+        when(projection.stream()).thenReturn((Multi) flux);
+        return query;
+    }
+
+    @Test
+    void testChargeSoldesBudgetMensuel_nominal() {
+        ProjectionBudgetSoldes projection = new ProjectionBudgetSoldes();
+        projection.setIdCompteBancaire("C1");
+        doReturn(querySoldes(Multi.createFrom().item(projection))).when(adaptor).find(anyString(), any(Sort.class), any(Object[].class));
+
+        List<ProjectionBudgetSoldes> soldes = adaptor.chargeSoldesBudgetMensuel("C1", null, 2026).collect().asList().await().indefinitely();
+
+        assertEquals(1, soldes.size());
+        assertSame(projection, soldes.getFirst());
+    }
+
+    @Test
+    void testChargeSoldesBudgetMensuel_absence_fluxVideSans404() {
+        doReturn(querySoldes(Multi.createFrom().empty())).when(adaptor).find(anyString(), any(Sort.class), any(Object[].class));
+
+        List<ProjectionBudgetSoldes> soldes = adaptor.chargeSoldesBudgetMensuel("C1", null, 2026).collect().asList().await().indefinitely();
+
+        assertTrue(soldes.isEmpty(), "Aucun budget : liste vide (200), pas de BudgetNotFoundException");
+    }
+
+    @Test
+    void testChargeSoldesBudgetMensuel_erreurMongoPropagee() {
+        MongoTimeoutException timeout = new MongoTimeoutException("timeout");
+        doReturn(querySoldes(Multi.createFrom().failure(timeout))).when(adaptor).find(anyString(), any(Sort.class), any(Object[].class));
+
+        Multi<ProjectionBudgetSoldes> soldes = adaptor.chargeSoldesBudgetMensuel("C1", null, 2026);
+
+        assertSame(timeout, assertThrows(MongoTimeoutException.class, () -> soldes.collect().asList().await().indefinitely()),
+                "L'erreur Mongo remonte telle quelle (503), jamais convertie en BudgetNotFoundException (404)");
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void stubAggregation(Multi<Document> resultat) {
+        when(collection.aggregate(any(List.class), eq(Document.class))).thenReturn((Multi) resultat);
+    }
+
+    @Test
+    void testChargeIntervalleBudgets_nominal() {
+        Instant min = Instant.parse("2025-01-01T00:00:00Z");
+        Instant max = Instant.parse("2026-03-01T00:00:00Z");
+        stubAggregation(Multi.createFrom().item(new Document("minDate", Date.from(min)).append("maxDate", Date.from(max))));
+
+        Instant[] intervalle = adaptor.chargeIntervalleBudgets("C1").await().indefinitely();
+
+        assertEquals(2, intervalle.length);
+        assertEquals(min, intervalle[0]);
+        assertEquals(max, intervalle[1]);
+    }
+
+    @Test
+    void testChargeIntervalleBudgets_absence_tableauVideSans404() {
+        stubAggregation(Multi.createFrom().empty());
+
+        assertEquals(0, adaptor.chargeIntervalleBudgets("C1").await().indefinitely().length, "Aucun budget : tableau vide, pas de BudgetNotFoundException");
+    }
+
+    @Test
+    void testChargeIntervalleBudgets_erreurMongoPropagee() {
+        MongoTimeoutException timeout = new MongoTimeoutException("timeout");
+        stubAggregation(Multi.createFrom().failure(timeout));
+
+        Uni<Instant[]> intervalle = adaptor.chargeIntervalleBudgets("C1");
+
+        assertSame(timeout, assertThrows(MongoTimeoutException.class, () -> intervalle.await().indefinitely()),
+                "L'erreur Mongo remonte telle quelle (503), jamais convertie en BudgetNotFoundException (404)");
     }
 }

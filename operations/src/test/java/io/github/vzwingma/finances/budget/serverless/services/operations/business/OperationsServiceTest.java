@@ -224,6 +224,14 @@ class OperationsServiceTest {
     }
 
     @Test
+    void testGetIntervalleBudgets_erreurMongoPropagee() {
+        com.mongodb.MongoTimeoutException timeout = new com.mongodb.MongoTimeoutException("timeout");
+        when(mockOperationDataProvider.chargeIntervalleBudgets("C1")).thenReturn(Uni.createFrom().failure(timeout));
+        Uni<Instant[]> intervalle = operationsAppProvider.getIntervalleBudgets("C1");
+        assertSame(timeout, assertThrows(com.mongodb.MongoTimeoutException.class, () -> intervalle.await().indefinitely()));
+    }
+
+    @Test
     void testCalculSoldesOperationRealisee() {
         BudgetMensuel budget = MockDataBudgets.getBudgetActifCompteC1et1operationPrevue();
         BudgetDataUtils.razCalculs(budget);

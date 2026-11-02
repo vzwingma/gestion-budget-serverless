@@ -1043,6 +1043,42 @@ class BudgetServiceTest {
     }
 
     @Test
+    void testGetSoldesBudgetMensuel_erreurMongoPropagee() {
+        MongoTimeoutException timeout = new MongoTimeoutException("timeout");
+        when(mockOperationDataProvider.chargeSoldesBudgetMensuel(anyString(), any(), any()))
+                .thenReturn(Multi.createFrom().failure(timeout));
+
+        Multi<ProjectionBudgetSoldes> soldes = budgetAppProvider.getSoldesBudgetMensuel("C1", Month.JANUARY, 2022);
+
+        assertSame(timeout, assertThrows(MongoTimeoutException.class, () -> soldes.collect().asList().await().indefinitely()));
+    }
+
+    @Test
+    void testGetSoldesBudgetMensuel_absence_listeVide() {
+        when(mockOperationDataProvider.chargeSoldesBudgetMensuel(anyString(), any(), any()))
+                .thenReturn(Multi.createFrom().empty());
+
+        assertTrue(budgetAppProvider.getSoldesBudgetMensuel("C1", null, null).collect().asList().await().indefinitely().isEmpty());
+    }
+
+    @Test
+    void testGetiIntervalleBudgets_erreurMongoPropagee() {
+        MongoTimeoutException timeout = new MongoTimeoutException("timeout");
+        when(mockOperationDataProvider.chargeIntervalleBudgets(anyString())).thenReturn(Uni.createFrom().failure(timeout));
+
+        Uni<Instant[]> intervalle = budgetAppProvider.getiIntervalleBudgets("C1");
+
+        assertSame(timeout, assertThrows(MongoTimeoutException.class, () -> intervalle.await().indefinitely()));
+    }
+
+    @Test
+    void testGetiIntervalleBudgets_absence_tableauVide() {
+        when(mockOperationDataProvider.chargeIntervalleBudgets(anyString())).thenReturn(Uni.createFrom().item(new Instant[]{}));
+
+        assertEquals(0, budgetAppProvider.getiIntervalleBudgets("C1").await().indefinitely().length);
+    }
+
+    @Test
     void testGetSigningKeyReadRepository() {
         assertNull(budgetAppProvider.getSigningKeyReadRepository());
     }
