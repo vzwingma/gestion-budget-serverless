@@ -3,7 +3,7 @@
 ---
 
 **Date :** 2026-10-26
-**Statut :** Proposée
+**Statut :** Acceptée (Gate #4 du 2026-10-30)
 **Décideurs :** 🟠 ARCos + 👤 Développeur humain
 
 ---
@@ -72,13 +72,13 @@ Mécanisme (option A3) :
 - **Conséquence** : les migrations doivent rester courtes et idempotentes. Les opérations longues (ex. construction d'index sur une grosse collection) sont lancées sans attendre la fin côté client, ou avec un timeout dédié à l'opération.
 - **Ordre garanti** : si une version est réservée par un autre runner, la chaîne s'arrête pour ce démarrage, au lieu de sauter à la version suivante. La reprise se fait au démarrage à froid suivant.
 - **Échec d'écriture du statut final** : un échec d'écriture du statut `SUCCES` n'est pas confondu avec un échec de la migration elle-même. La version reste `EN_COURS` jusqu'à expiration du bail ; elle est ensuite reprise, d'où l'exigence d'idempotence.
-- **Arrêt et poursuite de la chaîne** : la chaîne s'arrête sur un `ECHEC` de migration ou sur un échec de finalisation (correctif en cours de mise en œuvre). Elle continue si la version a été passée en `SUCCES` par un autre runner (E11000 sur une version `SUCCES` : rien à exécuter, passage à la version suivante). Une version `EN_COURS` chez un autre runner arrête la chaîne (voir ci-dessus).
+- **Arrêt et poursuite de la chaîne** : la chaîne s'arrête sur un `ECHEC` de migration ou sur un échec de finalisation (échec d'écriture, ou aucun document finalisé car la réservation a été reprise). Elle continue si la version a été passée en `SUCCES` par un autre runner (E11000 sur une version `SUCCES` : rien à exécuter, passage à la version suivante). Une version `EN_COURS` chez un autre runner arrête la chaîne (voir ci-dessus).
 - **Timeout de V002 (construction d'index)** : la construction des index de V002 reste bornée par `quarkus.mongodb.read-timeout=8S`. Si le délai est dépassé, la migration passe en `ECHEC` et est rejouée au démarrage suivant. Elle est idempotente : un index existant de même clé est ignoré. Côté serveur, la construction peut se poursuivre en arrière-plan. **Décision 👤 du 2026-10-29** (Gate #2, 2e passage, plan 004) : accepté, pas de timeout dédié.
 - **Décision 👤 du 2026-10-26** (Gate #2 de la Phase 1, plan 004) : documenter la limite, sans implémenter de renouvellement. À réévaluer si une migration longue apparaît.
 
 ### Neutres
 - L'[ADR-002](./002-migrations-mongodb-maison.md) **reste Acceptée** : le présent ADR la complète (fiabilité en exécution concurrente) sans la remplacer.
-- `docs/ARCHITECTURE.md` (section Migrations MongoDB) à mettre à jour à l'implémentation.
+- `docs/ARCHITECTURE.md` (section Migrations MongoDB) mise à jour à l'implémentation (Gate #4).
 
 ---
 
@@ -86,7 +86,21 @@ Mécanisme (option A3) :
 
 - **Fichiers impactés** (module `communs`, package `migrations`) : `MongoMigrationRunner.java`, `MigrationRecord.java`, `MigrationRepository.java` (réservation + finalisation), énumération des statuts (ajout `EN_COURS`).
 - **Tâches de suivi** : DEVon — implémenter T1.2a/T1.2b ; QALvin — tests de concurrence (réservation simultanée, E11000, reprise après `ECHEC`, reprise après expiration du bail avec `Clock.fixed`) ; DOCly — mise à jour de `docs/ARCHITECTURE.md`.
-- **Date d'effet** : à partir de la Phase 1 du Plan d'Action 004, sous réserve du `GO` 👤 (passage du statut à `Acceptée`).
+- **Date d'effet** : Phase 1 du Plan d'Action 004. Statut `Acceptée` au Gate #4 du 2026-10-30 (implémentation conforme, Gates #2 et #3 `GO`).
+
+### Note de mise en œuvre
+
+Implémentée sur la branche `feat/ap004-phase1-fiabilite-mongo` (PR #224, correctif de tests PR #225), commits principaux (SHA de la branche, à retrouver par message si l'historique a été réécrit au merge) :
+
+| Commit | Contenu |
+|---|---|
+| `9dd380e` | Réservation atomique (`reserver`, `finaliserSucces` / `finaliserEchec`, état `EN_COURS`, champ `owner`, bail 5 min via `Clock`) et migration V002 (T1.2a, T1.2b) |
+| `34e6ab8` | Arrêt de la chaîne après échec, gestion de l'E11000 concurrent |
+| `dc80a12` | Arrêt de la chaîne si la finalisation `SUCCES` ne trouve aucun document |
+| `eba86c9` | Suppression du WARN en double sur finalisation non persistée |
+| `181f513` | Tests : réservation, bail, V002, concurrence réelle de N runners (T1.3) |
+
+Écarts par rapport au texte initial : l'arrêt de chaîne sur `ECHEC` / échec de finalisation et la poursuite sur une version déjà en `SUCCES` ont été précisés aux Gates #2 ; V002 est borné par le `read-timeout` sans timeout dédié (voir « Limites connues »). Détail : [rapport de phase](../../.claude/plans/004_reports/PHASE_1_COMPLETION_REPORT.md).
 
 ---
 

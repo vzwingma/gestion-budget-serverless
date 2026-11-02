@@ -3,7 +3,7 @@
 ---
 
 **Date :** 2026-07-07
-**Statut :** Acceptée
+**Statut :** Acceptée (complétée par [ADR-006](./006-reservation-atomique-migrations-mongodb.md) : réservation atomique par version, exécution concurrente multi-Lambda)
 **Décideurs :** 🟠 ARCos + 👤 Développeur humain
 
 ---
@@ -52,7 +52,7 @@ Contrainte structurante du projet : les 4 microservices (`comptes`, `operations`
 - Compatible nativement avec GraalVM/Mandrel : aucun hint de réflexion à maintenir par migration (seul `MigrationRecord` porte `@RegisterForReflection`, une fois pour toutes).
 - Mécanisme simple à comprendre et à étendre : ajouter une migration = ajouter une classe CDI dans `communs/.../migrations/scripts/`.
 - Idempotence garantie au niveau du runner : une migration déjà en statut `SUCCES` n'est jamais rejouée.
-- Échec explicite et non bloquant : une migration en échec est journalisée en erreur mais n'empêche pas le démarrage de l'application ni l'exécution des migrations suivantes.
+- Échec explicite et non bloquant pour le démarrage : une migration en échec est journalisée en erreur mais n'empêche pas le démarrage de l'application. *(Précisé par l'[ADR-006](./006-reservation-atomique-migrations-mongodb.md) : la chaîne s'arrête sur un échec, les versions suivantes ne sont pas exécutées avant la reprise de la version en échec.)*
 
 ### Négatives / Compromis
 - Moins de tooling qu'un outil dédié : pas de rollback automatique, pas d'UI d'administration, pas de dry-run — ces besoins devront être développés manuellement si nécessaires.

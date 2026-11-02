@@ -3,7 +3,7 @@
 ---
 
 **Date :** 2026-10-26
-**Statut :** Proposée
+**Statut :** Acceptée (Gate #4 du 2026-10-30)
 **Décideurs :** 🟠 ARCos + 👤 Développeur humain
 
 ---
@@ -84,7 +84,8 @@ Règles :
 - **R2 bis — écriture concurrente sur M-1 lors de la clôture** — décision 👤 du 2026-10-29 (Gate #2, 6e passage, plan 004) : la clôture de M-1 relit le document juste avant de le clore, puis l'enregistre en entier (sans champ de version). Une écriture concurrente sur M-1 entre la relecture et l'enregistrement reste possible et serait écrasée. Fenêtre réduite, risque accepté. Correction prévue par un verrou optimiste en Phase 4 / T4.2.
 
 ### Neutres
-- Mise à jour de la documentation d'API (wiki serverless, `Conception-globale.md`) et de `docs/ARCHITECTURE.md` si le contrat de réponse du virement est modifié.
+- Documentation mise à jour au Gate #4 : `docs/ARCHITECTURE.md` (section « Codes HTTP et gestion des erreurs ») et wiki serverless (`Conception-globale.md`).
+- Impact IHM des codes 406 / 400 / 404 tracé dans le plan IHM 009 (en attente).
 
 ---
 
@@ -92,7 +93,22 @@ Règles :
 
 - **Fichiers impactés** : `operations/.../business/BudgetService.java` (méthode de virement, environ lignes 502-568) et ses tests.
 - **Tâches de suivi** : DEVon — implémenter T1.1d (séquentiel, compensation, propagation d'erreurs, gardes) ; QALvin — tests nominal, échec cible avec compensation réussie, échec de compensation (log `ERROR`), gardes 406 / 400 ; DOCly — mise à jour wiki/architecture ; MAINa — plan IHM pour l'impact des gardes.
-- **Date d'effet** : à partir de la Phase 1 du Plan d'Action 004, sous réserve du `GO` 👤 (passage du statut à `Acceptée`).
+- **Date d'effet** : Phase 1 du Plan d'Action 004. Statut `Acceptée` au Gate #4 du 2026-10-30 (implémentation conforme, Gates #2 et #3 `GO`).
+
+### Note de mise en œuvre
+
+Implémentée sur la branche `feat/ap004-phase1-fiabilite-mongo` (PR #224, correctif de tests PR #225), commits principaux (SHA de la branche, à retrouver par message si l'historique a été réécrit au merge) :
+
+| Commit | Contenu |
+|---|---|
+| `c86abc6` | Virement séquentiel avec compensation, un seul `getCompteById`, propagation des erreurs, gardes 406 / 400 (T1.1d) |
+| `012dee5` | Compensation ciblée (`$pull`, `$set` positionnel, port `IOperationsRepository.compenseOperation`), 404 pour un compte destination inconnu |
+| `7304d6c` | Compensation avec ligne supprimée en concurrence (`$push`) et identifiant d'opération garanti |
+| `4e7d639` | Virement sans `etat` refusé en 400 avant toute écriture, compensation fiabilisée |
+| `37988e6` | Relecture de M-1 avant clôture, `DonneeCorrompueException` (500), R5 (absence 404 / erreur Mongo 503) |
+| `bfa9b4e` | Mode dégradé réservé à l'affichage : une erreur technique sur M-1 du compte destination fait échouer le virement (503) et compense la source |
+
+Écarts par rapport au texte initial : la compensation est ciblée et non plus une réécriture du budget entier ; la garde 400 couvre aussi `etat == null` ; le compte destination inconnu donne un 404. Les limites R2 et R2 bis sont documentées dans « Limites connues ». Détail : [rapport de phase](../../.claude/plans/004_reports/PHASE_1_COMPLETION_REPORT.md).
 
 ---
 
