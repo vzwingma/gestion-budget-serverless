@@ -26,6 +26,11 @@ final class JwtTestSupport {
 
     private static final PrivateKey PRIVATE_KEY = loadPrivateKey();
 
+    /** @return la clé privée de test (utilisée par OidcTokenForge pour forger des jetons arbitraires) */
+    static PrivateKey privateKey() {
+        return PRIVATE_KEY;
+    }
+
     private JwtTestSupport() { }
 
     private static PrivateKey loadPrivateKey() {
