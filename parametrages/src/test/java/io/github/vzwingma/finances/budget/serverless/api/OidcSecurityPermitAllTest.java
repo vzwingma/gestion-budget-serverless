@@ -68,7 +68,7 @@ class OidcSecurityPermitAllTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {INFO, CATEGORIES})
+    @ValueSource(strings = {CATEGORIES})
     void permitAll_jetonInvalide_401_authProactive(String url) {
         // Comportement accepté (décision 👤) : un jeton invalide est refusé même sur @PermitAll
         assertEquals(401, status(url, "Bearer null"), "Bearer null : " + url);
@@ -77,6 +77,13 @@ class OidcSecurityPermitAllTest {
                 OidcTokenForge.otherPrivateKey()))), "autre clé : " + url);
         assertEquals(401, status(url, OidcTokenForge.bearer(OidcTokenForge.unsigned(OidcTokenForge.rs256Header(), OidcTokenForge.validClaims()))),
                 "non signé : " + url);
+    }
+
+    @Test
+    void info_jetonInvalide_200_tenantInfoPublic() {
+        // AP005 / ADR-008 : /_info traité en anonyme (tenant OIDC info-public désactivé). Tests complets : AP005 T2.3
+        assertEquals(200, status(INFO, "Bearer null"));
+        assertEquals(200, status(INFO, "Bearer a.b.c"));
     }
 
     @Test
@@ -97,6 +104,6 @@ class OidcSecurityPermitAllTest {
     void permitAll_emailVerifiedFalse_401() {
         Map<String, Object> claims = OidcTokenForge.validClaims();
         claims.put("email_verified", false);
-        assertEquals(401, status(INFO, OidcTokenForge.bearer(OidcTokenForge.valid(claims))));
+        assertEquals(401, status(CATEGORIES, OidcTokenForge.bearer(OidcTokenForge.valid(claims))));
     }
 }
