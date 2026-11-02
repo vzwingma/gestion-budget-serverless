@@ -8,6 +8,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.UriInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +42,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
     @Override
     public void filter(ContainerRequestContext requestContext) {
         String apiKey = requestContext.getHeaders().getFirst(HTTP_HEADER_API_KEY);
+        boolean isInfoPath = isInfoPath(requestContext);
 
         if (identity != null && !identity.isAnonymous()) {
             AccessTokenCredential credential = identity.getCredential(AccessTokenCredential.class);
@@ -49,14 +51,32 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
             securityContext.setJwtValidatedToken(new JWTAuthToken(new JwtAuthHeader(), payload, true, credential != null ? credential.getToken() : null));
         }
         else {
-            logger.debug("Aucune identité authentifiée. Accès anonyme.");
+            if (isInfoPath) {
+                logger.debug("Aucune identité authentifiée. Accès anonyme.");
+            } else {
+                logger.warn("Aucune identité authentifiée. Accès anonyme.");
+            }
         }
         if(apiKey == null || apiKey.isEmpty()){
-            logger.warn("Clé API non trouvée");
+            if (isInfoPath) {
+                logger.debug("Clé API non trouvée");
+            } else {
+                logger.warn("Clé API non trouvée");
+            }
         }
         else {
             securityContext.setApiKey(apiKey);
         }
         // Le SecurityContext JAX-RS reste celui de Quarkus (SecurityIdentity, @RolesAllowed) : ne pas le surcharger
+    }
+
+    /**
+     * @param requestContext requête
+     * @return true si le chemin de la requête se termine par {@code /_info} (endpoint public, accès anonyme attendu)
+     */
+    private static boolean isInfoPath(ContainerRequestContext requestContext) {
+        UriInfo uriInfo = requestContext.getUriInfo();
+        String path = uriInfo != null ? uriInfo.getPath() : null;
+        return path != null && path.endsWith(InfoPublicTenantResolver.INFO_PATH_SUFFIX);
     }
 }
