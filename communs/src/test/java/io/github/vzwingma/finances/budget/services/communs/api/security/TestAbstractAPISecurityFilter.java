@@ -6,10 +6,16 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.UriInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -103,5 +109,66 @@ class TestAbstractAPISecurityFilter {
         headers.add(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "");
         filter.filter(request);
         assertNull(securityContext.getApiKey());
+    }
+
+    // ---------- niveau de log selon le chemin (ADR-008) ----------
+
+    private List<LogRecord> logsPour(String path) {
+        UriInfo uriInfo = mock(UriInfo.class);
+        when(uriInfo.getPath()).thenReturn(path);
+        when(request.getUriInfo()).thenReturn(uriInfo);
+        filter.identity = QuarkusSecurityIdentity.builder().setAnonymous(true).build();
+
+        List<LogRecord> records = new ArrayList<>();
+        Handler handler = new Handler() {
+            @Override
+            public void publish(LogRecord r) {
+                records.add(r);
+            }
+
+            @Override
+            public void flush() {
+                // rien à vider
+            }
+
+            @Override
+            public void close() {
+                // rien à fermer
+            }
+        };
+        java.util.logging.Logger jul = java.util.logging.Logger.getLogger(AbstractAPISecurityFilter.class.getName());
+        Level previous = jul.getLevel();
+        jul.setLevel(Level.ALL);
+        jul.addHandler(handler);
+        try {
+            filter.filter(request);
+        } finally {
+            jul.removeHandler(handler);
+            jul.setLevel(previous);
+        }
+        return records;
+    }
+
+    private static Level levelOf(List<LogRecord> records, String fragment) {
+        return records.stream().filter(r -> r.getMessage().contains(fragment)).map(LogRecord::getLevel).findFirst().orElse(null);
+    }
+
+    @Test
+    void cheminInfo_anonymeEtCleApiAbsente_debug() {
+        List<LogRecord> records = logsPour("comptes/v2/_info");
+        assertEquals(Level.FINE, levelOf(records, "Accès anonyme"));
+        assertEquals(Level.FINE, levelOf(records, "Clé API non trouvée"));
+    }
+
+    @Test
+    void autreChemin_anonymeEtCleApiAbsente_warn() {
+        List<LogRecord> records = logsPour("comptes/v2/tous");
+        assertEquals(Level.WARNING, levelOf(records, "Accès anonyme"));
+        assertEquals(Level.WARNING, levelOf(records, "Clé API non trouvée"));
+    }
+
+    @Test
+    void cheminFinissantParInfoPublic_anonyme_warn() {
+        assertEquals(Level.WARNING, levelOf(logsPour("parametres/v2/categories/info-public"), "Accès anonyme"));
     }
 }
