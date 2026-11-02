@@ -1,7 +1,7 @@
 # Plan d'Action 005 — `/_info` public, lisible même avec un jeton invalide
 
 **Date création :** 2026-10-29
-**Statut :** ⏳ Planifié — en attente Gate #1
+**Statut :** 🔵 En cours — Gate #1 GO, Phase 1 (DEVon) lancée le 2026-11-02 après le merge de la Phase 1 du plan 004 (#224, #225, #226) et le rebase sur master (37fdbd7)
 **Porteur :** ⚫ MAINa
 **Branche :** `feat/info-endpoint-public` (depuis `origin/master` 655fcfb, sans upstream ; push avec `git push -u origin feat/info-endpoint-public` après accord 👤)
 **ADR liés :** [ADR-008 — Endpoint `/_info` public via tenant OIDC désactivé](../../docs/adr/008-endpoint-info-public-tenant-oidc-desactive.md) (`Proposée`) · ADR-005 (authentification `quarkus-oidc`, renvoi à ajouter)
@@ -128,4 +128,4 @@ Phase 1 au GO du Gate #1. Tests et doc ensuite. Merge après celui de la Phase 1
 | Gate | Date | Objet | Décision | Notes |
 |---|---|---|---|---|
 | #0 | 2026-10-29 | Choix de solution (ARCos) | ✅ GO | Option C (tenant `info-public` désactivé). GET catégories gardent 401 ; jeton valide ignoré sur `/_info` accepté ; log « Accès anonyme » en DEBUG ; Phase 1 plan 004 mergée d'abord ; plan 005 / ADR-008 |
-| #1 | — | Validation plan + ADR-008 `Proposée` | ⏳ En attente 👤 | |
+| #1 | 2026-10-29 | Validation plan + ADR-008 | ✅ GO | ADR-008 → `Acceptée`. Exécution séquentielle après la Phase 1 du plan 004 (décision 👤). Branche rebasée sur master 37fdbd7 le 2026-11-02 (conflit trivial sur l'index des plans résolu) |
