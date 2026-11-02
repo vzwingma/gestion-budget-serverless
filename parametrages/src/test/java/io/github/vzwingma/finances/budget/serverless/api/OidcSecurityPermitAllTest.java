@@ -23,10 +23,14 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests de sécurité des endpoints {@code @PermitAll} (AP004 T0.5), module parametrages.
- * Comportement accepté (décision 👤 Gate #2) : sans jeton => accessible (200) ; avec jeton invalide => 401
- * (authentification proactive de quarkus-oidc, y compris sur {@code @PermitAll}) ; avec jeton valide => 200.
- * Endpoints : {@code GET /params/v2/_info} et {@code GET /params/v2/categories} (tous deux {@code @PermitAll}).
+ * Tests de sécurité des endpoints {@code @PermitAll} (AP004 T0.5, AP005 T2.3), module parametrages.
+ * Comportement accepté (décision 👤 Gate #2 AP004, amendée par ADR-008 / AP005) :
+ * <ul>
+ *   <li>{@code GET /parametres/v2/categories} ({@code @PermitAll}) : sans jeton => 200 ; jeton invalide => 401
+ *   (authentification proactive de quarkus-oidc, y compris sur {@code @PermitAll}) ; jeton valide => 200 ;</li>
+ *   <li>{@code GET /parametres/v2/_info} ({@code @PermitAll}) : 200 quel que soit le jeton (tenant OIDC {@code info-public}
+ *   désactivé sélectionné par {@code InfoPublicTenantResolver}, ADR-008 amendé).</li>
+ * </ul>
  */
 @QuarkusTest
 class OidcSecurityPermitAllTest {
@@ -81,9 +85,19 @@ class OidcSecurityPermitAllTest {
 
     @Test
     void info_jetonInvalide_200_tenantInfoPublic() {
-        // AP005 / ADR-008 : /_info traité en anonyme (tenant OIDC info-public désactivé). Tests complets : AP005 T2.3
-        assertEquals(200, status(INFO, "Bearer null"));
-        assertEquals(200, status(INFO, "Bearer a.b.c"));
+        // AP005 / ADR-008 : /_info traité en anonyme (tenant OIDC info-public désactivé), contrairement à CATEGORIES (401)
+        assertEquals(200, status(INFO, "Bearer null"), "Bearer null : " + INFO);
+        assertEquals(200, status(INFO, "Bearer a.b.c"), "mal formé : " + INFO);
+        assertEquals(200, status(INFO, OidcTokenForge.bearer(OidcTokenForge.sign(OidcTokenForge.rs256Header(), OidcTokenForge.validClaims(),
+                OidcTokenForge.otherPrivateKey()))), "autre clé : " + INFO);
+        assertEquals(200, status(INFO, OidcTokenForge.bearer(OidcTokenForge.unsigned(OidcTokenForge.rs256Header(), OidcTokenForge.validClaims()))),
+                "non signé : " + INFO);
+    }
+
+    @Test
+    void categories_jetonInvalide_401_pasAnonyme() {
+        // Garde-fou : la désactivation du tenant ne concerne que /_info, pas les autres @PermitAll
+        assertEquals(401, status(CATEGORIES, "Bearer null"));
     }
 
     @Test
