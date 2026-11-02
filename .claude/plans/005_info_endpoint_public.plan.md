@@ -129,3 +129,4 @@ Phase 1 au GO du Gate #1. Tests et doc ensuite. Merge après celui de la Phase 1
 |---|---|---|---|---|
 | #0 | 2026-10-29 | Choix de solution (ARCos) | ✅ GO | Option C (tenant `info-public` désactivé). GET catégories gardent 401 ; jeton valide ignoré sur `/_info` accepté ; log « Accès anonyme » en DEBUG ; Phase 1 plan 004 mergée d'abord ; plan 005 / ADR-008 |
 | #1 | 2026-10-29 | Validation plan + ADR-008 | ✅ GO | ADR-008 → `Acceptée`. Exécution séquentielle après la Phase 1 du plan 004 (décision 👤). Branche rebasée sur master 37fdbd7 le 2026-11-02 (conflit trivial sur l'index des plans résolu) |
+| #2 | 2026-11-02 | Validation code Phase 1 | 🔧 AJUSTER | Décisions 👤 : (1) `TenantResolver` dans `communs` limitant `info-public` à `/_info` (renvoie `Default` ailleurs, `null` insuffisant) ; (2) logs anonyme / clé API en DEBUG pour `/_info` seulement, WARN ailleurs ; (3) QALvin T2.1 ×4 (variantes de chemin).

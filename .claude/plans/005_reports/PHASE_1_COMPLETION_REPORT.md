@@ -50,3 +50,33 @@
 
 ## Synthèse
 Tâches 4/4. Prochaine phase : Phase 2 QALvin après Gate #2.
+
+
+## Ajustement Gate #2 (2026-11-02, décision 👤 AJUSTER)
+
+**Faille corrigée.** La résolution statique de quarkus-oidc (`StaticTenantResolver.DefaultStaticTenantResolver`) sélectionne le tenant statique dont l'identifiant égale un segment quelconque du chemin. `/parametres/v2/categories/info-public` ou `/comptes/v2/info-public` partaient donc vers le tenant désactivé : jeton non validé.
+
+**Correctif.**
+- `InfoPublicTenantResolver` (`communs`, `@ApplicationScoped`) : `info-public` si le chemin normalisé finit par `/_info`, sinon `"Default"`.
+- Pourquoi `"Default"` et non `null` (sources quarkus-oidc 3.40.1.1) : le resolver custom est consulté en premier (`StaticTenantResolver` groupe 1) ; un `null` fait continuer sur `tenant-paths` puis sur `DefaultStaticTenantResolver` (groupe 2), qui matche le segment. `"Default"` = `OidcUtils.DEFAULT_TENANT_ID` : non nul, il court-circuite ces résolutions et `getStaticTenantContext` retombe sur le tenant par défaut.
+- Bean découvert par les 4 modules : `communs` est indexé (`META-INF/jandex.idx`, jandex-maven-plugin du pom racine).
+- `tenant-enabled=false` et `tenant-paths` conservés (défense en profondeur, cohérence ADR) ; `tenant-paths` est redondant.
+- Logs `AbstractAPISecurityFilter` : « Accès anonyme » et « Clé API non trouvée » en DEBUG si le chemin finit par `/_info`, WARN sinon.
+
+**Tests ajoutés.**
+- `TestInfoPublicTenantResolver` (communs, 14 cas) ; 3 tests de niveau de log dans `TestAbstractAPISecurityFilter`.
+- `InfoPublicTenantNonRegressionTest` comptes (`/comptes/v2/info-public` : jeton valide 200 avec identité transmise, jeton invalide 401, sans jeton 401) et parametrages (`/parametres/v2/categories/info-public` : jeton invalide 401, sans jeton 200, jeton valide 200).
+
+**Preuve de la faille.** Resolver rendu temporairement à `null` hors `/_info` : `comptes...idInfoPublic_jetonValide_authentifie_pasAnonyme` et `parametrages...idInfoPublic_jetonInvalide_401` échouent (200 au lieu de 401 ; identité non transmise). Avec `"Default"` : verts.
+
+**Preuves build.** `mvn clean install -Dmaven.test.failure.ignore=true -Dtest='!*MongoTest' -Dsurefire.failIfNoSpecifiedTests=false` : BUILD SUCCESS.
+
+| Module | Tests | Échecs | Erreurs |
+|---|---|---|---|
+| communs | 244 | 0 | 13 (`TestMigrationRepository*`, MongoTimeout, pas de Docker : préexistant) |
+| parametrages | 38 | 0 | 0 |
+| utilisateurs | 50 | 0 | 0 |
+| comptes | 117 | 0 | 0 |
+| operations | 178 | 0 | 0 |
+
+**À reporter par QALvin (T2.1 ×4)** : variantes `/_info/`, `/_info;x`, casse, double slash en e2e.
