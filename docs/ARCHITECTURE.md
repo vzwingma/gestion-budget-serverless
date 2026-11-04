@@ -364,22 +364,45 @@ Les propriétés `auth-server-url` et timeouts sont limitées aux profils `%dev`
 - claim `email` requis (non vide) et `email_verified` = `true` (booléen ou chaîne `"true"`, les deux formes étant émises par Google) ;
 - rôles applicatifs (`app.security.roles`, défaut `USER_COMPTES,USER_OPERATIONS,USER_UTILISATEURS`) attribués à **tout utilisateur authentifié** (pas de contrôle de propriété ni de rôle admin : hors périmètre, second temps).
 
-`AbstractAPISecurityFilter` ne décode plus le jeton : il expose l'identité validée (email, jeton brut pour la propagation inter-µServices par `RequestJWTHeaderFactory`) et l'`X-Api-Key`.
+`AbstractAPISecurityFilter` ne décode plus le jeton : il expose l'identité validée (email, jeton brut pour la propagation inter-µServices par `RequestJWTHeaderFactory`) et l'`X-Api-Key`. Les logs « Aucune identité authentifiée. Accès anonyme. » et « Clé API non trouvée » sont en **DEBUG** pour un chemin finissant par `/_info` (accès anonyme attendu), en **WARN** ailleurs.
 
 ### Retiré du chemin d'authentification
 
-`JWTUtils`, le cache et la collection Mongo `jwks_auth_signing_keys`, le refresh des clés JWKS via `/_info` (`parametrages`) et `IJwtSigningKeyService` ne sont plus utilisés pour authentifier. Le code est **conservé jusqu'à la Phase 4** (suppression par le 👤) : inventaire dans [`PHASE_4_SUPPRESSIONS_A_FAIRE.md`](../.claude/plans/004_reports/PHASE_4_SUPPRESSIONS_A_FAIRE.md). `/_info` garde le même contrat (JSON, 200).
+`JWTUtils`, le cache et la collection Mongo `jwks_auth_signing_keys`, le refresh des clés JWKS via `/_info` (`parametrages`) et `IJwtSigningKeyService` ne sont plus utilisés pour authentifier. Le code est **conservé jusqu'à la Phase 4** (suppression par le 👤) : inventaire dans [`PHASE_4_SUPPRESSIONS_A_FAIRE.md`](../.claude/plans/004_reports/PHASE_4_SUPPRESSIONS_A_FAIRE.md). `/_info` garde le même contrat (JSON, 200), désormais quel que soit le jeton (voir ci-dessous).
 
 ### Codes HTTP d'authentification
 
 | Situation | Code |
 |---|---|
 | Jeton absent, invalide, expiré, mal signé, issuer/audience/email refusé (endpoints `@RolesAllowed`) | **401** (auparavant 403) |
+| `/_info` (4 services) quel que soit le jeton : absent, invalide, expiré, `Bearer null`, valide (ignoré, requête anonyme) | **200** ([ADR-008](./adr/008-endpoint-info-public-tenant-oidc-desactive.md)) |
+| `/_info/`, `/_info;x`, `/_INFO` **avec** jeton invalide (tenant par défaut, échec fermé) | **401** |
 | Endpoint `@PermitAll` **sans** jeton | 200 |
-| Endpoint `@PermitAll` **avec** jeton invalide (authentification proactive) | **401** |
+| Endpoint `@PermitAll` **avec** jeton invalide, hors `/_info` (ex. GET catégories de `parametrages`, authentification proactive) | **401** (inchangé) |
+| `/parametres/v2/categories/_info` (`@PermitAll`, chemin finissant par `/_info`) | **200** sans validation de jeton (figé par un test) |
 | JWKS / discovery Google injoignable | **500** (limite connue, voir ci-dessous) |
 
-> ⚠️ Le passage 403 → 401 impacte l'IHM (déconnexion sur 401) : plan IHM `008_gestion_401_auth_oidc_backend`, **prérequis bloquant avant la PROD**.
+Les endpoints protégés (`@RolesAllowed`) sont inchangés.
+
+> ⚠️ Le passage 403 → 401 impacte l'IHM (déconnexion sur 401) : plan IHM `008_gestion_401_auth_oidc_backend`, **prérequis bloquant avant la PROD**. Depuis l'ADR-008, `/_info` ne renvoie plus 401 : la page Infos ne déconnecte plus ; seules les catégories `@PermitAll` gardent 401 avec un jeton invalide.
+
+### `/_info` public : tenant `info-public` (ADR-008)
+
+Avec l'authentification proactive de `quarkus-oidc`, tout jeton présent est validé avant l'autorisation, même sur `@PermitAll`. Pour que `/_info` (nom, version, description fixe : rien de sensible) reste lisible avec un jeton invalide, un tenant OIDC nommé `info-public` est déclaré dans les `application.properties` (`{dev,prod}` et test) de chaque service :
+
+| Propriété | Valeur | Rôle |
+|---|---|---|
+| `quarkus.oidc.info-public.tenant-enabled` | `false` | Tenant désactivé : requête traitée en anonyme, `@PermitAll` s'applique |
+| `quarkus.oidc.info-public.tenant-paths` | `<BASE>/_info` (`/comptes/v2`, `/budgets/v2`, `/parametres/v2`, `/utilisateurs/v2`) | Lie le tenant au seul chemin `/_info` |
+
+`InfoPublicTenantResolver` (`communs/.../api/security/`, bean `@ApplicationScoped` découvert par les 4 services) renvoie `info-public` si `normalizedPath()` se termine par `/_info`, et `Default` (tenant par défaut) dans tous les autres cas.
+
+- **Pourquoi pas `null`** : `null` laisse la chaîne continuer sur `tenant-paths` puis sur la résolution statique par **dernier segment** de chemin, qui sélectionne le tenant dont le nom égale ce segment. Une URL finissant par `/info-public` (ex. `/parametres/v2/categories/info-public`) partirait alors vers le tenant désactivé, jeton non validé. `Default`, non nul, court-circuite ces résolutions.
+- **`tenant-enabled=false` redondant** avec le resolver : le tenant `info-public` n'a pas d'`auth-server-url` et ne valide donc aucun jeton. Conservé en défense en profondeur et comme documentation.
+- **Risque** : un second bean `TenantResolver` fait échouer le démarrage (`IllegalStateException`, visible).
+- **Verrouillé par des tests** : `TestInfoPublicTenantResolver`, `InfoEndpointPublicTest` ×4, `InfoPublicTenantNonRegressionTest` (`comptes`, `parametrages`), `ProtectedEndpointNonRegressionTest`.
+
+> ⚠️ **À revérifier à chaque montée de version de `quarkus-oidc`** (ordre des resolvers, comportement « tenant désactivé → identité nulle »). Validé sur Quarkus 3.40.1.1.
 
 ### Limites connues
 
@@ -646,6 +669,7 @@ mvn clean package -Pnative -Dquarkus.native.container-build=true
 | [005](./adr/005-authentification-jwt-extension-quarkus.md) | Authentification JWT via `quarkus-oidc` (remplace la validation maison) | Acceptée |
 | [006](./adr/006-reservation-atomique-migrations-mongodb.md) | Réservation atomique par version des migrations MongoDB (complète l'ADR-002) | Acceptée |
 | [007](./adr/007-coherence-virement-ecriture-sequentielle-compensee.md) | Cohérence du virement interne : écriture séquentielle compensée, sans transaction MongoDB | Acceptée |
+| [008](./adr/008-endpoint-info-public-tenant-oidc-desactive.md) | Endpoint `/_info` public : tenant OIDC `info-public` désactivé par chemin + `InfoPublicTenantResolver` (complète l'ADR-005) | Acceptée (amendée le 2026-11-02) |
 
 > 💡 Toute nouvelle décision architecturale majeure (nouveau framework, changement de pattern, décision de sécurité) doit faire l'objet d'un ADR délégué à l'agent 🟣 DOCly.
 
