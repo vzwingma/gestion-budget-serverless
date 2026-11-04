@@ -75,4 +75,18 @@ class ProtectedEndpointNonRegressionTest {
                 .then().extract().statusCode());
         verify(budgetServiceMock, never()).getBudgetMensuel(anyString());
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "Bearer a.b.c"})
+    void idOperationInfo_ressourceProtegee_401_pasPublic(String authorization) {
+        // Grep des ressources (AP005 T2.1/T2.2) : seule route @RolesAllowed se terminant par {param} sous /budgets/v2 = /{idBudget}/operations/{idOperation}.
+        // Avec idOperation="_info" le chemin finit par /_info => tenant info-public (anonyme) : l'accès doit rester refusé par @RolesAllowed, jamais 200.
+        var requete = given();
+        if (!authorization.isEmpty()) {
+            requete = requete.header(HttpHeaders.AUTHORIZATION, authorization);
+        }
+        assertEquals(401, requete.when().delete(OperationsAPIEnum.BUDGET_BASE + "/budget-test/operations/_info").then().extract().statusCode(),
+                "DELETE .../operations/_info ne doit pas devenir public");
+        verify(budgetServiceMock, never()).getBudgetMensuel(anyString());
+    }
 }
