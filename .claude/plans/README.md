@@ -10,7 +10,6 @@ Cet index est **synthétique** : liste des plans + statut global uniquement (pas
 
 ## 📂 Plans Actifs / En Cours
 
-- [`005_info_endpoint_public.plan.md`](./005_info_endpoint_public.plan.md) — 🔵 **En cours** (Gates #0 et #1 GO 2026-10-29 ; Phase 1 DEVon lancée le 2026-11-02). `/_info` des 4 services lisible en 200 même avec un jeton invalide : tenant OIDC `info-public` désactivé via `tenant-paths` (option C). ADR-008 `Acceptée`. Branche `feat/info-endpoint-public`, mergée après la Phase 1 du plan 004.
 - [`004_revue_architecture_backend.plan.md`](./004_revue_architecture_backend.plan.md) — 🔵 **En cours** (Gate #1 GO 2026-10-25). Revue architecture ARCos (note ≈ 2,5/5) → trajectoire A puis B sans changement de contrat, C exclue. Phase 0 (hotfix sécurité JWT, bascule `quarkus-oidc`, Lot 6 avancé) : ✅ clôturée (Gate #4 GO 2026-10-26), PR #220 mergée (7a50e5d), QUA à valider. Phase 1 (fiabilité + Mongo) : ✅ clôturée (Gate #4 GO 2026-10-30, reliquat R5 T1.6 GO 2026-10-31 ; PR #224, #225 mergées, #226 en cours) ; ADR-006/007 `Acceptée` ; contrôle QUA reporté. Phases 2 à 5 à venir. ADR-005 `Acceptée`. Prérequis PROD : plan IHM 008 (gestion du 401) et validation QUA.
 - [`002_fix_desync_quarkus_renovate.plan.md`](./002_fix_desync_quarkus_renovate.plan.md) — 🔵 **En cours**. Fix désync version Quarkus (`pom.xml` vs README/ARCHITECTURE.md/instructions) sur PR Renovate — check CI "Check Quarkus version sync" cassait car Renovate ne suivait pas les fichiers doc. Phase 1 ✅ (`customManager` Renovate ajouté dans `renovate.json`) ; Phase 2 (vérification + déblocage PR en cours) et Phase 3 (doc) restantes.
 
@@ -18,6 +17,7 @@ Cet index est **synthétique** : liste des plans + statut global uniquement (pas
 
 ## 📋 Plans Archivés / Complétés
 
+- [`005_info_endpoint_public.plan.md`](./005_info_endpoint_public.plan.md) — 🏁 **Clôturé (Gate #4, 2026-11-04)**. `/_info` public sur les 4 services (lisible en 200 même avec un jeton invalide) : tenant OIDC `info-public` + `InfoPublicTenantResolver`, ADR-008 `Acceptée` ; PR #228 mergée (12c5525), déployé en QUA.
 - [`003_remediation_sonar.plan.md`](./003_remediation_sonar.plan.md) — 🏁 **Clôturé (Phases A-E complétées, 2026-07-21)**. Remédiation 314 issues SonarCloud OPEN (`vzwingma_gestion-budget-serverless`) → 0 issue réelle traitable restante. Phase A (blocker + majeurs `MongoMigrationRunner.java`) ✅ 8/9 issues (S125 introuvable). Phase B (S8688 `.now()` UTC, 18 issues, [`docs/adr/004-clock-injection-convention.md`](../../docs/adr/004-clock-injection-convention.md)) ✅ 18/18, T B.1 `communs` + T B.2 `operations`/`utilisateurs`, vigilance clonage mois suivant validée QALvin. Phase C (S8924 imports statiques Mockito, mécanique) ✅ 267/267 en 4 lots. Phase D (reliquats S7467/S6213/S5778/S8700) ✅ ~17 issues. Phase E (2 reliquats post-merge scan PR#202) ✅ S5778 régression + S7467/bugfix logique réel `BudgetService.java` (propagation `DataNotFoundException`), conflit de merge Phase D/Phase E résolu manuellement, `operations` 92/92 + `utilisateurs` 36/36 verts, poussé branche `fix/sonar-phase-e` commit `a3ecbe6` (PR à ouvrir/merger par l'utilisateur pour scan Sonar final). Gates #2/#3 obtenues toutes phases. **3 points de suivi résiduel documentés en clôture** : (1) 4 issues hors-scope (S2259 x2, S101, S2143) suivies séparément via tâche spawnée `task_c58e6b55`, non traitée à date ; (2) 5 issues dette acceptée ADR-004 (S6813 x3 + S107 x2) à marquer "Won't Fix" par l'utilisateur ; (3) validation Mongo réelle `TestMigrationRepository`/`TestMigrationRepositoryPersistence` toujours différée (voir section "Action de clôture différée" du plan, non résolue).
 - [`001_modernisation_stack.plan.md`](./001_modernisation_stack.plan.md) — 🏁 **Clôturé (Gate #4, 2026-07-08)**. Phases 1-7 complétées (ADR-001/002/003, upgrade Quarkus 3.37.1, migrations Mongo, tuning infra SAM/CI, Java 25 + Mandrel 25 sur les 5 modules) ; Phase 8 partiellement complétée (T8.2 ✅, T8.1 reste ouverte — backport upstream Quarkus #55278 non confirmé, sans date connue, à surveiller lors d'une prochaine initiative). QUA et PROD déployés et fonctionnels (`master`).
 
@@ -91,5 +91,5 @@ Pour contribuer ou modifier un plan existant :
 
 ---
 
-**Dernière mise à jour :** 2026-10-26 (Plan 004 — Phase 0 : Gates #2 et #3 GO, documentation en cours)
+**Dernière mise à jour :** 2026-11-04 (Plan 005 — clôturé, Gate #4 GO)
 **Gestionnaire des Plans :** ⚫ MAINa & 👤 Développeur humain
