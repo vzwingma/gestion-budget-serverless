@@ -107,7 +107,7 @@ Preuve : avec `null`, ces deux tests échouent ; avec `Default`, ils passent.
 - Le log « Accès anonyme » passe en DEBUG seulement pour `/_info` (WARN ailleurs) ; « Clé API non trouvée » passe aussi en DEBUG pour `/_info` (amendement 2026-11-02).
 - La sécurité ne dépend plus d'un comportement implicite de la résolution statique de tenant.
 - `docs/ARCHITECTURE.md` est mis à jour.
-- Renvoi à ajouter depuis ADR-005.
+- Renvoi depuis l'ADR-005 ajouté (note de mise en œuvre et points ouverts).
 
 ---
 

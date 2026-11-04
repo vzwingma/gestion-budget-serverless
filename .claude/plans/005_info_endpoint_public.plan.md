@@ -1,10 +1,10 @@
 # Plan d'Action 005 — `/_info` public, lisible même avec un jeton invalide
 
 **Date création :** 2026-10-29
-**Statut :** 🔵 En cours — Gate #1 GO, Phase 1 (DEVon) lancée le 2026-11-02 après le merge de la Phase 1 du plan 004 (#224, #225, #226) et le rebase sur master (37fdbd7)
+**Statut :** 🔵 En cours — Phases 1-3 réalisées (Gates #2 et #3 GO), Gate #4 en attente ; PR #228
 **Porteur :** ⚫ MAINa
-**Branche :** `feat/info-endpoint-public` (depuis `origin/master` 655fcfb, sans upstream ; push avec `git push -u origin feat/info-endpoint-public` après accord 👤)
-**ADR liés :** [ADR-008 — Endpoint `/_info` public via tenant OIDC désactivé](../../docs/adr/008-endpoint-info-public-tenant-oidc-desactive.md) (`Proposée`) · ADR-005 (authentification `quarkus-oidc`, renvoi à ajouter)
+**Branche :** `feat/info-endpoint-public` (rebasée sur master 45a34a8, poussée par le 👤, PR #228)
+**ADR liés :** [ADR-008 — Endpoint `/_info` public via tenant OIDC désactivé](../../docs/adr/008-endpoint-info-public-tenant-oidc-desactive.md) (`Acceptée`, amendée le 2026-11-02 : `InfoPublicTenantResolver`) · ADR-005 (authentification `quarkus-oidc`, renvoi ajouté)
 
 ---
 
@@ -95,6 +95,10 @@ Comportement vérifié par ARCos dans les sources Quarkus 3.40.1 : `OidcAuthenti
 
 ## Phase 3 — Documentation (DOCly)
 
+**Statut : ✅ Réalisée le 2026-11-04 (DOCly), Gate #4 en attente.** Fichiers modifiés (non commités) :
+- serverless : `docs/ARCHITECTURE.md`, `docs/adr/005-authentification-jwt-extension-quarkus.md`, ce plan ;
+- wikis : `gestion-budget-serverless.wiki/Conception-globale.md`, `gestion-budget-ihm.wiki/Historique-de-l'Architecture.md`.
+
 - `docs/ARCHITECTURE.md` : tableau des codes HTTP (`/_info` avec jeton invalide → 200), tableau de config (propriétés `info-public`), note « à revérifier à chaque montée de `quarkus-oidc` », index ADR (008).
 - ADR-008 → `Acceptée` (au GO du Gate #1) ; renvoi depuis ADR-005 (note de mise en œuvre + points ouverts).
 - Wiki serverless (sécurité) ; wiki IHM `Historique-de-l'Architecture.md`. Note T1.1 du plan IHM 008 déjà corrigée (worktree IHM, non commitée).
@@ -131,3 +135,4 @@ Phase 1 au GO du Gate #1. Tests et doc ensuite. Merge après celui de la Phase 1
 | #1 | 2026-10-29 | Validation plan + ADR-008 | ✅ GO | ADR-008 → `Acceptée`. Exécution séquentielle après la Phase 1 du plan 004 (décision 👤). Branche rebasée sur master 37fdbd7 le 2026-11-02 (conflit trivial sur l'index des plans résolu) |
 | #2 | 2026-11-02 | Validation code Phase 1 | 🔧 AJUSTER | Décisions 👤 : (1) `TenantResolver` dans `communs` limitant `info-public` à `/_info` (renvoie `Default` ailleurs, `null` insuffisant) ; (2) logs anonyme / clé API en DEBUG pour `/_info` seulement, WARN ailleurs ; (3) QALvin T2.1 ×4 (variantes de chemin).
 | #3 | 2026-11-04 | Validation tests Phase 2 | ⏳ En attente | Phase 2 terminée : rapport `005_reports/PHASE_2_TESTS_REPORT.md`, build vert (erreurs Mongo communs préexistantes), couverture 100 % des classes touchées, régression prouvée (resolver) |
+| Phase 3 | 2026-11-04 | Documentation (DOCly) | ✅ Réalisée | Phase 3 doc, Gate #4 en attente : `ARCHITECTURE.md`, ADR-005 (renvoi ADR-008), wikis serverless et IHM |
