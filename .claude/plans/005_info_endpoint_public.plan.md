@@ -1,9 +1,9 @@
 # Plan d'Action 005 — `/_info` public, lisible même avec un jeton invalide
 
 **Date création :** 2026-10-29
-**Statut :** 🔵 En cours — Phases 1-3 réalisées (Gates #2 et #3 GO), Gate #4 en attente ; PR #228
+**Statut :** 🏁 Clôturé (Gate #4 GO 2026-11-04) — PR #228 mergée (12c5525), déployé en QUA
 **Porteur :** ⚫ MAINa
-**Branche :** `feat/info-endpoint-public` (rebasée sur master 45a34a8, poussée par le 👤, PR #228)
+**Branche :** `feat/info-endpoint-public` (mergée via PR #228)
 **ADR liés :** [ADR-008 — Endpoint `/_info` public via tenant OIDC désactivé](../../docs/adr/008-endpoint-info-public-tenant-oidc-desactive.md) (`Acceptée`, amendée le 2026-11-02 : `InfoPublicTenantResolver`) · ADR-005 (authentification `quarkus-oidc`, renvoi ajouté)
 
 ---
@@ -133,6 +133,7 @@ Phase 1 au GO du Gate #1. Tests et doc ensuite. Merge après celui de la Phase 1
 |---|---|---|---|---|
 | #0 | 2026-10-29 | Choix de solution (ARCos) | ✅ GO | Option C (tenant `info-public` désactivé). GET catégories gardent 401 ; jeton valide ignoré sur `/_info` accepté ; log « Accès anonyme » en DEBUG ; Phase 1 plan 004 mergée d'abord ; plan 005 / ADR-008 |
 | #1 | 2026-10-29 | Validation plan + ADR-008 | ✅ GO | ADR-008 → `Acceptée`. Exécution séquentielle après la Phase 1 du plan 004 (décision 👤). Branche rebasée sur master 37fdbd7 le 2026-11-02 (conflit trivial sur l'index des plans résolu) |
-| #2 | 2026-11-02 | Validation code Phase 1 | 🔧 AJUSTER | Décisions 👤 : (1) `TenantResolver` dans `communs` limitant `info-public` à `/_info` (renvoie `Default` ailleurs, `null` insuffisant) ; (2) logs anonyme / clé API en DEBUG pour `/_info` seulement, WARN ailleurs ; (3) QALvin T2.1 ×4 (variantes de chemin).
-| #3 | 2026-11-04 | Validation tests Phase 2 | ⏳ En attente | Phase 2 terminée : rapport `005_reports/PHASE_2_TESTS_REPORT.md`, build vert (erreurs Mongo communs préexistantes), couverture 100 % des classes touchées, régression prouvée (resolver) |
+| #2 | 2026-11-02 | Validation code Phase 1 | 🔧 AJUSTER | Décisions 👤 : (1) `TenantResolver` dans `communs` limitant `info-public` à `/_info` (renvoie `Default` ailleurs, `null` insuffisant) ; (2) logs anonyme / clé API en DEBUG pour `/_info` seulement, WARN ailleurs ; (3) QALvin T2.1 ×4 (variantes de chemin). |
+| #3 | 2026-11-04 | Validation tests Phase 2 | ✅ GO | + test de configuration `InfoPublicTenantConfigTest` ×4 demandé par le 👤 (137221b). Phase 2 terminée : rapport `005_reports/PHASE_2_TESTS_REPORT.md`, build vert (erreurs Mongo communs préexistantes), couverture 100 % des classes touchées, régression prouvée (resolver) |
 | Phase 3 | 2026-11-04 | Documentation (DOCly) | ✅ Réalisée | Phase 3 doc, Gate #4 en attente : `ARCHITECTURE.md`, ADR-005 (renvoi ADR-008), wikis serverless et IHM |
+| #4 | 2026-11-04 | Documentation + clôture | ✅ GO | CI PR #228 15/15 verte (natif x4, Sonar quality gate OK, couverture nouveau code 100 %, 0 bug), QUA déployé. Wikis commités par le 👤. ADR-008 Acceptée |
