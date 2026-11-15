@@ -29,7 +29,7 @@ Comportement vérifié par ARCos dans les sources Quarkus 3.40.1 : `OidcAuthenti
 | # | Sujet | Décision |
 |---|---|---|
 | 1 | Option | **C** (tenant `info-public` désactivé par chemin). A (`proactive=false` + refonte du filtre) écartée |
-| 2 | GET catégories `@PermitAll` de `parametrages` | **Restent en 401** avec un jeton invalide (couvert par le plan IHM 008) |
+| 2 | GET catégories `@PermitAll` de `parametrages` | **Restent en 401** avec un jeton invalide (couvert par le plan IHM 010) |
 | 3 | Jeton **valide** ignoré sur `/_info` (identité anonyme) ; version publique | **Accepté** |
 | 4 | Log WARN « Aucune identité authentifiée. Accès anonyme. » (`AbstractAPISecurityFilter`) | **Passer en DEBUG** (touche `communs`) |
 | 5 | Ordre de merge | **Phase 1 du plan 004 d'abord**, puis rebase de cette branche |
@@ -101,7 +101,7 @@ Comportement vérifié par ARCos dans les sources Quarkus 3.40.1 : `OidcAuthenti
 
 - `docs/ARCHITECTURE.md` : tableau des codes HTTP (`/_info` avec jeton invalide → 200), tableau de config (propriétés `info-public`), note « à revérifier à chaque montée de `quarkus-oidc` », index ADR (008).
 - ADR-008 → `Acceptée` (au GO du Gate #1) ; renvoi depuis ADR-005 (note de mise en œuvre + points ouverts).
-- Wiki serverless (sécurité) ; wiki IHM `Historique-de-l'Architecture.md`. Note T1.1 du plan IHM 008 déjà corrigée (worktree IHM, non commitée).
+- Wiki serverless (sécurité) ; wiki IHM `Historique-de-l'Architecture.md`. Note T1.1 du plan IHM 010 déjà corrigée (worktree IHM, non commitée).
 
 ---
 

@@ -107,7 +107,7 @@ Précisions :
 
 ### Note de mise en œuvre (Phase 0, plan 004)
 
-`quarkus-oidc` en mode `service` est en place sur les 4 microservices (commits `42a3d4b` bascule, `bc15842` masquage du jeton dans les logs et durcissement de `JwtRolesAugmentor`). L'essai n'a pas nécessité le repli `smallrye-jwt`. Particularités : `issuer=any` avec contrôle strict des 2 formes d'issuer dans `JwtRolesAugmentor` (Google émet les deux), `email` requis et `email_verified=true`, discovery conservée avec `connection-timeout=3S` / `connection-delay=4S`. Limites connues (JWKS injoignable → 500, masquage du jeton par configuration seule, build natif et cold start à valider en QUA) : voir [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md#-sécurité). Le 401 remplace le 403 : plan IHM 008, prérequis PROD.
+`quarkus-oidc` en mode `service` est en place sur les 4 microservices (commits `42a3d4b` bascule, `bc15842` masquage du jeton dans les logs et durcissement de `JwtRolesAugmentor`). L'essai n'a pas nécessité le repli `smallrye-jwt`. Particularités : `issuer=any` avec contrôle strict des 2 formes d'issuer dans `JwtRolesAugmentor` (Google émet les deux), `email` requis et `email_verified=true`, discovery conservée avec `connection-timeout=3S` / `connection-delay=4S`. Limites connues (JWKS injoignable → 500, masquage du jeton par configuration seule, build natif et cold start à valider en QUA) : voir [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md#-sécurité). Le 401 remplace le 403 : plan IHM 010, prérequis PROD.
 
 ### Suite : `/_info` public (ADR-008, plan 005)
 

@@ -384,7 +384,7 @@ Les propriétés `auth-server-url` et timeouts sont limitées aux profils `%dev`
 
 Les endpoints protégés (`@RolesAllowed`) sont inchangés.
 
-> ⚠️ Le passage 403 → 401 impacte l'IHM (déconnexion sur 401) : plan IHM `008_gestion_401_auth_oidc_backend`, **prérequis bloquant avant la PROD**. Depuis l'ADR-008, `/_info` ne renvoie plus 401 : la page Infos ne déconnecte plus ; seules les catégories `@PermitAll` gardent 401 avec un jeton invalide.
+> ⚠️ Le passage 403 → 401 impacte l'IHM (déconnexion sur 401) : plan IHM `010_gestion_401_auth_oidc_backend`, **prérequis bloquant avant la PROD**. Depuis l'ADR-008, `/_info` ne renvoie plus 401 : la page Infos ne déconnecte plus ; seules les catégories `@PermitAll` gardent 401 avec un jeton invalide.
 
 ### `/_info` public : tenant `info-public` (ADR-008)
 

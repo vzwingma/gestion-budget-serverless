@@ -83,7 +83,7 @@ Tests (`test(security)`) et rapport + inventaire (`docs(plans)`) en **deux commi
 
 ## Risques
 - Bug 1 (fuite jeton dans les logs) à traiter avant PROD.
-- Bug 2 : décision 👤 sur le 500 en cas de panne JWKS (lié au plan IHM 008).
+- Bug 2 : décision 👤 sur le 500 en cas de panne JWKS (lié au plan IHM 008, renuméroté 010 le 2026-11-15).
 - Validation QUA indispensable (cold start réel, Google réel, kid, natif).
 
 ## Ajustement Gate #3
