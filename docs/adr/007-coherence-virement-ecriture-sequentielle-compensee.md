@@ -85,7 +85,7 @@ Règles :
 
 ### Neutres
 - Documentation mise à jour au Gate #4 : `docs/ARCHITECTURE.md` (section « Codes HTTP et gestion des erreurs ») et wiki serverless (`Conception-globale.md`).
-- Impact IHM des codes 406 / 400 / 404 tracé dans le plan IHM 009 (en attente).
+- Impact IHM des codes 406 / 400 / 404 tracé dans le plan IHM 011 (en attente).
 
 ---
 

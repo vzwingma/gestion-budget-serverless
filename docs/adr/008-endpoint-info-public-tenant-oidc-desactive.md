@@ -12,7 +12,7 @@
 
 `quarkus-oidc` ([ADR-005](./005-authentification-jwt-extension-quarkus.md)) tourne en mode `service`, avec l'authentification proactive par défaut. Tout jeton présent est validé avant l'autorisation. Un jeton invalide, expiré ou `Bearer null` renvoie donc 401, y compris sur `/_info` (`@PermitAll`). Ce comportement avait été accepté au Gate #2 de la Phase 0 du plan 004 ; il est désormais à changer.
 
-- L'IHM envoie toujours `Authorization: Bearer <token|null>` (`ClientHTTP.service.ts:94`). Avec le plan IHM 008, un 401 déclenche `logOut()`.
+- L'IHM envoie toujours `Authorization: Bearer <token|null>` (`ClientHTTP.service.ts:94`). Avec le plan IHM 010, un 401 déclenche `logOut()`.
 - `/_info` (`AbstractAPIResource`, `Info`) n'expose que `nom`, `version` et une description fixe : ni config, ni secret, ni accès Mongo.
 - Vérifié dans la doc Quarkus *Proactive authentication* : « requests with invalid credentials are rejected, even if the target page is public ».
 
@@ -103,7 +103,7 @@ Preuve : avec `null`, ces deux tests échouent ; avec `Default`, ils passent.
 - Un peu de code Java dans `communs` : un bean `TenantResolver` partagé par les 4 services (amendement 2026-11-02). Un second bean `TenantResolver` ferait échouer le démarrage (`IllegalStateException`).
 
 ### Neutres
-- Les GET catégories `@PermitAll` de `parametrages` gardent 401 avec un jeton invalide (décision 👤, couvert par le plan IHM 008).
+- Les GET catégories `@PermitAll` de `parametrages` gardent 401 avec un jeton invalide (décision 👤, couvert par le plan IHM 010).
 - Le log « Accès anonyme » passe en DEBUG seulement pour `/_info` (WARN ailleurs) ; « Clé API non trouvée » passe aussi en DEBUG pour `/_info` (amendement 2026-11-02).
 - La sécurité ne dépend plus d'un comportement implicite de la résolution statique de tenant.
 - `docs/ARCHITECTURE.md` est mis à jour.
