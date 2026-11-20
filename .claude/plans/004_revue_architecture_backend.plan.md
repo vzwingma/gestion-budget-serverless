@@ -1,7 +1,7 @@
 # Plan d'Action 004 — Revue architecture backend : sécurisation, fiabilisation, modernisation Quarkus/Mongo
 
 **Date création :** 2026-10-25
-**Statut :** 🔵 En cours — Phase 0 ✅ clôturée (Gate #4 GO 2026-10-26, PR #220 non mergée, QUA/PROD à venir) ; Phase 1 en cours (Gate #1 de phase GO, branche `feat/ap004-phase1-fiabilite-mongo`)
+**Statut :** 🔵 En cours — Phases 0 et 1 ✅ clôturées (PR #220, #224, #225, #226 mergées ; QUA déployé, contrôle QUA par le 👤) ; Phase 2 en cadrage (Gate #0 GO 2026-11-20, Gate #1 en attente)
 **Porteur :** ⚫ MAINa
 **ADR liés :** [ADR-005 — Authentification JWT via extension Quarkus](../../docs/adr/005-authentification-jwt-extension-quarkus.md) (`Acceptée` pour le principe ; choix final oidc / smallrye-jwt par essai Phase 0) · ADR-002 (migrations maison, maintenu) · ADR-004 (`Clock`, maintenu)
 
@@ -236,23 +236,152 @@ Piste D : T1.2c
 
 ---
 
-## Phase 2 — Mutualisation `communs` + appels inter-services (Lots 3 et 4, option A)
+## Phase 2 — Mutualisation `communs` + appels inter-services (Lots 3 et 4) — ⏳ Gate #0 GO 2026-11-20, Gate #1 en attente
+
+**ADR :** [ADR-009 — Mutualisation `communs` et résilience des appels inter-services](../../docs/adr/009-mutualisation-communs-et-resilience-appels-inter-services.md) (`Proposée`)
+**Branche :** `docs/ap004-phase2` pour le plan et l'ADR, depuis master 5ee159e. **Une seule PR pour toute la Phase 2** (décision 👤) : l'implémentation se poursuit sur cette branche, ou sur `feat/ap004-phase2` qui la reprend (choix à faire au Gate #1).
+
+### Contexte (cadrage ARCos du 2026-11-20)
+- **M1.** Les classes dupliquées sont des coquilles `@Provider` qui délèguent déjà à des classes abstraites de `communs`.
+  - Vivantes et génériques : `JwtSecurityFilter` ×4, `APIExceptionsHandler` ×4, `SPIExceptionsHandler` ×4, filtres pre/post-matching de trace dans les 4 ressources.
+  - Vivantes et propres à chaque module : `RootAPIResource` (chemin lié à `tenant-paths`, ADR-008) et `OpenAPIConfig` (titre propre, version « 21.1.0 » codée en dur).
+  - Mortes, à traiter en T4.0 : `JwtReflectionConfig`, `JwsSigningKeysDatabaseAdaptor`.
+- **M2.** Les 8 `application.properties` sont identiques à environ 80 % : Mongo, OIDC, CORS, logs, #55278, masquage `OidcProvider`.
+  - Préfixes `rest-client-reactive.*` et `rest-client.*` mélangés.
+  - Avec les profils Maven, les tests JVM tournent sur `dev/` et les tests natifs sur `prod/`.
+- **P1.** Les appels `operations` → `comptes`/`parametrages` passent par l'API Gateway public.
+  - Aucun timeout : défauts Quarkus de 15 s / 30 s, alors que la Lambda est limitée à 15 s.
+  - Pas de `ResponseExceptionMapper` : erreur de l'aval → 500 probable. Le 404 n'est traduit que pour le virement.
+  - L'appel à comptes est fait **après** la lecture Mongo dans `getBudgetAndCompteActif`, alors qu'il est parallélisable.
+
+### Décisions 👤 (Gate #0, 2026-11-20)
+| # | Sujet | Décision |
+|---|---|---|
+| Q1 | Mutualisation | **A3** : ne mutualiser que le vivant générique. Critère reformulé : 4 familles mutualisées, 2 classes spécifiques assumées, 2 mortes laissées à T4.0 |
+| Q2 | Suppressions de fichiers | **Règle absolue : aucun agent ne supprime de fichier.** La liste exacte figure ci-dessous (T2.1, T2.3). Au Gate #2, MAINa pose la question au 👤 : il supprime lui-même, ou il approuve explicitement un mécanisme autorisé (ex. `git rm` en mode `ask`) |
+| Q3 | Profils Quarkus | **B2 dans la Phase 2**, en plus de B1 |
+| Q4 | Retry | **`quarkus-smallrye-fault-tolerance`** |
+| Q5 | Codes HTTP | Validés : compte inconnu hors virement 500 → **404** ; panne ou timeout de l'aval 500 → **503**. Traçabilité IHM : voir T2.10 |
+| Q6 | Cache | **D1** : catégories (modifiées à la main en base), TTL 1 h. Cache du compte reporté après la mesure |
+| Q7 | Mesure | Lancée par le 👤 en QUA : 50 appels à chaud + 5 à froid. **Logs uniquement**, sans métriques détaillées API Gateway ni X-Ray |
+| Q8 | Timeouts REST | Connexion 1,5 s, lecture 4 s, 1 retry restreint. Pire cas Mongo de 16 s **accepté** |
+| Q9 | Découpage | **Une seule PR** pour toute la Phase 2, instrumentation et mesures avant/après comprises |
+| Q10 | `OpenAPIConfig.version` | Aligner sur la version de l'application |
+
+### Stratégie « une seule PR » et risque lié au SNAPSHOT `communs`
+- **Ordre des commits dans la PR :**
+  1. **T2.0 instrumentation.** Premier push : la PR verte se déploie en QUA, le 👤 fait la **mesure « avant »**.
+  2. Mutualisation, configuration, résilience, cache, tests.
+  3. Dernier push : déploiement QUA, le 👤 fait la **mesure « après »**.
+- **Garde-fous SNAPSHOT :**
+  - aucune autre PR serverless qui touche `communs` ne doit être ouverte pendant la Phase 2 ;
+  - `build-communs` publie le SNAPSHOT avant les builds de modules (déjà en place) ;
+  - **un test REST par module** vérifie les codes 404 / 406 / 503 / 401 et le log de trace unique, pour détecter un module qui aurait perdu ses mappers sans erreur de compilation ;
+  - en local, toujours lancer `mvn clean install` depuis la racine, jamais un module seul contre un SNAPSHOT en cache.
 
 ### Critères de réussite
-- 0 duplication des 7 classes listées (M1) ; configuration commune ; profils Quarkus `%dev`/`%prod` (M2).
-- Clients REST `operations` → `comptes`/`parametrages` avec timeouts < timeout Lambda, fault tolerance, cache.
+- Familles vivantes mutualisées : `grep` des `extends Abstract(APIExceptionsHandler|BDDExceptionsHandler|APISecurityFilter)` et des `@Server(Request|Response)Filter` dans les modules = 0 (après suppressions par le 👤).
+- Configuration commune (B1) et un seul `application.properties` par module en profils Quarkus (B2). La configuration effective dev / test / prod est identique avant et après, hors corrections annoncées.
+- Clients REST : timeouts 1,5 s / 4 s, 1 retry restreint, `ResponseExceptionMapper`. Aval lent → 503 en moins de 6 s.
+- Cache des catégories : un seul appel HTTP pour 2 lectures dans la durée du TTL.
+- `mvn clean install` vert dans `build-on-all` ; build natif des 4 services vert et QUA déployé.
+- `*APIEnum` inchangés ; schéma OpenAPI identique (diff avant/après), hors `info.version` alignée.
+- `Init Duration` p95 dégradé de moins de 10 %. p95 de création d'opération mesuré avant et après.
 
 ### Tâches
-#### T2.1 — Mutualiser dans `communs` (DEVon)
-- `JwtSecurityFilter`, `APIExceptionsHandler`, `SPIExceptionsHandler`, `JwtReflectionConfig`, `OpenAPIConfig`, `RootAPIResource`, `JwsSigningKeysDatabaseAdaptor` (variante écriture `parametrages` conservée) ; filtres pre/postMatching globaux ; `META-INF/microprofile-config.properties` commun ; clés `rest-client.*` homogènes.
-- **Acceptation :** 5 modules verts, chemins `*APIEnum` inchangés, build natif CI vert.
 
-#### T2.2 — Timeouts, fault tolerance, cache (DEVon)
-- `quarkus-smallrye-fault-tolerance` (`@Timeout`, `@Retry` lectures), `quarkus-cache` (catégories, compte), timeouts REST client.
-- **Acceptation :** p95 création opération QUA mesuré avant/après.
+#### T2.0 — Instrumentation (DEVon) — premier commit de la PR
+- **Fichiers :** `communs/.../api/AbstractAPIInterceptors.java` (heure de début au pre-matching, log INFO `[HTTP-METRIC] op=<Ressource.méthode> status durationMs cold`) ; `ClientRequestFilter`/`ClientResponseFilter` des 2 clients (`[REST-METRIC] client status durationMs`).
+- **Acceptation :** aucun id, jeton ni corps dans les logs (`grep eyJ` vide) ; tests unitaires.
 
-#### T2.3 — Tests Phase 2 (QALvin)
-- Non-régression 5 modules, tests timeout/retry/cache.
+#### T2.1 — Mutualisation A3 (DEVon)
+- **Créer dans `communs` :**
+  - `api/APIExceptionsHandler` (concret, `@Provider`) ;
+  - `spi/SPIExceptionsHandler` (concret, `@Provider`) ;
+  - `api/security/JwtSecurityFilter` (concret, `@Provider @PreMatching`) ;
+  - `api/APITraceFilters` (`@ServerRequestFilter(preMatching = true)` et `@ServerResponseFilter`, qui délèguent à `AbstractAPIInterceptors`).
+- **Retirer** les 2 méthodes de filtre de `BudgetsResource`, `ComptesResource`, `ParametragesResource` et `UtilisateursResource`. Ces ressources gardent `extends AbstractAPIInterceptors` pour `getAuthenticatedUser()`.
+- **Fichiers à supprimer, par le 👤 (Q2) :**
+  - `{comptes,operations,parametrages,utilisateurs}/src/main/java/.../api/override/JwtSecurityFilter.java` (4 fichiers)
+  - `{…}/src/main/java/.../api/override/APIExceptionsHandler.java` (4 fichiers ; chemins exacts à lister par DEVon dans le handoff)
+  - `{…}/src/main/java/.../spi/SPIExceptionsHandler.java` (4 fichiers)
+  - `{comptes,parametrages,utilisateurs}/src/test/java/.../APIExceptionsHandlerTest.java` (3 fichiers, à déplacer d'abord vers `communs`)
+- **Acceptation :** un `@QuarkusTest` REST par module prouve les codes 404, 406, 503 (Mongo) et 401, un log de trace **unique** (pas de doublon tant que les fichiers ne sont pas supprimés), et un `getAuthenticatedUser()` différent de ANONYME.
+
+#### T2.2 — Configuration commune B1 (DEVon)
+- **Fichiers :** création de `communs/src/main/resources/META-INF/microprofile-config.properties`. Il reçoit le bloc Mongo, le bloc OIDC commun (avec `%dev,prod.auth-server-url`), CORS, #55278 et le masquage `OidcProvider`. Retirer les mêmes lignes des modules. Uniformiser `rest-client.*`.
+- **Restent dans les modules :** `application.name`, ports, `tenant-paths` (ADR-008), catégorie de log, URL des clients REST, `jwt-signing-key-service` (T4.0).
+- **Acceptation :** test `ConfigProvider` par module sur au moins 8 clés, masquage = ERROR compris ; log INFO au démarrage en QUA avec les valeurs effectives ; prise en compte en natif démontrée (build natif CI et smoke QUA).
+
+#### T2.3 — Profils Quarkus B2 (DEVon)
+- **Créer** un seul `src/main/resources/application.properties` par module, avec les profils `%dev`/`%prod`. **Retirer** les profils de ressources Maven `dev`/`native` des 4 `pom.xml`, en gardant le profil `native` pour la compilation native.
+- **Fichiers à supprimer, par le 👤 (Q2) :** `{comptes,operations,parametrages,utilisateurs}/src/main/resources/{dev,prod}/application.properties` (8 fichiers).
+- **Acceptation :** tableau de configuration effective dev / test / prod identique avant et après ; Dev Services de `communs` et `*MongoTest` verts (l'exclusion `*MongoTest` du natif est revue si elle n'est plus nécessaire) ; natif vert.
+
+#### T2.4 — Erreurs de l'aval, timeouts, retry (DEVon)
+- **Fichiers :**
+  - `communs/.../exceptions/ServiceDistantIndisponibleException.java` (→ 503 via le repli de `AbstractAPIExceptionsHandler`) ;
+  - `operations/.../spi/ServicesDistantsResponseExceptionMapper.java`, enregistré par `@RegisterProvider` sur `IComptesServiceProvider` et `IParametragesServiceProvider` ;
+  - timeouts `quarkus.rest-client."<client>".connect-timeout=1500` et `read-timeout=4000` ;
+  - `quarkus-smallrye-fault-tolerance` dans `operations/pom.xml` : `@Retry(maxRetries=1, delay=200, jitter=…)` sur les lectures, uniquement pour la connexion refusée et les 502 / 503 / 504 / 429 ; pas de retry sur timeout, pas de `@CircuitBreaker`, pas de `@Fallback`.
+- **Mapping :** 404 → `DataNotFoundException` (404) ; 401 → 401 ; 403 / 429 / 5xx / connexion / timeout → `ServiceDistantIndisponibleException` (503). La traduction manuelle de `BudgetService` (virement) devient redondante : à simplifier.
+- **Acceptation :**
+  - aval lent → 503 en moins de 6 s ;
+  - 502 puis 200 → 1 retry puis 200 ;
+  - read-timeout → aucun retry ;
+  - 404 → 404 ;
+  - 403 de l'aval → 503 ;
+  - codes du virement (404 / 406 / 400) inchangés.
+
+#### T2.5 — Parallélisation (DEVon)
+- **Fichier :** `BudgetService.getBudgetAndCompteActif` (lignes 149-169 environ). La lecture du compte (déduit de `idBudget`) et celle du budget partent en parallèle. Garde `budget.idCompteBancaire == idCompte`, sinon `DonneeCorrompueException` (500). Un 404 sur le budget reste prioritaire.
+
+#### T2.6 — Cache des catégories, D1 (DEVon)
+- **Fichiers :** `operations/pom.xml` (`quarkus-cache`) ; `@CacheResult` sur `getCategories()` et `getSsCategorieParId(id)` ; `quarkus.cache.caffeine."categories".expire-after-write=1H` ; log au cache miss.
+- **Acceptation :** 2 appels → 1 seul appel HTTP ; une erreur n'est pas mise en cache ; TTL respecté (test avec un TTL court).
+
+#### T2.7 — `OpenAPIConfig.version` (DEVon)
+- Aligner la version sur celle de l'application (`quarkus.application.version`, ou `quarkus.smallrye-openapi.info-version`) dans les 4 modules, à la place de « 21.1.0 ».
+
+#### T2.8 — Tests (QALvin)
+- Non-régression des 5 modules. Faux service aval sous forme de ressource JAX-RS de test dans `operations` (délai et statut pilotés), sans nouvelle dépendance.
+- Tests : timeouts, retry (cas couverts et non couverts), mapper, parallélisation, cache, configuration effective, codes REST par module.
+- **Acceptation :** couverture ≥ 80 % des nouvelles classes ; preuve de régression (sans le mapper, le test passe au rouge).
+
+#### T2.9 — Mesure QUA (👤, avec analyse MAINa)
+- Requêtes CloudWatch Logs Insights :
+  - `[HTTP-METRIC] op=BudgetsResource.createOperation` : p50, p95, max, en séparant chaud et froid ;
+  - lignes `REPORT` : Duration et Init Duration.
+- **Protocole :** même compte et même budget ; 50 POST à chaud, 1 par seconde ; 5 démarrages à froid forcés ; mesure avant (après T2.0) et après (fin de PR). Ne conclure qu'au-delà d'environ 20 % d'écart.
+
+#### T2.10 — Traçabilité IHM (MAINa)
+- Codes visibles qui changent : compte inconnu hors virement → 404 ; panne ou timeout de l'aval → 503. **Proposition :** ajouter une ligne dans le **plan IHM 011, Phase 2**, déjà consacré aux états d'erreur 503/404 de la page budget et du virement, plutôt qu'un nouveau plan. À valider au Gate #1.
+
+#### T2.11 — Documentation (DOCly)
+- `docs/ARCHITECTURE.md` : providers dans `communs`, configuration commune et profils, timeouts / retry / cache, 503 en cas de panne de l'aval, instrumentation.
+- ADR-009 passe en `Acceptée` au GO du Gate #1.
+- Index ; wiki backend (commité par le 👤).
+- Version Quarkus 3.40.1.2 déjà corrigée dans `ARCHITECTURE.md`, dans le commit du plan.
+
+### Ordre (une seule PR)
+```
+T2.0 → [push, QUA, mesure avant 👤] → (T2.1 ∥ T2.2) → T2.3 → (T2.4 ∥ T2.5) → T2.6 → T2.7 → revue → Gate #2 (dont suppressions 👤)
+     → T2.8 → Gate #3 → [push, QUA, mesure après 👤] → T2.11 → Gate #4 → merge 👤
+```
+
+### Risques
+| # | Risque | Parade |
+|---|---|---|
+| R1 | Un module construit contre un SNAPSHOT `communs` obsolète perd ses mappers sans erreur de compilation | Tests REST de codes par module ; une seule PR ; `mvn clean install` depuis la racine |
+| R2 | Providers de `communs` non découverts en natif | Build natif CI + smoke QUA (404 / 406 / 503 / 401) |
+| R3 | `microprofile-config.properties` d'un jar non lu au build natif | Test `ConfigProvider` + log des valeurs effectives en QUA |
+| R4 | Une clé sans préfixe désactive Dev Services ou fait appeler Google pendant les tests | Préfixe `%dev,prod.` ; CI `build-on-all` |
+| R5 | Le retry provoque des cold starts en cascade | Pas de retry sur timeout |
+| R6 | Le masquage du jeton `OidcProvider` est perdu lors du déplacement de configuration | Test + `grep eyJ` sur les logs QUA |
+| R7 | Les codes HTTP changent côté IHM | T2.10 |
+| R8 | Pire cas Mongo à 16 s, au-delà des 15 s de la Lambda | Accepté par le 👤, hors périmètre |
+| R9 | Surcoût au démarrage des extensions fault-tolerance / cache | Suivi d'`Init Duration` |
+| R10 | Filtres en double tant que les fichiers ne sont pas supprimés | Test « log unique » ; suppressions par le 👤 avant le Gate #2
 
 ---
 
@@ -357,6 +486,8 @@ Chaque phase : Gate #2 (code) → Gate #3 (tests) ; Gate #4 global en fin de pla
 | — | 2026-10-30 | Merge et déploiement | ℹ️ | La PR #224 avait été mergée avant le correctif Testcontainers : le natif master était rouge et QUA non déployé. Corrigé par la PR #225 (Sonar OK ; #224 avait échoué sur `new_reliability_rating` = C). **Déploiement QUA sur PR** : après la relance du job natif Utilisateurs (`gh run rerun 41076750284 --failed`, échec passager de résolution Maven), « Deploy Lambda on QUA » est passé en success avant le merge de #225. C'est le **fonctionnement normal et voulu** du workflow `build-on-master.yml` : toute PR dont les builds natifs sont verts est déployée en QUA (confirmé par le 👤 le 2026-11-02 ; même comportement observé sur #226). Il n'avait été sauté au premier passage de #225 qu'à cause du job en échec. Q7 : MongoDB Atlas confirmé (tier non précisé) |
 | #4 (Phase 1) | 2026-10-30 | Documentation + clôture Phase 1 | ✅ GO | `ARCHITECTURE.md` (migrations, MongoDB Atlas, collection `operations` corrigée, codes HTTP, CI), ADR-006/007 → `Acceptée`, renvoi ADR-002 → ADR-006 (3da2da2). Wikis backend et IHM modifiés (commit par le 👤). Écart R5 relevé → T1.6 |
 | T1.6 | 2026-10-31 | Mini-gate reliquat R5 | ✅ GO | cfdf0a9 : `/soldes` et `/intervalles` erreur Mongo 404 → 503, autre erreur 404 → 500, absence 200 + `[]` conservée. BUILD SUCCESS, operations 178, 0 échec, +14 tests ; code-review low sans régression ; security : rien. PR #226 (merge par le 👤 après CI, avant la PR docs). **Phase 1 clôturée.** Contrôle QUA (logs `[MIGRATIONS]`, index) reporté par le 👤 |
+| #0 (Phase 2) | 2026-11-20 | Cadrage Phase 2 (ARCos) | ✅ GO | A3, B1 + B2, C2 (fault-tolerance, 1 retry restreint, connexion 1,5 s / lecture 4 s), `ResponseExceptionMapper` (404 / 401 / 503), parallélisation, D1 (catégories, TTL 1 h). Codes HTTP 404 / 503 validés. Une seule PR. Mesure QUA par le 👤 (logs uniquement). `OpenAPIConfig.version` alignée. Suppressions de fichiers par le 👤 (question posée au Gate #2). ADR-009 `Proposée` |
+| #1 (Phase 2) | — | Validation du plan + ADR-009 | ⏳ En attente 👤 | |
 
 ### ⚠️ Limites connues (Phase 1)
 
