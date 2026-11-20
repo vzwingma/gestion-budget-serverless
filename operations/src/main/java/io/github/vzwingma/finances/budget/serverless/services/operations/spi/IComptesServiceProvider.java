@@ -7,6 +7,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 /**
@@ -16,6 +17,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 @Path(ComptesApiUrlEnum.COMPTES_BASE)
 @RegisterRestClient(configKey = "comptes-service")
 @RegisterClientHeaders(RequestJWTHeaderFactory.class)
+@RegisterProvider(ComptesRestClientMetricsFilter.class)
 public interface IComptesServiceProvider {
 
     /**

@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.services.communs.api;
 
+import io.github.vzwingma.finances.budget.services.communs.api.metrics.HttpMetricsRecorder;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
 import io.github.vzwingma.finances.budget.services.communs.api.security.IJwtSecurityContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
@@ -22,12 +23,19 @@ public abstract class AbstractAPIInterceptors {
     @Inject
     IJwtSecurityContext securityContext;
 
+    /** Instrumentation des requêtes (AP004 T2.0). Peut être nul hors CDI (tests unitaires). */
+    @Inject
+    HttpMetricsRecorder httpMetrics;
+
     /**
      * Logger requête
      *
      * @param requestContext context de la requête
      */
     public void preMatchingFilter(ContainerRequestContext requestContext) {
+        if (httpMetrics != null) {
+            httpMetrics.start(requestContext);
+        }
         // Replace pattern-breaking characters
         String path = requestContext.getUriInfo().getPath().replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
         String apiKey = requestContext.getHeaderString(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY);
@@ -44,6 +52,9 @@ public abstract class AbstractAPIInterceptors {
      */
     public void postMatchingFilter(ContainerResponseContext responseContext) {
 
+        if (httpMetrics != null) {
+            httpMetrics.record(responseContext.getStatus());
+        }
         BusinessTraceContext.getclear();
         LOG.debug("[HTTP] < [{} - {}]", responseContext.getStatus(), responseContext.getStatusInfo().getReasonPhrase());
     }
