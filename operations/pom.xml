@@ -13,50 +13,18 @@
     <name>Opérations</name>
     <build>
         <finalName>${project.artifactId}</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <!-- TRANSITOIRE (AP004 T2.3) : les anciens dev/ et prod/ ne sont plus des ressources (profils Quarkus).
+                     A retirer une fois dev/application.properties et prod/application.properties supprimés. -->
+                <excludes>
+                    <exclude>dev/**</exclude>
+                    <exclude>prod/**</exclude>
+                </excludes>
+            </resource>
+        </resources>
     </build>
-
-
-    <profiles>
-        <profile>
-            <id>dev</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <build>
-                <resources>
-                    <resource>
-                        <directory>src/main/resources/dev</directory>
-                        <filtering>true</filtering>
-                    </resource>
-                    <resource>
-                        <directory>src/main/resources/prod</directory>
-                        <excludes>
-                            <exclude>*.*</exclude>
-                        </excludes>
-
-                    </resource>
-                </resources>
-            </build>
-        </profile>
-        <profile>
-            <id>native</id>
-            <build>
-                <resources>
-                    <resource>
-                        <directory>src/main/resources/dev</directory>
-                        <excludes>
-                            <exclude>*.*</exclude>
-                        </excludes>
-                    </resource>
-                    <resource>
-                        <directory>src/main/resources/prod</directory>
-                        <filtering>true</filtering>
-                    </resource>
-                </resources>
-            </build>
-
-        </profile>
-    </profiles>
 
 
     <dependencies>
