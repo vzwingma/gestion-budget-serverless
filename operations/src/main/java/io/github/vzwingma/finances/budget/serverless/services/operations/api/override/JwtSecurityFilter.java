@@ -1,8 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.api.override;
 
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
-import jakarta.ws.rs.container.PreMatching;
-import jakarta.ws.rs.ext.Provider;
 import lombok.Getter;
 
 
@@ -12,6 +10,6 @@ import lombok.Getter;
  * de la validation des tokens JWT dans le contexte de cette application.
  */
 @Getter
-@Provider
-@PreMatching
+// AP004 T2.1 (R10) : @Provider et @PreMatching retirés. Le filtre de sécurité vit désormais dans communs
+// (api.security.JwtSecurityFilter). Cette coquille, devenue inerte, est à supprimer par le développeur (ADR-009).
 public class JwtSecurityFilter extends AbstractAPISecurityFilter { }

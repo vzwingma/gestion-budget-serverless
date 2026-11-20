@@ -1,7 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.business;
 
 import com.mongodb.MongoTimeoutException;
-import io.github.vzwingma.finances.budget.serverless.services.operations.api.override.APIExceptionsHandler;
+import io.github.vzwingma.finances.budget.services.communs.api.APIExceptionsHandler;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.IdsCategoriesEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
