@@ -670,7 +670,7 @@ mvn clean package -Pnative -Dquarkus.native.container-build=true
 | [006](./adr/006-reservation-atomique-migrations-mongodb.md) | Réservation atomique par version des migrations MongoDB (complète l'ADR-002) | Acceptée |
 | [007](./adr/007-coherence-virement-ecriture-sequentielle-compensee.md) | Cohérence du virement interne : écriture séquentielle compensée, sans transaction MongoDB | Acceptée |
 | [008](./adr/008-endpoint-info-public-tenant-oidc-desactive.md) | Endpoint `/_info` public : tenant OIDC `info-public` désactivé par chemin + `InfoPublicTenantResolver` (complète l'ADR-005) | Acceptée (amendée le 2026-11-02) |
-| [009](./adr/009-mutualisation-communs-et-resilience-appels-inter-services.md) | Mutualisation partielle dans `communs`, configuration commune et résilience des appels REST inter-services (timeouts, retry ciblé, erreurs typées 503, cache catégories) | Proposée |
+| [009](./adr/009-mutualisation-communs-et-resilience-appels-inter-services.md) | Mutualisation partielle dans `communs`, configuration commune et résilience des appels REST inter-services (timeouts, retry ciblé, erreurs typées 503, cache catégories) | Acceptée |
 
 > 💡 Toute nouvelle décision architecturale majeure (nouveau framework, changement de pattern, décision de sécurité) doit faire l'objet d'un ADR délégué à l'agent 🟣 DOCly.
 

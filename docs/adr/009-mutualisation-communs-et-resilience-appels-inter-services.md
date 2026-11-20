@@ -3,7 +3,7 @@
 ---
 
 **Date :** 2026-11-20
-**Statut :** Proposée (en attente du Gate #1)
+**Statut :** Acceptée (Gate #1 GO 👤, 2026-11-20)
 **Décideurs :** 🟠 ARCos + 👤 Développeur humain
 
 ---

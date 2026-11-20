@@ -236,9 +236,9 @@ Piste D : T1.2c
 
 ---
 
-## Phase 2 — Mutualisation `communs` + appels inter-services (Lots 3 et 4) — ⏳ Gate #0 GO 2026-11-20, Gate #1 en attente
+## Phase 2 — Mutualisation `communs` + appels inter-services (Lots 3 et 4) — 🔵 en cours (Gate #1 GO 2026-11-20)
 
-**ADR :** [ADR-009 — Mutualisation `communs` et résilience des appels inter-services](../../docs/adr/009-mutualisation-communs-et-resilience-appels-inter-services.md) (`Proposée`)
+**ADR :** [ADR-009 — Mutualisation `communs` et résilience des appels inter-services](../../docs/adr/009-mutualisation-communs-et-resilience-appels-inter-services.md) (`Acceptée`)
 **Branche :** `docs/ap004-phase2` pour le plan et l'ADR, depuis master 5ee159e. **Une seule PR pour toute la Phase 2** (décision 👤) : l'implémentation se poursuit sur cette branche, ou sur `feat/ap004-phase2` qui la reprend (choix à faire au Gate #1).
 
 ### Contexte (cadrage ARCos du 2026-11-20)
@@ -487,7 +487,7 @@ Chaque phase : Gate #2 (code) → Gate #3 (tests) ; Gate #4 global en fin de pla
 | #4 (Phase 1) | 2026-10-30 | Documentation + clôture Phase 1 | ✅ GO | `ARCHITECTURE.md` (migrations, MongoDB Atlas, collection `operations` corrigée, codes HTTP, CI), ADR-006/007 → `Acceptée`, renvoi ADR-002 → ADR-006 (3da2da2). Wikis backend et IHM modifiés (commit par le 👤). Écart R5 relevé → T1.6 |
 | T1.6 | 2026-10-31 | Mini-gate reliquat R5 | ✅ GO | cfdf0a9 : `/soldes` et `/intervalles` erreur Mongo 404 → 503, autre erreur 404 → 500, absence 200 + `[]` conservée. BUILD SUCCESS, operations 178, 0 échec, +14 tests ; code-review low sans régression ; security : rien. PR #226 (merge par le 👤 après CI, avant la PR docs). **Phase 1 clôturée.** Contrôle QUA (logs `[MIGRATIONS]`, index) reporté par le 👤 |
 | #0 (Phase 2) | 2026-11-20 | Cadrage Phase 2 (ARCos) | ✅ GO | A3, B1 + B2, C2 (fault-tolerance, 1 retry restreint, connexion 1,5 s / lecture 4 s), `ResponseExceptionMapper` (404 / 401 / 503), parallélisation, D1 (catégories, TTL 1 h). Codes HTTP 404 / 503 validés. Une seule PR. Mesure QUA par le 👤 (logs uniquement). `OpenAPIConfig.version` alignée. Suppressions de fichiers par le 👤 (question posée au Gate #2). ADR-009 `Proposée` |
-| #1 (Phase 2) | — | Validation du plan + ADR-009 | ⏳ En attente 👤 | |
+| #1 (Phase 2) | 2026-11-20 | Validation du plan + ADR-009 | ✅ GO | ADR-009 → `Acceptée`. Branche d'implémentation `feat/ap004-phase2`, créée depuis `docs/ap004-phase2` (une seule PR, non poussée seule). T2.10 : traçabilité dans la Phase 2 du plan IHM 011. Ligne 405 d'`ARCHITECTURE.md` conservée. Retrait de l'exclusion `*MongoTest` du natif tenté en T2.3 (vérifié par la CI). **T2.0 seul**, puis arrêt : push, déploiement QUA et mesure « avant » par le 👤 avant T2.1 |
 
 ### ⚠️ Limites connues (Phase 1)
 
