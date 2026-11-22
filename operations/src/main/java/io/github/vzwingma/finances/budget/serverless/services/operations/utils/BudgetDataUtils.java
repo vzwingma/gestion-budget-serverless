@@ -9,10 +9,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Utilitaire de data
@@ -29,18 +32,29 @@ public class BudgetDataUtils {
     }
 
 
+    /** Id d'un budget : {@code <idCompte>_<AAAA>_<MM>}. L'id du compte peut lui-même contenir des {@code _} : seul le suffixe est analysé, depuis la fin. */
+    private static final Pattern PATTERN_ID_BUDGET = Pattern.compile("^(.+)_(\\d{4})_(\\d{1,2})$");
+
+    private static Matcher analyserId(String budgetId, String partie) throws BudgetNotFoundException {
+        Matcher matcher = PATTERN_ID_BUDGET.matcher(budgetId);
+        if (!matcher.matches()) {
+            throw new BudgetNotFoundException("Erreur dans l'id du budget " + budgetId + ". Données (" + partie + ") incohérentes");
+        }
+        return matcher;
+    }
+
     /**
      * @param budgetId id budget
-     * @return la valeur de l'année à partir de l'id
+     * @return le mois à partir de l'id
      * @throws BudgetNotFoundException budget introuvable car erreur d'id
      */
     public static Month getMoisFromBudgetId(String budgetId) throws BudgetNotFoundException {
         if (budgetId != null) {
+            Matcher matcher = analyserId(budgetId, "mois");
             try {
-                return Month.of(Integer.parseInt(budgetId.substring(budgetId.lastIndexOf('_') + 1)));
-            } catch (Exception _) {
-                // Erreur dans l'id
-                throw new BudgetNotFoundException("Erreur de mois dans l'id du budget " + budgetId + ". Données (mois) incohérentes");
+                return Month.of(Integer.parseInt(matcher.group(3)));
+            } catch (DateTimeException _) {
+                throw new BudgetNotFoundException("Erreur dans l'id du budget " + budgetId + ". Données (mois) incohérentes");
             }
         }
         return null;
@@ -48,17 +62,12 @@ public class BudgetDataUtils {
 
     /**
      * @param budgetId id budget
-     * @return la valeur de l'année à partir de l'id
+     * @return l'id du compte : l'id du budget privé de son suffixe {@code _AAAA_MM} (l'id du compte peut contenir des {@code _})
      * @throws BudgetNotFoundException budget introuvable car erreur d'id
      */
     public static String getCompteFromBudgetId(String budgetId) throws BudgetNotFoundException {
         if (budgetId != null) {
-            try {
-                return budgetId.substring(0, budgetId.indexOf('_'));
-            } catch (Exception _) {
-                // Erreur dans l'id
-                throw new BudgetNotFoundException("Erreur de compte dans l'id du budget " + budgetId + ". Données (compte) incohérentes");
-            }
+            return analyserId(budgetId, "compte").group(1);
         }
         return null;
     }
@@ -72,12 +81,7 @@ public class BudgetDataUtils {
      */
     public static Integer getAnneeFromBudgetId(String budgetId) throws BudgetNotFoundException {
         if (budgetId != null) {
-            try {
-                return Integer.parseInt(budgetId.substring(budgetId.indexOf('_') + 1, budgetId.lastIndexOf('_')));
-            } catch (Exception _) {
-                // Erreur dans l'id
-                throw new BudgetNotFoundException("Erreur d'année dans l'id du budget " + budgetId + ". Données (année) incohérentes");
-            }
+            return Integer.parseInt(analyserId(budgetId, "année").group(2));
         }
         return null;
     }
