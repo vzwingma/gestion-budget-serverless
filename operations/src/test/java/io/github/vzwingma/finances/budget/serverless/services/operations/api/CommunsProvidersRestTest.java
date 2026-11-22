@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.api;
 
+import io.github.vzwingma.finances.budget.services.communs.api.metrics.MetricsLog;
 import com.mongodb.MongoException;
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.BudgetService;
@@ -111,7 +112,7 @@ class CommunsProvidersRestTest {
         // Endpoint Uni (non streaming) : la réponse est complète quand le client la reçoit, donc la ligne [HTTP-METRIC] est déjà émise
         when(serviceMock.getBudgetMensuel(anyString())).thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
         List<String> lignes = new CopyOnWriteArrayList<>();
-        Logger jul = Logger.getLogger("io.github.vzwingma.finances.budget.services.communs.api.metrics.HttpMetricsRecorder");
+        Logger jul = Logger.getLogger(MetricsLog.CATEGORIE);
         Handler handler = new Handler() {
             @Override
             public void publish(LogRecord record) {

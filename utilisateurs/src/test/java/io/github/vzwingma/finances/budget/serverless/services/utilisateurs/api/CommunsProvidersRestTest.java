@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.utilisateurs.api;
 
+import io.github.vzwingma.finances.budget.services.communs.api.metrics.MetricsLog;
 import com.mongodb.MongoException;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.api.enums.UtilisateursAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.UtilisateursService;
@@ -107,7 +108,7 @@ class CommunsProvidersRestTest {
     void uneSeuleLigneDeTraceParRequete() {
         when(serviceMock.getLastAccessDate(anyString())).thenReturn(Uni.createFrom().item(LocalDateTime.of(2026, 1, 10, 8, 0)));
         List<String> lignes = new CopyOnWriteArrayList<>();
-        Logger jul = Logger.getLogger("io.github.vzwingma.finances.budget.services.communs.api.metrics.HttpMetricsRecorder");
+        Logger jul = Logger.getLogger(MetricsLog.CATEGORIE);
         Handler handler = new Handler() {
             @Override
             public void publish(LogRecord record) {
