@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
+import io.github.vzwingma.finances.budget.services.communs.api.metrics.MetricsLog;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ class RestClientMetricsFilterTest {
         when(response.getStatus()).thenReturn(status);
 
         StringBuilder captured = new StringBuilder();
-        Logger jul = Logger.getLogger(AbstractRestClientMetricsFilter.class.getName());
+        Logger jul = Logger.getLogger(MetricsLog.CATEGORIE);
         Handler handler = new Handler() {
             @Override
             public void publish(LogRecord record) {

@@ -3,11 +3,10 @@ package io.github.vzwingma.finances.budget.services.communs.api.metrics;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ResourceInfo;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -42,10 +41,6 @@ public class HttpMetricsRecorder {
     @Inject
     ContainerRequestContext requestContext;
 
-    /** Ressource de la requête courante (proxy CDI résolu à l'appel) */
-    @Inject
-    ResourceInfo resourceInfo;
-
     /** Début de requête : mémorise l'heure de début et l'état « démarrage à froid ». */
     record Start(long nanos, boolean cold) {
     }
@@ -64,11 +59,12 @@ public class HttpMetricsRecorder {
     /**
      * Journalise la métrique de la requête courante (post-matching).
      *
+     * @param info   ressource sélectionnée, fournie par RESTEasy Reactive au filtre de réponse (peut être nulle)
      * @param status code HTTP de la réponse
      * @return la ligne journalisée
      */
-    public String record(int status) {
-        return record(requestContext, resourceInfo, status);
+    public String record(SimpleResourceInfo info, int status) {
+        return record(requestContext, info, status);
     }
 
     /**
@@ -79,7 +75,7 @@ public class HttpMetricsRecorder {
      * @param status  code HTTP de la réponse
      * @return la ligne journalisée
      */
-    String record(ContainerRequestContext request, ResourceInfo info, int status) {
+    String record(ContainerRequestContext request, SimpleResourceInfo info, int status) {
         Object start = null;
         try {
             start = request != null ? request.getProperty(START_PROPERTY) : null;
@@ -93,7 +89,7 @@ public class HttpMetricsRecorder {
             cold = s.cold();
         }
         String line = format(operation(info), status, durationMs, cold);
-        LOG.info(line);
+        MetricsLog.info(line);
         return line;
     }
 
@@ -105,16 +101,18 @@ public class HttpMetricsRecorder {
     }
 
     /**
-     * Nom {@code Ressource.méthode} de l'opération JAX-RS
+     * Nom {@code Ressource.méthode} de l'opération JAX-RS, lu dans {@link SimpleResourceInfo} (classe et nom de méthode
+     * connus de RESTEasy Reactive au build) : aucune réflexion sur {@code java.lang.reflect.Method}, donc sûr en
+     * image native (contrairement à {@code ResourceInfo#getResourceMethod()}).
      */
-    static String operation(ResourceInfo info) {
+    static String operation(SimpleResourceInfo info) {
         try {
             Class<?> resourceClass = info != null ? info.getResourceClass() : null;
-            Method method = info != null ? info.getResourceMethod() : null;
+            String method = info != null ? info.getMethodName() : null;
             if (resourceClass != null && method != null) {
-                return resourceClass.getSimpleName() + "." + method.getName();
+                return resourceClass.getSimpleName() + "." + method;
             }
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | LinkageError e) {
             LOG.debug("[HTTP-METRIC] ressource indisponible", e);
         }
         return OP_UNMATCHED;

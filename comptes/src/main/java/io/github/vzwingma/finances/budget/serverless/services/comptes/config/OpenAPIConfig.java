@@ -16,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
         info = @Info(
                 title = "Gestion de Budgets : µService de comptes",
                 description = "API du service de comptes",
-                version = "21.1.0",
+                version = "${quarkus.application.version}", // repli : la valeur effective est quarkus.smallrye-openapi.info-version (communs)
                 contact = @Contact(
                         name = "Vincent Zwingmann",
                         email = "vincent.zwingmann@github.com"),

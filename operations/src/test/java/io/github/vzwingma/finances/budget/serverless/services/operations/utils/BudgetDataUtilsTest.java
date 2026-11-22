@@ -101,6 +101,37 @@ class BudgetDataUtilsTest {
 
 
     @Test
+    void getCompteFromBudgetId_compteAvecUnderscore() throws BudgetNotFoundException {
+        assertEquals("a_1", BudgetDataUtils.getCompteFromBudgetId("a_1_2026_05"));
+        assertEquals(Integer.valueOf(2026), BudgetDataUtils.getAnneeFromBudgetId("a_1_2026_05"));
+        assertEquals(Month.MAY, BudgetDataUtils.getMoisFromBudgetId("a_1_2026_05"));
+        assertEquals("a_b_c", BudgetDataUtils.getCompteFromBudgetId("a_b_c_2018_12"));
+        assertEquals(Month.DECEMBER, BudgetDataUtils.getMoisFromBudgetId("a_b_c_2018_12"));
+    }
+
+    @Test
+    void getFromBudgetId_idNull() throws BudgetNotFoundException {
+        assertNull(BudgetDataUtils.getCompteFromBudgetId(null));
+        assertNull(BudgetDataUtils.getAnneeFromBudgetId(null));
+        assertNull(BudgetDataUtils.getMoisFromBudgetId(null));
+    }
+
+    @Test
+    void getFromBudgetId_idMalFormeLeveException() {
+        for (String id : new String[]{"sansunderscore", "ING_2018", "ING_20_01", "_2018_01", "ING_aaaa_01", ""}) {
+            assertThrows(BudgetNotFoundException.class, () -> BudgetDataUtils.getCompteFromBudgetId(id), id);
+            assertThrows(BudgetNotFoundException.class, () -> BudgetDataUtils.getAnneeFromBudgetId(id), id);
+            assertThrows(BudgetNotFoundException.class, () -> BudgetDataUtils.getMoisFromBudgetId(id), id);
+        }
+    }
+
+
+    @Test
+    void getMoisFromBudgetId_moisInvalide() {
+        assertThrows(BudgetNotFoundException.class, () -> BudgetDataUtils.getMoisFromBudgetId("ING_2018_13"));
+    }
+
+    @Test
     void testGetCategorie() {
 
 

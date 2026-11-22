@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.api;
 
+import io.github.vzwingma.finances.budget.services.communs.api.metrics.MetricsLog;
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,7 @@ class HttpMetricsLogTest {
     @Test
     void requete_ligneHttpMetric() {
         List<String> lines = new CopyOnWriteArrayList<>();
-        Logger jul = Logger.getLogger("io.github.vzwingma.finances.budget.services.communs.api.metrics.HttpMetricsRecorder");
+        Logger jul = Logger.getLogger(MetricsLog.CATEGORIE);
         Handler handler = new Handler() {
             @Override
             public void publish(LogRecord record) {

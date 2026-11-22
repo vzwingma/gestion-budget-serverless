@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
+import io.github.vzwingma.finances.budget.services.communs.api.metrics.MetricsLog;
 import com.sun.net.httpserver.HttpServer;
 import io.quarkus.test.junit.QuarkusTest;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
@@ -26,7 +27,7 @@ class RestClientMetricsQuarkusTest {
     @Test
     void clientComptes_ligneRestMetric() throws Exception {
         List<String> lines = new CopyOnWriteArrayList<>();
-        Logger jul = Logger.getLogger(AbstractRestClientMetricsFilter.class.getName());
+        Logger jul = Logger.getLogger(MetricsLog.CATEGORIE);
         Handler handler = new Handler() {
             @Override
             public void publish(LogRecord record) {

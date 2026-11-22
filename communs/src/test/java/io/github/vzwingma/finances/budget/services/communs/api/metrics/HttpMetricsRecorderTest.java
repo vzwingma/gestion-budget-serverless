@@ -1,7 +1,7 @@
 package io.github.vzwingma.finances.budget.services.communs.api.metrics;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ResourceInfo;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +32,7 @@ class HttpMetricsRecorderTest {
 
     private HttpMetricsRecorder recorder;
     private ContainerRequestContext request;
-    private ResourceInfo info;
+    private SimpleResourceInfo info;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -41,9 +41,9 @@ class HttpMetricsRecorderTest {
         request = mock(ContainerRequestContext.class);
         when(request.getProperty(anyString())).thenAnswer(i -> properties.get(i.<String>getArgument(0)));
         doAnswer(i -> properties.put(i.getArgument(0), i.getArgument(1))).when(request).setProperty(anyString(), any());
-        info = mock(ResourceInfo.class);
+        info = mock(SimpleResourceInfo.class);
         when(info.getResourceClass()).thenAnswer(i -> FakeResource.class);
-        when(info.getResourceMethod()).thenReturn(FakeResource.class.getMethod("getBudget"));
+        when(info.getMethodName()).thenReturn("getBudget");
     }
 
     @Test
@@ -93,6 +93,20 @@ class HttpMetricsRecorderTest {
     @Test
     void record_ressourceIndisponible_unmatched() {
         when(info.getResourceClass()).thenThrow(new IllegalStateException("hors requête"));
+        recorder.start(request);
+        assertTrue(recorder.record(request, info, 500).contains("op=unmatched"));
+    }
+
+    @Test
+    void record_erreurDeLiaisonOuDeChargement_unmatched() {
+        when(info.getResourceClass()).thenThrow(new NoClassDefFoundError("x"));
+        recorder.start(request);
+        assertTrue(recorder.record(request, info, 500).contains("op=unmatched"));
+    }
+
+    @Test
+    void record_methodeInconnue_unmatched() {
+        when(info.getMethodName()).thenReturn(null);
         recorder.start(request);
         assertTrue(recorder.record(request, info, 500).contains("op=unmatched"));
     }

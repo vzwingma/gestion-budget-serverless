@@ -32,8 +32,6 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -141,31 +139,66 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
         return this.dataOperationsProvider.chargeSoldesBudgetMensuel(idCompte, mois, annee);
     }
     /**
-     * Chargement du budget et du compte en double Uni
+     * Chargement du budget et du compte en double Uni, <b>en parallèle</b> (AP004 T2.5) : l'identifiant du compte est déduit
+     * de l'identifiant du budget, ce qui évite d'attendre la lecture Mongo avant l'appel au service comptes.
+     * <ul>
+     *   <li>Budget introuvable : 404, prioritaire sur toute erreur de lecture du compte (même si celle-ci survient en premier).</li>
+     *   <li>Compte du budget différent de celui déduit de l'identifiant : {@link DonneeCorrompueException} (500).</li>
+     *   <li>Compte clos : {@link CompteClosedException} (406).</li>
+     * </ul>
      *
      * @param idBudget id du budget
      * @return tuple (budget, compte)
      */
     private Uni<Tuple2<BudgetMensuel, CompteBancaire>> getBudgetAndCompteActif(String idBudget) {
         BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget);
-        return getBudgetMensuel(idBudget)
-                .flatMap(budget -> Uni.combine().all()
-                        .unis(Uni.createFrom().item(budget),
-                                this.comptesService.getCompteById(budget.getIdCompteBancaire()))
-                        .asTuple())
-                // Si pas d'erreur, vérification du compte
-                .onItem().ifNotNull()
-                // Vérification du compte
-                .transformToUni(tuple -> {
-                    CompteBancaire compteBancaire = tuple.getItem2();
+        final String idCompte;
+        try {
+            idCompte = BudgetDataUtils.getCompteFromBudgetId(idBudget);
+        } catch (BudgetNotFoundException e) {
+            return Uni.createFrom().failure(e);
+        }
+        // L'échec de lecture du compte est différé (Resultat) : il ne peut pas masquer un échec du budget, qui reste prioritaire
+        Uni<ResultatLecture> compte = this.comptesService.getCompteById(idCompte)
+                .map(ResultatLecture::succes)
+                .onFailure().recoverWithItem(ResultatLecture::echec);
+        return Uni.combine().all().unis(getBudgetMensuel(idBudget), compte).asTuple()
+                // Vérification du budget et du compte
+                .chain(tuple -> {
+                    BudgetMensuel budget = tuple.getItem1();
+                    ResultatLecture resultatCompte = tuple.getItem2();
+                    if (resultatCompte.erreur() != null) {
+                        return Uni.<Tuple2<BudgetMensuel, CompteBancaire>>createFrom().failure(resultatCompte.erreur());
+                    }
+                    CompteBancaire compteBancaire = resultatCompte.compte();
+                    if (compteBancaire == null) {
+                        return Uni.createFrom().failure(new DataNotFoundException("Compte bancaire " + idCompte + " non trouvé"));
+                    }
+                    if (!idCompte.equals(budget.getIdCompteBancaire())) {
+                        LOGGER.error("Budget {} incohérent : compte {} attendu, compte {} stocké", idBudget, idCompte, budget.getIdCompteBancaire());
+                        return Uni.createFrom().failure(new DonneeCorrompueException("Budget " + idBudget + " incohérent : le compte stocké ne correspond pas à l'identifiant du budget"));
+                    }
                     BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.COMPTE, compteBancaire.getId());
 
                     if (!Boolean.TRUE.equals(compteBancaire.isActif())) {
-                        LOGGER.warn("Impossible de modifier ou créer une opération. Le compte {} est cloturé", tuple.getItem1().getIdCompteBancaire());
-                        return Uni.createFrom().failure(new CompteClosedException("Impossible de modifier ou créer une opération. Le compte " + tuple.getItem1().getIdCompteBancaire() + " est cloturé"));
+                        LOGGER.warn("Impossible de modifier ou créer une opération. Le compte {} est cloturé", budget.getIdCompteBancaire());
+                        return Uni.createFrom().failure(new CompteClosedException("Impossible de modifier ou créer une opération. Le compte " + budget.getIdCompteBancaire() + " est cloturé"));
                     }
-                    return Uni.createFrom().item(tuple);
+                    return Uni.createFrom().item(Tuple2.of(budget, compteBancaire));
                 });
+    }
+
+    /**
+     * Résultat de la lecture du compte, avec l'erreur éventuelle différée (voir {@link #getBudgetAndCompteActif})
+     */
+    private record ResultatLecture(CompteBancaire compte, Throwable erreur) {
+        static ResultatLecture succes(CompteBancaire compte) {
+            return new ResultatLecture(compte, null);
+        }
+
+        static ResultatLecture echec(Throwable erreur) {
+            return new ResultatLecture(null, erreur);
+        }
     }
 
 
@@ -759,15 +792,12 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     }
 
     /**
-     * Lecture du compte de destination. Un 404 distant du service comptes (le client REST lève une
-     * {@link WebApplicationException} de statut 404 pour un compte inconnu) est traduit en {@link DataNotFoundException}
-     * (404 côté API) ; toute autre erreur est propagée inchangée.
+     * Lecture du compte de destination. Le client REST traduit déjà un 404 distant en {@link DataNotFoundException}
+     * (AP004 T2.4) ; seul le libellé est précisé ici (compte de destination). Toute autre erreur est propagée inchangée.
      */
     private Uni<CompteBancaire> getCompteDestination(String idCompteDestination) {
         return this.comptesService.getCompteById(idCompteDestination)
-                .onFailure(erreur -> erreur instanceof WebApplicationException wae
-                        && wae.getResponse() != null
-                        && wae.getResponse().getStatus() == Response.Status.NOT_FOUND.getStatusCode())
+                .onFailure(DataNotFoundException.class)
                 .transform(erreur -> {
                     LOGGER.error("Virement interne refusé : compte de destination {} introuvable (404 du service comptes)", idCompteDestination);
                     return new DataNotFoundException("Compte de destination " + idCompteDestination + " introuvable");
