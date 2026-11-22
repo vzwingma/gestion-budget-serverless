@@ -286,7 +286,7 @@ Piste D : T1.2c
 - Cache des catégories : un seul appel HTTP pour 2 lectures dans la durée du TTL.
 - `mvn clean install` vert dans `build-on-all` ; build natif des 4 services vert et QUA déployé.
 - `*APIEnum` inchangés ; schéma OpenAPI identique (diff avant/après), hors `info.version` alignée.
-- `Init Duration` p95 dégradé de moins de 10 %. p95 de création d'opération mesuré avant et après.
+- ~~`Init Duration` p95 dégradé de moins de 10 % ; p95 de création d'opération mesuré avant et après.~~ **Non réalisé, décision 👤 du 2026-11-22 (« continue sans faire la comparaison »)** : aucune mesure avant/après. L'instrumentation T2.0 reste en place pour un suivi ultérieur.
 
 ### Tâches
 
@@ -348,7 +348,7 @@ Piste D : T1.2c
 - Tests : timeouts, retry (cas couverts et non couverts), mapper, parallélisation, cache, configuration effective, codes REST par module.
 - **Acceptation :** couverture ≥ 80 % des nouvelles classes ; preuve de régression (sans le mapper, le test passe au rouge).
 
-#### T2.9 — Mesure QUA (👤, avec analyse MAINa)
+#### T2.9 — Mesure QUA (👤, avec analyse MAINa) — ❌ abandonnée (décision 👤 du 2026-11-22 : pas de comparaison avant/après)
 - Requêtes CloudWatch Logs Insights :
   - `[HTTP-METRIC] op=BudgetsResource.createOperation` : p50, p95, max, en séparant chaud et froid ;
   - lignes `REPORT` : Duration et Init Duration.
