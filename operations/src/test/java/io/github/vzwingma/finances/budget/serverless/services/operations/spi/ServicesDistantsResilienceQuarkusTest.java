@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
+import io.github.vzwingma.finances.budget.services.communs.api.metrics.MetricsLog;
 import com.sun.net.httpserver.HttpServer;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.ServiceDistantIndisponibleException;
@@ -85,6 +86,7 @@ class ServicesDistantsResilienceQuarkusTest {
     private final List<String> metriques = new CopyOnWriteArrayList<>();
     private Handler handlerLog;
     private Logger loggerInterceptor;
+    private Logger loggerMetriques;
 
     @BeforeEach
     void setup() {
@@ -108,11 +110,14 @@ class ServicesDistantsResilienceQuarkusTest {
             }
         };
         loggerInterceptor.addHandler(handlerLog);
+        loggerMetriques = Logger.getLogger(MetricsLog.CATEGORIE);
+        loggerMetriques.addHandler(handlerLog);
     }
 
     @AfterEach
     void teardown() {
         loggerInterceptor.removeHandler(handlerLog);
+        loggerMetriques.removeHandler(handlerLog);
         arreter(serveurComptes);
         arreter(serveurParametrages);
     }
@@ -189,7 +194,8 @@ class ServicesDistantsResilienceQuarkusTest {
         assertFalse(e instanceof ServiceDistantTransitoireException, "un timeout n'est jamais rejoué");
         assertEquals(1, appelsComptes.get());
         assertEquals(1, metriques.stream().filter(m -> m.contains("status=timeout")).count(), metriques.toString());
-        assertTrue(metriques.get(0).matches("^\\[REST-METRIC] client=comptes method=GET status=timeout durationMs=\\d+$"), metriques.get(0));
+        String ligneTimeout = metriques.stream().filter(m -> m.contains("status=timeout")).findFirst().orElseThrow();
+        assertTrue(ligneTimeout.matches("^\\[REST-METRIC] client=comptes method=GET status=timeout durationMs=\\d+$"), ligneTimeout);
     }
 
     @Test

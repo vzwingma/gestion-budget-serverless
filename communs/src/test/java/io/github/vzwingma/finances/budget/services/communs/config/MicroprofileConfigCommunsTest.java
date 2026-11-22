@@ -1,5 +1,7 @@
 package io.github.vzwingma.finances.budget.services.communs.config;
 
+import io.github.vzwingma.finances.budget.services.communs.api.metrics.MetricsLog;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -9,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -59,5 +62,22 @@ class MicroprofileConfigCommunsTest {
         for (String cle : new String[]{"quarkus.application.name", "quarkus.http.port", "quarkus.oidc.info-public.tenant-paths"}) {
             assertNull(p.getProperty(cle), cle + " est propre à chaque module");
         }
+    }
+
+    @Test
+    void categorieMetriques_infoPourTousLesProfils_independanteDeQuarkusLogLevel() throws IOException {
+        String cle = "quarkus.log.category.\"" + MetricsLog.CATEGORIE + "\".level";
+        Properties p = charger();
+        assertEquals("INFO", p.getProperty(cle));
+        // aucune variante par profil (SmallRye résout %profil.cle avant cle) ni référence à QUARKUS_LOG_LEVEL
+        for (String nom : p.stringPropertyNames()) {
+            if (nom.contains(MetricsLog.CATEGORIE)) {
+                assertEquals(cle, nom, "la catégorie des métriques ne doit pas avoir de variante par profil");
+                assertFalse(p.getProperty(nom).contains("QUARKUS_LOG_LEVEL"));
+            }
+        }
+        // résolu par MicroProfile Config (profil test) : INFO
+        assertEquals("INFO", ConfigProvider.getConfig().getValue(cle, String.class));
+        assertEquals("io.github.vzwingma.finances.budget.metrics", MetricsLog.CATEGORIE);
     }
 }

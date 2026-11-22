@@ -1,11 +1,10 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
+import io.github.vzwingma.finances.budget.services.communs.api.metrics.MetricsLog;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
@@ -23,8 +22,6 @@ import java.util.concurrent.TimeUnit;
  * La durée est mesurée avec {@link System#nanoTime()} (horloge monotone).
  */
 public abstract class AbstractRestClientMetricsFilter implements ClientRequestFilter, ClientResponseFilter {
-
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractRestClientMetricsFilter.class);
 
     /** Propriété de requête portant l'heure de début (nanosecondes) */
     static final String START_PROPERTY = AbstractRestClientMetricsFilter.class.getName() + ".startNanos";
@@ -44,7 +41,7 @@ public abstract class AbstractRestClientMetricsFilter implements ClientRequestFi
     public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) {
         Object start = requestContext.getProperty(START_PROPERTY);
         long durationMs = start instanceof Long nanos ? TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - nanos) : -1L;
-        LOG.info(format(clientName, requestContext.getMethod(), responseContext.getStatus(), durationMs));
+        MetricsLog.info(format(clientName, requestContext.getMethod(), responseContext.getStatus(), durationMs));
     }
 
     /**

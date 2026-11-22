@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
+import io.github.vzwingma.finances.budget.services.communs.api.metrics.MetricsLog;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.AbstractBusinessException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.ServiceDistantIndisponibleException;
 import io.quarkus.arc.ArcInvocationContext;
@@ -129,7 +130,7 @@ public class TraductionErreursServiceDistantInterceptor {
             return erreur;
         }
         String statut = echec == Echec.TIMEOUT ? STATUT_TIMEOUT : STATUT_CONNECT_ERROR;
-        LOG.info(AbstractRestClientMetricsFilter.format(cible.client(), cible.methode(), statut, dureeMs));
+        MetricsLog.info(AbstractRestClientMetricsFilter.format(cible.client(), cible.methode(), statut, dureeMs));
         return echec == Echec.TIMEOUT
                 ? new ServiceDistantIndisponibleException("Service distant indisponible (délai dépassé)")
                 : new ServiceDistantTransitoireException("Service distant indisponible (connexion impossible)");

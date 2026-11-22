@@ -89,7 +89,7 @@ public class HttpMetricsRecorder {
             cold = s.cold();
         }
         String line = format(operation(info), status, durationMs, cold);
-        LOG.info(line);
+        MetricsLog.info(line);
         return line;
     }
 
