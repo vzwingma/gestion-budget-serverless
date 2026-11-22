@@ -16,8 +16,9 @@ import java.util.concurrent.TimeUnit;
  *   <li>Ni chemin, ni identifiant, ni jeton, ni en-tête n'est tracé : seuls le nom logique du client, la méthode
  *   HTTP, le statut et la durée le sont.</li>
  *   <li>Réponse en erreur (4xx / 5xx) : le filtre de réponse s'exécute, la ligne est tracée avec le statut reçu.</li>
- *   <li>Exception avant réponse (timeout, connexion refusée) : le filtre de réponse n'est <b>pas</b> exécuté, aucune
- *   ligne {@code [REST-METRIC]} n'est émise ; l'échec reste visible dans l'erreur remontée par l'appelant.</li>
+ *   <li>Exception avant réponse (timeout, connexion refusée) : le filtre de réponse n'est <b>pas</b> exécuté ; la ligne
+ *   est alors émise par {@link TraductionErreursServiceDistantInterceptor} avec {@code status=timeout} ou
+ *   {@code status=connect-error}.</li>
  * </ul>
  * La durée est mesurée avec {@link System#nanoTime()} (horloge monotone).
  */
@@ -50,6 +51,14 @@ public abstract class AbstractRestClientMetricsFilter implements ClientRequestFi
      * Format de la ligne de métrique
      */
     static String format(String client, String method, int status, long durationMs) {
+        return format(client, method, String.valueOf(status), durationMs);
+    }
+
+    /**
+     * Format de la ligne de métrique, avec un statut textuel pour les échecs sans réponse HTTP
+     * ({@code timeout}, {@code connect-error}), émis par {@link TraductionErreursServiceDistantInterceptor}.
+     */
+    static String format(String client, String method, String status, long durationMs) {
         return "[REST-METRIC] client=" + client + " method=" + method + " status=" + status + " durationMs=" + durationMs;
     }
 }

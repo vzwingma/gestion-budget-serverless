@@ -32,8 +32,6 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -759,15 +757,12 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     }
 
     /**
-     * Lecture du compte de destination. Un 404 distant du service comptes (le client REST lève une
-     * {@link WebApplicationException} de statut 404 pour un compte inconnu) est traduit en {@link DataNotFoundException}
-     * (404 côté API) ; toute autre erreur est propagée inchangée.
+     * Lecture du compte de destination. Le client REST traduit déjà un 404 distant en {@link DataNotFoundException}
+     * (AP004 T2.4) ; seul le libellé est précisé ici (compte de destination). Toute autre erreur est propagée inchangée.
      */
     private Uni<CompteBancaire> getCompteDestination(String idCompteDestination) {
         return this.comptesService.getCompteById(idCompteDestination)
-                .onFailure(erreur -> erreur instanceof WebApplicationException wae
-                        && wae.getResponse() != null
-                        && wae.getResponse().getStatus() == Response.Status.NOT_FOUND.getStatusCode())
+                .onFailure(DataNotFoundException.class)
                 .transform(erreur -> {
                     LOGGER.error("Virement interne refusé : compte de destination {} introuvable (404 du service comptes)", idCompteDestination);
                     return new DataNotFoundException("Compte de destination " + idCompteDestination + " introuvable");

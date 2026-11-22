@@ -222,11 +222,13 @@ class BudgetServiceVirementTest {
 
     @Test
     void testGarde_compteDestinationInconnuDuServiceComptes404_traduitEnDataNotFound() {
-        when(comptes.getCompteById("C2")).thenReturn(Uni.createFrom().failure(new WebApplicationException(Response.status(404).build())));
+        // Le client REST (ServicesDistantsResponseExceptionMapper) traduit le 404 distant en DataNotFoundException ; le service précise le libellé
+        when(comptes.getCompteById("C2")).thenReturn(Uni.createFrom().failure(new DataNotFoundException("Ressource non trouvée dans le service distant")));
 
         Throwable erreur = erreur(budgetService.createOperationsVirementInterne(budgetSource.getId(), virement("v", "x"), "C2", "userTest"));
 
         assertInstanceOf(DataNotFoundException.class, erreur);
+        assertTrue(((DataNotFoundException) erreur).getLibelle().contains("Compte de destination C2 introuvable"));
         assertAucuneEcriture(repository);
     }
 

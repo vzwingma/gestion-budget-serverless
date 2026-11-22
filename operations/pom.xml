@@ -33,6 +33,11 @@
             <artifactId>communs</artifactId>
             <version>26.0.0-SNAPSHOT</version>
         </dependency>
+        <!-- Résilience des appels REST inter-services : retry restreint (AP004 T2.4, ADR-009) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
+        </dependency>
         <!-- Tests d'intégration Mongo : MongoDB Testcontainers indépendant du profil Maven (version gérée par le BOM Quarkus) -->
         <dependency>
             <groupId>org.testcontainers</groupId>

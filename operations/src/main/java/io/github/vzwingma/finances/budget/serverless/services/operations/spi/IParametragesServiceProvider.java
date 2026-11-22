@@ -7,6 +7,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
@@ -21,6 +22,8 @@ import java.util.List;
 @RegisterRestClient(configKey = "parametrages-service")
 @RegisterClientHeaders(RequestJWTHeaderFactory.class)
 @RegisterProvider(ParametragesRestClientMetricsFilter.class)
+@RegisterProvider(ServicesDistantsResponseExceptionMapper.class)
+@TraductionErreursServiceDistant
 public interface IParametragesServiceProvider {
 
     /**
@@ -31,6 +34,7 @@ public interface IParametragesServiceProvider {
      */
     @GET
     @Path(ParametragesApiUrlEnum.PARAMS_CATEGORIES + ParametragesApiUrlEnum.PARAMS_CATEGORIE_ID)
+    @Retry(maxRetries = 1, delay = 200, jitter = 100, retryOn = ServiceDistantTransitoireException.class)
     Uni<SsCategorieOperations> getSsCategorieParId(String idCategorie);
 
     /**
@@ -40,5 +44,6 @@ public interface IParametragesServiceProvider {
      */
     @GET
     @Path(ParametragesApiUrlEnum.PARAMS_CATEGORIES)
+    @Retry(maxRetries = 1, delay = 200, jitter = 100, retryOn = ServiceDistantTransitoireException.class)
     Uni<List<CategorieOperations>> getCategories();
 }
