@@ -7,6 +7,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import io.quarkus.cache.CacheResult;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -26,6 +27,9 @@ import java.util.List;
 @TraductionErreursServiceDistant
 public interface IParametragesServiceProvider {
 
+    /** Cache des catégories (TTL 1 h : quarkus.cache.caffeine."categories".expire-after-write). Les erreurs ne sont jamais mises en cache. */
+    String CATEGORIES_CACHE = "categories";
+
     /**
      * Recherche d'une catégorie ou d'une sous catégorie d'opérations à partir de son id
      *
@@ -34,6 +38,7 @@ public interface IParametragesServiceProvider {
      */
     @GET
     @Path(ParametragesApiUrlEnum.PARAMS_CATEGORIES + ParametragesApiUrlEnum.PARAMS_CATEGORIE_ID)
+    @CacheResult(cacheName = CATEGORIES_CACHE)
     @Retry(maxRetries = 1, delay = 200, jitter = 100, retryOn = ServiceDistantTransitoireException.class)
     Uni<SsCategorieOperations> getSsCategorieParId(String idCategorie);
 
@@ -44,6 +49,7 @@ public interface IParametragesServiceProvider {
      */
     @GET
     @Path(ParametragesApiUrlEnum.PARAMS_CATEGORIES)
+    @CacheResult(cacheName = CATEGORIES_CACHE)
     @Retry(maxRetries = 1, delay = 200, jitter = 100, retryOn = ServiceDistantTransitoireException.class)
     Uni<List<CategorieOperations>> getCategories();
 }

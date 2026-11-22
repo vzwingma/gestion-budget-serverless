@@ -4,6 +4,8 @@ import com.sun.net.httpserver.HttpServer;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.ServiceDistantIndisponibleException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.UserNotAuthorizedException;
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
@@ -74,6 +76,9 @@ class ServicesDistantsResilienceQuarkusTest {
     @RestClient
     IParametragesServiceProvider parametrages;
 
+    @CacheName(IParametragesServiceProvider.CATEGORIES_CACHE)
+    Cache cacheCategories;
+
     private HttpServer serveurComptes;
     private HttpServer serveurParametrages;
     private final AtomicInteger appelsComptes = new AtomicInteger();
@@ -84,6 +89,7 @@ class ServicesDistantsResilienceQuarkusTest {
 
     @BeforeEach
     void setup() {
+        cacheCategories.invalidateAll().await().indefinitely();
         loggerInterceptor = Logger.getLogger(TraductionErreursServiceDistantInterceptor.class.getName());
         loggerInterceptor.setLevel(Level.ALL);
         handlerLog = new Handler() {
@@ -191,6 +197,39 @@ class ServicesDistantsResilienceQuarkusTest {
         Throwable e = erreur(() -> parametrages.getCategories().await().indefinitely());
         assertInstanceOf(ServiceDistantTransitoireException.class, e);
         assertEquals(2, metriques.stream().filter(m -> m.contains("client=parametrages method=GET status=connect-error")).count(), metriques.toString());
+    }
+
+    // ====== cache des catégories ======
+
+    @Test
+    void categories_deuxLectures_unSeulAppelHttp() throws IOException {
+        serveurParametrages = demarrer(PORT_PARAMETRAGES, appelsParametrages, n -> 200, CATEGORIES_JSON, 0);
+        assertEquals(1, parametrages.getCategories().await().indefinitely().size());
+        assertEquals(1, parametrages.getCategories().await().indefinitely().size());
+        assertEquals(1, appelsParametrages.get());
+        // log DEBUG sur le seul miss (le 2e appel est servi par le cache)
+        assertEquals(1, metriques.stream().filter(m -> m.contains("[CACHE] miss")).count(), metriques.toString());
+    }
+
+    @Test
+    void ssCategorie_deuxLecturesMemeId_unSeulAppelHttp_idDifferent_secondAppel() throws IOException {
+        serveurParametrages = demarrer(PORT_PARAMETRAGES, appelsParametrages, n -> 200, SS_CATEGORIE_JSON, 0);
+        parametrages.getSsCategorieParId("ss1").await().indefinitely();
+        parametrages.getSsCategorieParId("ss1").await().indefinitely();
+        assertEquals(1, appelsParametrages.get());
+        parametrages.getSsCategorieParId("ss2").await().indefinitely();
+        assertEquals(2, appelsParametrages.get());
+    }
+
+    @Test
+    void categories_uneErreurN_estPasMiseEnCache() throws IOException {
+        serveurParametrages = demarrer(PORT_PARAMETRAGES, appelsParametrages, n -> n == 1 ? 500 : 200, CATEGORIES_JSON, 0);
+        assertInstanceOf(ServiceDistantIndisponibleException.class, erreur(() -> parametrages.getCategories().await().indefinitely()));
+        assertEquals(1, parametrages.getCategories().await().indefinitely().size());
+        assertEquals(2, appelsParametrages.get());
+        // et le succès, lui, est mis en cache
+        parametrages.getCategories().await().indefinitely();
+        assertEquals(2, appelsParametrages.get());
     }
 
     // ====== utilitaires ======

@@ -2,6 +2,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.AbstractBusinessException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.ServiceDistantIndisponibleException;
+import io.quarkus.cache.CacheResult;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
@@ -58,12 +59,32 @@ public class TraductionErreursServiceDistantInterceptor {
     Object traduire(InvocationContext ctx) throws Exception {
         final long debut = System.nanoTime();
         final Class<?> contrat = contrat(ctx);
+        traceCacheMiss(contrat, ctx.getMethod());
         Object resultat = ctx.proceed();
         if (resultat instanceof Uni<?> uni) {
             return uni.onFailure().transform(erreur ->
                     traduireErreur(contrat, ctx.getMethod(), erreur, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - debut)));
         }
         return resultat;
+    }
+
+    /**
+     * Cet intercepteur est <i>interne</i> à l'intercepteur de cache : s'il s'exécute pour une méthode {@code @CacheResult},
+     * c'est que le cache n'a pas de valeur (miss) et que le service distant va être appelé. Aucun paramètre (donc aucun
+     * identifiant) n'est tracé. Un retry rejoue l'appel distant et donc cette trace.
+     */
+    private static void traceCacheMiss(Class<?> contrat, Method methode) {
+        if (!LOG.isDebugEnabled()) {
+            return;
+        }
+        try {
+            CacheResult cache = contrat.getMethod(methode.getName(), methode.getParameterTypes()).getAnnotation(CacheResult.class);
+            if (cache != null) {
+                LOG.debug("[CACHE] miss cache={} : appel du service distant {}.{}", cache.cacheName(), nomClient(contrat), methode.getName());
+            }
+        } catch (NoSuchMethodException e) {
+            // méthode non portée par le contrat : rien à tracer
+        }
     }
 
     private static Throwable traduireErreur(Class<?> contrat, Method methode, Throwable erreur, long dureeMs) {

@@ -38,6 +38,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
         </dependency>
+        <!-- Cache des catégories de parametrages (AP004 T2.6, ADR-009) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-cache</artifactId>
+        </dependency>
         <!-- Tests d'intégration Mongo : MongoDB Testcontainers indépendant du profil Maven (version gérée par le BOM Quarkus) -->
         <dependency>
             <groupId>org.testcontainers</groupId>
