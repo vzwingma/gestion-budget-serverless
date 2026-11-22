@@ -311,13 +311,19 @@ public class OperationsService implements IOperationsAppProvider {
      * @return ligne de remboursement
      */
 
-    private LigneOperation createOperationRemboursement(LigneOperation operationSource, String auteur, SsCategorieOperations ssCategorieRemboursement) {
+    LigneOperation createOperationRemboursement(LigneOperation operationSource, String auteur, SsCategorieOperations ssCategorieRemboursement) {
         // Workaround de #26
+        // La sous-catégorie vient du cache des catégories (AP004 T2.6) : instance partagée entre requêtes, qui ne doit jamais être
+        // modifiée. On travaille sur une copie locale ; ce point est le seul endroit où une catégorie en cache était modifiée.
         SsCategorieOperations.CategorieParente categorieParente = new SsCategorieOperations.CategorieParente(IdsCategoriesEnum.CAT_RENTREES.getId(), IdsCategoriesEnum.CAT_RENTREES.getLibelle());
-        ssCategorieRemboursement.setCategorieParente(categorieParente);
+        SsCategorieOperations ssCategorieCopie = new SsCategorieOperations(ssCategorieRemboursement.getId());
+        ssCategorieCopie.setLibelle(ssCategorieRemboursement.getLibelle());
+        ssCategorieCopie.setActif(ssCategorieRemboursement.isActif());
+        ssCategorieCopie.setType(ssCategorieRemboursement.getType());
+        ssCategorieCopie.setCategorieParente(categorieParente);
         // Si l'opération est une opération de remboursement, on ajoute la catégorie de remboursement
         return completeOperationAttributes(new LigneOperation(
-                        ssCategorieRemboursement,
+                        ssCategorieCopie,
                         operationSource.getLibelle(),
                         OperationTypeEnum.CREDIT,
                         Math.abs(operationSource.getValeur()),

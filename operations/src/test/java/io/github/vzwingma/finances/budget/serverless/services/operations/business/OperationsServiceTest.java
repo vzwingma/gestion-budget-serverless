@@ -63,6 +63,28 @@ class OperationsServiceTest {
     }
 
     @Test
+    void createOperationRemboursement_neModifiePasLaCategorieEnCache() {
+        SsCategorieOperations enCache = new SsCategorieOperations(IdsCategoriesEnum.SS_CAT_REMBOURSEMENT.getId());
+        enCache.setLibelle("Remboursement");
+        enCache.setType(CategorieOperationTypeEnum.REVENUS);
+        enCache.setActif(true);
+        SsCategorieOperations.CategorieParente parenteOrigine = new SsCategorieOperations.CategorieParente("parent-origine", "Parent d'origine");
+        enCache.setCategorieParente(parenteOrigine);
+
+        LigneOperation source = MockDataOperations.getOperationPrelevement();
+        LigneOperation remboursement = operationsAppProvider.createOperationRemboursement(source, "userTest", enCache);
+
+        // la valeur en cache est intacte
+        assertSame(parenteOrigine, enCache.getCategorieParente());
+        assertEquals("parent-origine", enCache.getCategorieParente().getId());
+        assertEquals("Remboursement", enCache.getLibelle());
+        // l'opération créée porte bien la catégorie parente de remboursement (workaround #26)
+        assertEquals(IdsCategoriesEnum.CAT_RENTREES.getId(), remboursement.getCategorie().getId());
+        assertEquals(IdsCategoriesEnum.SS_CAT_REMBOURSEMENT.getId(), remboursement.getSsCategorie().getId());
+        assertEquals(CategorieOperationTypeEnum.REVENUS, remboursement.getSsCategorie().getType());
+    }
+
+    @Test
     void testUpdateOperation() throws DataNotFoundException {
         List<LigneOperation> listeOperations = new ArrayList<>();
         listeOperations.add(MockDataOperations.getOperationPrelevement());
