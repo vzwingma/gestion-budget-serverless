@@ -24,7 +24,6 @@ import java.util.List;
 @RegisterClientHeaders(RequestJWTHeaderFactory.class)
 @RegisterProvider(ParametragesRestClientMetricsFilter.class)
 @RegisterProvider(ServicesDistantsResponseExceptionMapper.class)
-@TraductionErreursServiceDistant
 public interface IParametragesServiceProvider {
 
     /** Cache des catégories (TTL 1 h : quarkus.cache.caffeine."categories".expire-after-write). Les erreurs ne sont jamais mises en cache. */
@@ -37,6 +36,7 @@ public interface IParametragesServiceProvider {
      * @return catégorie correspondante. Null sinon
      */
     @GET
+    @TraductionErreursServiceDistant(client = "parametrages", method = "GET")
     @Path(ParametragesApiUrlEnum.PARAMS_CATEGORIES + ParametragesApiUrlEnum.PARAMS_CATEGORIE_ID)
     @CacheResult(cacheName = CATEGORIES_CACHE)
     @Retry(maxRetries = 1, delay = 200, jitter = 100, retryOn = ServiceDistantTransitoireException.class)
@@ -48,6 +48,7 @@ public interface IParametragesServiceProvider {
      * @return liste de catégories
      */
     @GET
+    @TraductionErreursServiceDistant(client = "parametrages", method = "GET")
     @Path(ParametragesApiUrlEnum.PARAMS_CATEGORIES)
     @CacheResult(cacheName = CATEGORIES_CACHE)
     @Retry(maxRetries = 1, delay = 200, jitter = 100, retryOn = ServiceDistantTransitoireException.class)

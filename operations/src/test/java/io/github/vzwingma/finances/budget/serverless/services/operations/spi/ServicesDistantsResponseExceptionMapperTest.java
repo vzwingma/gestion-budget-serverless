@@ -36,10 +36,12 @@ class ServicesDistantsResponseExceptionMapperTest {
     }
 
     @Test
-    void s401_userNotAuthorized_401() {
+    void s401_neProduitJamaisUn401_mais503_nonTransitoire() {
         AbstractBusinessException e = exceptionPour(401);
-        assertInstanceOf(UserNotAuthorizedException.class, e);
-        assertEquals(401, statutApi(e));
+        assertInstanceOf(ServiceDistantIndisponibleException.class, e);
+        assertFalse(e instanceof ServiceDistantTransitoireException);
+        assertFalse(e instanceof UserNotAuthorizedException);
+        assertEquals(503, statutApi(e));
     }
 
     @Test
@@ -61,7 +63,7 @@ class ServicesDistantsResponseExceptionMapperTest {
 
     @Test
     void autresStatuts_donnent503_nonTransitoire() {
-        for (int statut : new int[]{400, 406, 500, 501, 505}) {
+        for (int statut : new int[]{400, 406, 409, 422, 500, 501, 505}) {
             AbstractBusinessException e = exceptionPour(statut);
             assertInstanceOf(ServiceDistantIndisponibleException.class, e, "statut " + statut);
             assertFalse(e instanceof ServiceDistantTransitoireException, "statut " + statut);

@@ -4,6 +4,7 @@ import jakarta.inject.Singleton;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 
 /**
@@ -24,9 +25,13 @@ public class APITraceFilters extends AbstractAPIInterceptors {
         super.preMatchingFilter(requestContext);
     }
 
+    /**
+     * {@link SimpleResourceInfo} est fourni par RESTEasy Reactive (classe + nom de méthode connus au build) :
+     * pas de réflexion, sûr en image native.
+     */
     @Override
     @ServerResponseFilter
-    public void postMatchingFilter(ContainerResponseContext responseContext) {
-        super.postMatchingFilter(responseContext);
+    public void postMatchingFilter(ContainerResponseContext responseContext, SimpleResourceInfo resourceInfo) {
+        super.postMatchingFilter(responseContext, resourceInfo);
     }
 }

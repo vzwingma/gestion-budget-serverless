@@ -9,6 +9,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.HttpHeaders;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,14 +47,24 @@ public abstract class AbstractAPIInterceptors {
     }
 
     /**
-     * Logger réponse
+     * Logger réponse, sans information sur la ressource ({@code op=unmatched})
      *
      * @param responseContext context de la réponse
      */
     public void postMatchingFilter(ContainerResponseContext responseContext) {
+        postMatchingFilter(responseContext, null);
+    }
+
+    /**
+     * Logger réponse
+     *
+     * @param responseContext context de la réponse
+     * @param resourceInfo    ressource sélectionnée (peut être nulle)
+     */
+    public void postMatchingFilter(ContainerResponseContext responseContext, SimpleResourceInfo resourceInfo) {
 
         if (httpMetrics != null) {
-            httpMetrics.record(responseContext.getStatus());
+            httpMetrics.record(resourceInfo, responseContext.getStatus());
         }
         BusinessTraceContext.getclear();
         LOG.debug("[HTTP] < [{} - {}]", responseContext.getStatus(), responseContext.getStatusInfo().getReasonPhrase());

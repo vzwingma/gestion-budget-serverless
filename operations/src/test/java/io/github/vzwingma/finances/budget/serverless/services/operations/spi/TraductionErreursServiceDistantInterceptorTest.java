@@ -12,7 +12,14 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeoutException;
 
+import io.quarkus.arc.ArcInvocationContext;
+import jakarta.interceptor.InvocationContext;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * AP004 T2.4 : classement des échecs sans réponse HTTP (connexion, timeout, autre).
@@ -58,5 +65,58 @@ class TraductionErreursServiceDistantInterceptorTest {
     @Test
     void exceptionMetier_neEstJamaisReclassee() {
         assertEquals(Echec.AUTRE, TraductionErreursServiceDistantInterceptor.classer(new DataNotFoundException("404")));
+    }
+
+    @Test
+    void cible_luedansLaLiaison() {
+        ArcInvocationContext ctx = mock(ArcInvocationContext.class);
+        when(ctx.getInterceptorBinding(TraductionErreursServiceDistant.class)).thenReturn(liaison("comptes", "POST"));
+        assertEquals(new TraductionErreursServiceDistantInterceptor.Cible("comptes", "POST"), TraductionErreursServiceDistantInterceptor.cible(ctx));
+    }
+
+    @Test
+    void cible_repliSurLibelleParDefaut_siErreurDeReflexionOuDeLiaison() {
+        for (Throwable defaillance : new Throwable[]{new NoClassDefFoundError("x"), new LinkageError("x"),
+                new ExceptionInInitializerError("x"), new IllegalStateException("x")}) {
+            ArcInvocationContext ctx = mock(ArcInvocationContext.class);
+            when(ctx.getInterceptorBinding(any())).thenAnswer(i -> {
+                throw defaillance;
+            });
+            assertEquals(TraductionErreursServiceDistantInterceptor.Cible.INCONNUE, TraductionErreursServiceDistantInterceptor.cible(ctx), defaillance.toString());
+        }
+    }
+
+    @Test
+    void cible_repliSurLibelleParDefaut_siContexteNonArcOuLiaisonAbsente() {
+        assertEquals(TraductionErreursServiceDistantInterceptor.Cible.INCONNUE, TraductionErreursServiceDistantInterceptor.cible(mock(InvocationContext.class)));
+        assertEquals(TraductionErreursServiceDistantInterceptor.Cible.INCONNUE, TraductionErreursServiceDistantInterceptor.cible(mock(ArcInvocationContext.class)));
+    }
+
+    @Test
+    void cible_neMasquePasUneErreurFataleDeLaJvm() {
+        ArcInvocationContext ctx = mock(ArcInvocationContext.class);
+        when(ctx.getInterceptorBinding(any())).thenAnswer(i -> {
+            throw new OutOfMemoryError("x");
+        });
+        assertThrows(OutOfMemoryError.class, () -> TraductionErreursServiceDistantInterceptor.cible(ctx));
+    }
+
+    private static TraductionErreursServiceDistant liaison(String client, String methode) {
+        return new TraductionErreursServiceDistant() {
+            @Override
+            public String client() {
+                return client;
+            }
+
+            @Override
+            public String method() {
+                return methode;
+            }
+
+            @Override
+            public Class<? extends java.lang.annotation.Annotation> annotationType() {
+                return TraductionErreursServiceDistant.class;
+            }
+        };
     }
 }

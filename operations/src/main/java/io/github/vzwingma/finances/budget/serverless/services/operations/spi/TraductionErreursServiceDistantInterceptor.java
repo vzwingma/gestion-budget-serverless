@@ -2,25 +2,21 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.AbstractBusinessException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.ServiceDistantIndisponibleException;
+import io.quarkus.arc.ArcInvocationContext;
 import io.quarkus.cache.CacheResult;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
-import jakarta.ws.rs.HttpMethod;
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.NoRouteToHostException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.channels.ClosedChannelException;
-import java.util.Arrays;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -55,17 +51,52 @@ public class TraductionErreursServiceDistantInterceptor {
     /** Nature d'un échec sans réponse HTTP */
     enum Echec { TIMEOUT, CONNEXION, AUTRE }
 
+    /** Libellé par défaut si la liaison est illisible (ne casse jamais l'appel) */
+    static final String LIBELLE_INCONNU = "inconnu";
+
+    /** Client et méthode HTTP tracés pour un appel */
+    record Cible(String client, String methode) {
+        static final Cible INCONNUE = new Cible(LIBELLE_INCONNU, LIBELLE_INCONNU);
+    }
+
     @AroundInvoke
     Object traduire(InvocationContext ctx) throws Exception {
         final long debut = System.nanoTime();
-        final Class<?> contrat = contrat(ctx);
-        traceCacheMiss(contrat, ctx.getMethod());
+        final Cible cible = cible(ctx);
+        traceCacheMiss(ctx, cible);
         Object resultat = ctx.proceed();
         if (resultat instanceof Uni<?> uni) {
             return uni.onFailure().transform(erreur ->
-                    traduireErreur(contrat, ctx.getMethod(), erreur, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - debut)));
+                    traduireErreur(cible, erreur, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - debut)));
         }
         return resultat;
+    }
+
+    /**
+     * Lit client et méthode HTTP dans la liaison d'intercepteur (aucune réflexion). Toute défaillance, y compris une
+     * {@link Error} de réflexion/liaison (ex. {@code LinkageError}, {@code MissingReflectionRegistrationError} en natif),
+     * donne un libellé par défaut : la traduction des erreurs et l'appel ne sont jamais cassés par une trace.
+     */
+    static Cible cible(InvocationContext ctx) {
+        try {
+            if (ctx instanceof ArcInvocationContext arc) {
+                TraductionErreursServiceDistant liaison = arc.getInterceptorBinding(TraductionErreursServiceDistant.class);
+                if (liaison != null) {
+                    return new Cible(liaison.client(), liaison.method());
+                }
+            }
+        } catch (RuntimeException | Error e) {
+            rethrowSiFatale(e);
+            LOG.debug("[REST-METRIC] liaison d'intercepteur illisible : libellé par défaut", e);
+        }
+        return Cible.INCONNUE;
+    }
+
+    /** Une erreur fatale de la JVM n'est jamais absorbée */
+    private static void rethrowSiFatale(Throwable e) {
+        if (e instanceof VirtualMachineError fatale) {
+            throw fatale;
+        }
     }
 
     /**
@@ -73,21 +104,23 @@ public class TraductionErreursServiceDistantInterceptor {
      * c'est que le cache n'a pas de valeur (miss) et que le service distant va être appelé. Aucun paramètre (donc aucun
      * identifiant) n'est tracé. Un retry rejoue l'appel distant et donc cette trace.
      */
-    private static void traceCacheMiss(Class<?> contrat, Method methode) {
+    private static void traceCacheMiss(InvocationContext ctx, Cible cible) {
         if (!LOG.isDebugEnabled()) {
             return;
         }
         try {
-            CacheResult cache = contrat.getMethod(methode.getName(), methode.getParameterTypes()).getAnnotation(CacheResult.class);
-            if (cache != null) {
-                LOG.debug("[CACHE] miss cache={} : appel du service distant {}.{}", cache.cacheName(), nomClient(contrat), methode.getName());
+            if (ctx instanceof ArcInvocationContext arc) {
+                CacheResult cache = arc.getInterceptorBinding(CacheResult.class);
+                if (cache != null) {
+                    LOG.debug("[CACHE] miss cache={} : appel du service distant {}", cache.cacheName(), cible.client());
+                }
             }
-        } catch (NoSuchMethodException e) {
-            // méthode non portée par le contrat : rien à tracer
+        } catch (RuntimeException | Error e) {
+            rethrowSiFatale(e);
         }
     }
 
-    private static Throwable traduireErreur(Class<?> contrat, Method methode, Throwable erreur, long dureeMs) {
+    private static Throwable traduireErreur(Cible cible, Throwable erreur, long dureeMs) {
         if (erreur instanceof AbstractBusinessException) {
             return erreur;
         }
@@ -96,7 +129,7 @@ public class TraductionErreursServiceDistantInterceptor {
             return erreur;
         }
         String statut = echec == Echec.TIMEOUT ? STATUT_TIMEOUT : STATUT_CONNECT_ERROR;
-        LOG.info(AbstractRestClientMetricsFilter.format(nomClient(contrat), methodeHttp(contrat, methode), statut, dureeMs));
+        LOG.info(AbstractRestClientMetricsFilter.format(cible.client(), cible.methode(), statut, dureeMs));
         return echec == Echec.TIMEOUT
                 ? new ServiceDistantIndisponibleException("Service distant indisponible (délai dépassé)")
                 : new ServiceDistantTransitoireException("Service distant indisponible (connexion impossible)");
@@ -126,48 +159,5 @@ public class TraductionErreursServiceDistantInterceptor {
             courante = courante.getCause() == courante ? null : courante.getCause();
         }
         return connexion ? Echec.CONNEXION : Echec.AUTRE;
-    }
-
-    /**
-     * Interface du client REST (annotée {@link RegisterRestClient}) : l'intercepteur s'exécute sur le bean généré par
-     * Quarkus, qui implémente cette interface sans en recopier les annotations.
-     */
-    private static Class<?> contrat(InvocationContext ctx) {
-        Class<?> cible = ctx.getTarget() != null ? ctx.getTarget().getClass() : ctx.getMethod().getDeclaringClass();
-        for (Class<?> c = cible; c != null; c = c.getSuperclass()) {
-            if (c.isAnnotationPresent(RegisterRestClient.class)) {
-                return c;
-            }
-            for (Class<?> i : c.getInterfaces()) {
-                if (i.isAnnotationPresent(RegisterRestClient.class)) {
-                    return i;
-                }
-            }
-        }
-        return ctx.getMethod().getDeclaringClass();
-    }
-
-    /** Nom logique du client : clé de configuration sans le suffixe {@code -service} (ex. {@code comptes-service} -> {@code comptes}) */
-    private static String nomClient(Class<?> contrat) {
-        RegisterRestClient client = contrat.getAnnotation(RegisterRestClient.class);
-        if (client == null || client.configKey().isBlank()) {
-            return contrat.getSimpleName();
-        }
-        return client.configKey().replaceAll("-service$", "");
-    }
-
-    /** Méthode HTTP déduite de l'annotation JAX-RS de la méthode du contrat ({@code GET} par défaut) */
-    private static String methodeHttp(Class<?> contrat, Method methode) {
-        try {
-            Method methodeContrat = contrat.getMethod(methode.getName(), methode.getParameterTypes());
-            return Arrays.stream(methodeContrat.getAnnotations())
-                    .map(a -> a.annotationType().getAnnotation(HttpMethod.class))
-                    .filter(Objects::nonNull)
-                    .map(HttpMethod::value)
-                    .findFirst()
-                    .orElse("GET");
-        } catch (NoSuchMethodException e) {
-            return "GET";
-        }
     }
 }

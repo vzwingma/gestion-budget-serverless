@@ -3,7 +3,6 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 import com.sun.net.httpserver.HttpServer;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.ServiceDistantIndisponibleException;
-import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.UserNotAuthorizedException;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;
 import io.quarkus.test.junit.QuarkusTest;
@@ -136,9 +135,11 @@ class ServicesDistantsResilienceQuarkusTest {
     }
 
     @Test
-    void comptes_401_userNotAuthorized_sansRetry() throws IOException {
+    void comptes_401_deLAval_serviceIndisponible503_sansRetry() throws IOException {
         serveurComptes = demarrer(PORT_COMPTES, appelsComptes, n -> 401, "", 0);
-        assertInstanceOf(UserNotAuthorizedException.class, erreur(() -> comptes.getCompteById("C1").await().indefinitely()));
+        Throwable e = erreur(() -> comptes.getCompteById("C1").await().indefinitely());
+        assertInstanceOf(ServiceDistantIndisponibleException.class, e);
+        assertFalse(e instanceof ServiceDistantTransitoireException);
         assertEquals(1, appelsComptes.get());
     }
 
