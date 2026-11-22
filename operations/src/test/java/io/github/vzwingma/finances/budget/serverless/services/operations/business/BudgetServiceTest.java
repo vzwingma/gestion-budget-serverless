@@ -860,7 +860,7 @@ class BudgetServiceTest {
 
         // Test
         CompletionException exception = Assertions.assertThrows(CompletionException.class,
-                () -> budgetAppProvider.addOrUpdateOperationInBudget("idBudget", MockDataOperations.getOperationPrelevement(), "userTest").await().indefinitely());
+                () -> budgetAppProvider.addOrUpdateOperationInBudget(MockDataBudgets.getBudgetInactifCompteC1().getId(), MockDataOperations.getOperationPrelevement(), "userTest").await().indefinitely());
         assertEquals(CompteClosedException.class, exception.getCause().getClass());
 
     }
