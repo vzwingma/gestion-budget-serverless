@@ -1,7 +1,7 @@
 # Plan d'Action 006 — Upgrade Quarkus 4 et migration Jackson 3
 
 **Date de création :** 2026-11-23  
-**Statut :** 🔄 En cours — Phase 1 : profil CI sans MongoDB  
+**Statut :** ⚠️ Bloqué — résultat Sonar CI PR en attente  
 **Branche :** `renovate/major-quarkus.platform.version`  
 **Responsable :** ⚫ MAINa  
 **ADR :** aucun nouvel ADR prévu : adaptation à la version majeure déjà proposée par Renovate, sans changement de stratégie d'authentification ni d'architecture. Toute décision structurante découverte sera soumise au 👤.
@@ -22,7 +22,7 @@ Le 2026-11-23, 👤 a choisi l'option A : migrer les usages concernés vers Jack
 - Hors périmètre : déploiement, changement fonctionnel de l'authentification, ajout volontaire d'une seconde pile Jackson, et corrections sans lien avec l'upgrade.
 - Ajustement accepté par 👤 le 2026-11-23 : isoler explicitement les cinq classes d'intégration Mongo réel dans les builds CI sans MongoDB ni Docker, tout en conservant leur exécution séparée. Le profil sans Mongo ne prouve pas la persistance, les index ou l'atomicité Mongo.
 
-## Phase 1 — Adapter le code et débloquer les builds — ⏳
+## Phase 1 — Adapter le code et débloquer les builds — ✅
 
 **Dépendance :** Gate #1 GO.  
 **Responsable :** 🔵 DEVon.
@@ -55,7 +55,7 @@ Le 2026-11-23, 👤 a choisi l'option A : migrer les usages concernés vers Jack
 - **Scope :** profil Maven `ci-sans-mongo` excluant uniquement `TestMigrationRepository`, `TestMigrationRepositoryConcurrence`, `TestMigrationRepositoryPersistence`, `UtilisateurDatabaseAdaptorMongoTest` et `OperationDatabaseAdaptorMongoTest` ; activation explicite dans les builds CI exécutant des tests ; indication visible de l'exclusion. Sans ce profil, conserver la possibilité d'exécuter les tests d'intégration réels.
 - **Acceptation :** builds JVM du profil réussis et nombres de tests/exclusions documentés ; validation de l'absence d'exclusion lorsque le profil est inactif. Les builds natifs et SAM qui utilisent Docker restent un blocage distinct tant qu'une infrastructure ou solution compatible n'est pas validée.
 
-## Phase 2 — Vérifier les contrats et la non-régression — ⏳
+## Phase 2 — Vérifier les contrats et la non-régression — ✅
 
 **Dépendance :** Phase 1 terminée et Gate #2 GO.  
 **Responsable :** 🟢 QALvin.
@@ -81,7 +81,7 @@ Le 2026-11-23, 👤 a choisi l'option A : migrer les usages concernés vers Jack
 - **Scope :** exécuter les tests pertinents de jetons valides/invalides, absence de fuite et propagation ; vérifier les builds natifs selon les commandes effectives de la CI, sans déployer. Ne pas élargir les tests de sécurité aux comportements non affectés.
 - **Acceptation :** résultats et prérequis documentés pour chaque vérification ; toute validation indisponible reste explicitement bloquée.
 
-## Phase 3 — Synchroniser la documentation et clôturer — ⏳
+## Phase 3 — Synchroniser la documentation et clôturer — ⚠️
 
 **Dépendance :** Phase 2 terminée et Gate #3 GO.  
 **Responsable :** 🟣 DOCly.
@@ -131,6 +131,6 @@ Le 2026-11-23, 👤 a choisi l'option A : migrer les usages concernés vers Jack
 | #0 | 2026-11-23 | Choix de solution | ✅ GO — option A | Migration Jackson 3 retenue ; conservation des contrats existants. |
 | #1 | 2026-11-23 | Validation du plan | ✅ GO | Démarrage de la phase 1. |
 | Ajustement | 2026-11-23 | CI sans Mongo ni Docker | ✅ GO | Isolation explicite des cinq classes Mongo réel ; test HTTP adapté à 400 à la demande du 👤. |
-| #2 | — | Validation du code | ⏳ En attente | — |
-| #3 | — | Validation des tests | ⏳ En attente | — |
+| #2 | 2026-11-23 | Validation du code | ✅ GO | CI de branche verte ; cinq classes Mongo isolées ; CI native en cours. |
+| #3 | 2026-11-23 | Validation des tests | ✅ GO | Limites Mongo réel, branches et Sonar distant présentées. |
 | #4 | — | Clôture documentaire | ⏳ En attente | — |

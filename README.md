@@ -26,7 +26,7 @@ forme de fonctions AWS Lambda natives.
 
 ### Frameworks utilisés
 
-- Quarkus **3.37.1** / Java **21**
+- Quarkus **4.0.0** / Java **25**
 - Mutiny ([guide](https://quarkus.io/guides/mutiny)): A reactive programming framework for Java.
 - MongoDB with Panache ([guide](https://quarkus.io/guides/mongodb-panache)): Simplify your persistence code for MongoDB
   via the active record or the repository pattern
@@ -52,9 +52,11 @@ Projet Maven multi-modules :
 
 ## Prérequis
 
-- **Java 25** (Mandrel 25 pour le build natif)
+- **Java 25**
 - **Apache Maven 3.9+**
 - **MongoDB** accessible (local sur `localhost:27017` ou Atlas)
+- Pour les tests Mongo réels : Docker fonctionnel et accès à l'image Testcontainers `mongo:7.0` ; les tests de migrations nécessitent aussi un MongoDB de test accessible ou Dev Services.
+- Pour le build natif CI : Docker et image builder Mandrel JDK 25 ; SAM utilise aussi Docker.
 - *(Optionnel)* **VS Code** avec les extensions [Extension Pack for Java](https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-pack) et [Quarkus](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-quarkus)
 
 ---
@@ -130,14 +132,41 @@ mvn clean package
 # Construire un seul module
 mvn clean package -f comptes/pom.xml
 
-# Construire l'exécutable natif Linux pour Lambda (nécessite GraalVM/Mandrel)
+# Construire l'exécutable natif Linux pour Lambda (Docker et image builder native)
 mvn clean package -Pnative -Dquarkus.native.container-build=true
 ```
 
 ## Tests
 
+La CI JVM utilise explicitement le profil `ci-sans-mongo` :
+
 ```bash
-# Tous les tests
+mvn clean install -B -Pci-sans-mongo --file communs/pom.xml
+mvn clean install -B -Pci-sans-mongo --file pom.xml
+```
+
+Surefire exclut cinq classes : `TestMigrationRepository`, `TestMigrationRepositoryConcurrence`,
+`TestMigrationRepositoryPersistence`, `UtilisateurDatabaseAdaptorMongoTest` et
+`OperationDatabaseAdaptorMongoTest`. Cette CI ne valide pas l'atomicité, la persistance ni les index MongoDB.
+
+Pour exécuter séparément ces tests **sans** `ci-sans-mongo`, avec Java 25 et Maven depuis la racine,
+utiliser les commandes proposées ci-dessous (non exécutées lors de l'upgrade) :
+
+```bash
+# Installer communs pour les modules dépendants
+mvn install -B -DskipTests --file communs/pom.xml
+mvn test -B --file communs/pom.xml -Dtest=TestMigrationRepository,TestMigrationRepositoryConcurrence,TestMigrationRepositoryPersistence
+mvn test -B --file utilisateurs/pom.xml -Dtest=UtilisateurDatabaseAdaptorMongoTest
+mvn test -B --file operations/pom.xml -Dtest=OperationDatabaseAdaptorMongoTest
+```
+
+Les deux tests d'adaptateurs démarrent un MongoDB `mongo:7.0` via Testcontainers et Docker. Pour les
+trois tests de `communs`, prévoir un MongoDB de test joignable ou Dev Services avec Docker, et vérifier
+la configuration de connexion effective : une chaîne configurée peut empêcher Dev Services de démarrer.
+Utiliser une base de test isolée. Ces tests Mongo réels n'ont pas été validés lors de l'upgrade.
+
+```bash
+# Tous les tests, y compris Mongo réel : prérequis ci-dessus
 mvn clean test
 
 # Tests d'un seul module

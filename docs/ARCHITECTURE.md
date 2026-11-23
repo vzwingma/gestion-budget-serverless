@@ -11,7 +11,7 @@ microservices sont compiles en binaires natifs GraalVM et deployes sous forme de
 | Propriété | Valeur |
 |---|---|
 | **Type** | Backend – API REST serverless |
-| **Stack principale** | Java 25 (Mandrel 25 natif) + Quarkus 3.40.1.2 + Mutiny + MongoDB Panache |
+| **Stack principale** | Java 25 (Mandrel 25 natif) + Quarkus 4.0.0 + Mutiny + MongoDB Panache |
 | **Plateforme cible** | AWS Lambda (natif GraalVM/Mandrel) |
 | **Version applicative** | 26.0.0-SNAPSHOT |
 | **Statut** | En développement actif |
@@ -180,7 +180,7 @@ gestion-budget-serverless/
 
 | Catégorie | Librairie | Version | Rôle |
 |---|---|---|---|
-| Framework | Quarkus | **3.40.1.2** | Runtime Lambda natif |
+| Framework | Quarkus | **4.0.0** | Runtime Lambda natif |
 | Sécurité | Quarkus OIDC (`quarkus-oidc`) | (via Quarkus BOM) | Validation des `id_token` Google, mode `service` ([ADR-005](./adr/005-authentification-jwt-extension-quarkus.md)) |
 | Langage | Java | **25** (Mandrel 25 en natif) | LTS, Records, Pattern Matching |
 | Réactif | SmallRye Mutiny | (via Quarkus BOM) | `Uni<T>` / `Multi<T>` |
@@ -188,16 +188,14 @@ gestion-budget-serverless/
 | API | RESTEasy Reactive (JAX-RS) | (via Quarkus BOM) | Endpoints REST |
 | OpenAPI | MicroProfile OpenAPI | (via Quarkus BOM) | Documentation Swagger |
 | Métriques | Micrometer | (via Quarkus BOM) | Monitoring Lambda |
-| Utilitaires | Lombok | **1.18.46** | `@Getter`, `@Setter`, etc. |
+| Utilitaires | Lombok | **1.18.48** | `@Getter`, `@Setter`, etc. |
 | Tests | JUnit 5 + @QuarkusTest | (via Quarkus BOM) | Tests unitaires et intégration |
 | Tests | Mockito | **5.x** | Mocking |
 | Tests | REST Assured | (via Quarkus BOM) | Tests API |
-| Couverture | JaCoCo | **0.8.14** | Rapport couverture (SonarCloud) |
-| Réseau | Netty | **4.1.135.Final** (via Quarkus BOM) | Fix CVE-2026-33870/33871 |
+| Couverture | JaCoCo | **0.8.16** | Rapport couverture (SonarCloud) |
+| Réseau | Netty | (via Quarkus BOM) | Réseau |
 
 > ⚠️ Maintenir ce tableau à jour à chaque montée de version majeure (vérifier dans `pom.xml`).
->
-> ℹ️ Depuis Quarkus 3.37.1, l'override Netty explicite dans les POM a été retiré : le BOM Quarkus embarque nativement Netty 4.1.135.Final, qui couvre déjà les CVE-2026-33870/33871.
 >
 > ℹ️ Depuis Java 25 (upgrade [ADR-003](./adr/003-upgrade-java25-mandrel25.md)), Lombok est déclaré explicitement en `annotationProcessorPaths` dans la configuration `maven-compiler-plugin` du pom racine — `javac` ≥ 23 n'active plus les annotation processors présents sur le classpath par simple auto-discovery.
 
@@ -517,13 +515,34 @@ V002 liste d'abord les index existants et ne crée l'index que si aucun index de
 | Unitaires (service) | JUnit 5 + Mockito | `src/test/java/` | `mvn test` |
 | Intégration (REST) | @QuarkusTest + REST Assured | `src/test/java/` | `mvn test` |
 | Intégration Mongo (`*MongoTest`) | @QuarkusTest + MongoDB réel (Testcontainers `mongo:7.0`) | `operations`, `utilisateurs` (`src/test/java/`) | `mvn test` (Docker requis) |
-| Intégration Mongo (`communs`) | @QuarkusTest + Dev Services MongoDB | `communs/src/test/java/.../migrations/` | `mvn test` (Docker requis) |
+| Intégration Mongo (`communs`) | @QuarkusTest + MongoDB réel ou Dev Services | `communs/src/test/java/.../migrations/` | `mvn test` (MongoDB accessible ou Docker pour Dev Services) |
 | Couverture | JaCoCo | `target/jacoco-report/` | `mvn verify -Psonar` |
 
-Les tests `*MongoTest` démarrent leur propre conteneur MongoDB (`MongoDbTestResource`, branché uniquement par le profil de test de la classe, `quarkus.mongodb.devservices.enabled=false`) : ils sont indépendants du profil Maven. Sans Docker, ils échouent (ils ne s'ignorent pas en silence) ; contournement en développement local : `-Dtest='!*MongoTest'`. Les tests Mongo de `communs` (réservation atomique, concurrence de N runners, bail, index V002) s'appuient sur Dev Services.
+Le profil Maven `ci-sans-mongo` exclut exactement cinq classes Surefire :
+`TestMigrationRepository`, `TestMigrationRepositoryConcurrence`, `TestMigrationRepositoryPersistence`,
+`UtilisateurDatabaseAdaptorMongoTest` et `OperationDatabaseAdaptorMongoTest`. Les tests restants peuvent utiliser
+des mocks ; leur succès ne valide ni l'atomicité, ni la persistance, ni les index MongoDB.
+
+Les deux tests d'adaptateurs utilisent `MongoDbTestResource` et Testcontainers (`mongo:7.0`) : Docker
+fonctionnel et accès à l'image sont requis ; Dev Services y est désactivé. Les trois tests de migrations
+nécessitent un MongoDB de test accessible ou Dev Services avec Docker ; vérifier la configuration effective,
+car une chaîne de connexion configurée peut empêcher le démarrage de Dev Services. Prévoir une base de test isolée.
+Lors de l'upgrade, aucun Docker ou MongoDB local n'était disponible et ces cinq classes n'ont pas été validées.
 
 ```bash
-# Tous les tests du projet
+# Commandes JVM CI depuis la racine
+mvn clean install -B -Pci-sans-mongo --file communs/pom.xml
+mvn clean install -B -Pci-sans-mongo --file pom.xml
+
+# Exécution séparée Mongo réel, sans le profil ci-sans-mongo : commandes proposées, non exécutées lors de l'upgrade
+mvn install -B -DskipTests --file communs/pom.xml
+mvn test -B --file communs/pom.xml -Dtest=TestMigrationRepository,TestMigrationRepositoryConcurrence,TestMigrationRepositoryPersistence
+mvn test -B --file utilisateurs/pom.xml -Dtest=UtilisateurDatabaseAdaptorMongoTest
+mvn test -B --file operations/pom.xml -Dtest=OperationDatabaseAdaptorMongoTest
+```
+
+```bash
+# Tous les tests du projet, Mongo réel compris : prérequis ci-dessus
 mvn test
 
 # Tests d'un seul module
@@ -607,18 +626,18 @@ BusinessTraceContext.getclear()
 ### Pipeline CI/CD (GitHub Actions)
 
 ```
-1. Build communs        → mvn clean install + publish sur GitHub Packages
+1. Build communs        → mvn clean install -Pci-sans-mongo + publish sur GitHub Packages
 2. Génération SAM       → sed sur samconfig.template.toml (stack_name/s3_prefix uniquement)
 3. Build µServices (parallèle)
-   ├── parametrages    → mvn package -Pnative + build image Docker native
-   ├── utilisateurs    → mvn package -Pnative + build image Docker native
-   ├── comptes         → mvn package -Pnative + build image Docker native
-   └── operations      → mvn package -Pnative + build image Docker native
+   ├── parametrages    → mvn install -Pnative,ci-sans-mongo + build natif Docker
+   ├── utilisateurs    → mvn install -Pnative,ci-sans-mongo + build natif Docker
+   ├── comptes         → mvn install -Pnative,ci-sans-mongo + build natif Docker
+   └── operations      → mvn install -Pnative,ci-sans-mongo + build natif Docker
 4. Déploiement SAM      → sam deploy --parameter-overrides (Lambda + API Gateway)
-5. SonarCloud           → mvn verify -Psonar (sur master uniquement)
+5. SonarCloud           → mvn verify -Psonar,ci-sans-mongo (workflow master, après build communs)
 ```
 
-> ℹ️ **Tests `*MongoTest` et builds natifs** : la commande `mvn install -B -P native` des workflows `build-on-master.yml` et `build-on-tags.yml` exclut les `*MongoTest` (`-Dtest='!*MongoTest' -Dsurefire.failIfNoSpecifiedTests=false`) : ils ne sont pas rejoués avant la compilation native. Ils restent exécutés par `build-on-all` et par le job Sonar. Les autres tests d'intégration Mongo de `communs` (`TestMigrationRepository*`) ne sont pas exclus.
+> ℹ️ Sonar et les builds natifs dépendent de `build-communs` et peuvent tourner en parallèle. Les workflows JVM de branche, natifs et Sonar activent `ci-sans-mongo` pour les tests. Les builds natifs CI utilisent Docker et l'image Mandrel JDK 25 ; SAM utilise également Docker. L'exclusion Mongo ne rend donc pas les builds natifs ou SAM indépendants de Docker.
 
 ```bash
 # Déploiement manuel (depuis communs/src/aws-deploy/)
@@ -630,9 +649,10 @@ sam deploy --config-file samconfig.template.toml --parameter-overrides \
 
 ### Renovate — synchronisation version Quarkus (pom.xml vs docs)
 
-Le job `build-communs` (`build-on-master.yml`) inclut une étape *"Check Quarkus version sync"* qui échoue si `quarkus.platform.version` (`pom.xml`) diverge des mentions `Quarkus X.Y.Z` codées en dur dans `README.md`, ce document, `.claude/instructions/dev.instructions.md` et `.claude/instructions/orchestrator.instructions.md`.
-
-Pour éviter que Renovate ne bump `pom.xml` seul (automerge minor/patch actif) sans mettre à jour ces 4 fichiers, `renovate.json` déclare un `customManager` regex qui suit les mêmes fichiers avec le `depName`/`datasource` de `quarkus-bom` (`io.quarkus:quarkus-bom`, datasource `maven`) — Renovate regroupe ainsi la mise à jour doc et pom dans la même PR, et le check CI ne peut plus diverger. Voir [`.claude/plans/002_fix_desync_quarkus_renovate.plan.md`](../.claude/plans/002_fix_desync_quarkus_renovate.plan.md).
+Le `pom.xml` racine fait référence pour la version Quarkus. La configuration `renovate.json` actuelle ne
+déclare pas de `customManager` pour les versions documentaires ; le workflow `build-on-master.yml` consulté
+ne contient pas de contrôle de synchronisation des versions. Vérifier manuellement README et architecture
+lors des mises à jour.
 
 ### Paramétrage SAM (Parameters + parameter-overrides)
 
@@ -649,7 +669,7 @@ Depuis Phase 3 (tuning infra Lambda), `sam.native.template.yaml` utilise un vrai
 ### Build natif local
 
 ```bash
-# Nécessite GraalVM/Mandrel installé
+# Nécessite Docker et une image builder native
 mvn clean package -Pnative -Dquarkus.native.container-build=true
 ```
 
