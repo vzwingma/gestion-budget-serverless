@@ -28,17 +28,6 @@
 
     <build>
         <finalName>${project.artifactId}</finalName>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <!-- TRANSITOIRE (AP004 T2.3) : les anciens dev/ et prod/ ne sont plus des ressources (profils Quarkus).
-                     A retirer une fois dev/application.properties et prod/application.properties supprimés. -->
-                <excludes>
-                    <exclude>dev/**</exclude>
-                    <exclude>prod/**</exclude>
-                </excludes>
-            </resource>
-        </resources>
     </build>
 
 
