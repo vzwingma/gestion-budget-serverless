@@ -13,8 +13,8 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.test.da
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
-import io.github.vzwingma.finances.budget.serverless.services.operations.api.override.APIExceptionsHandler;
-import io.github.vzwingma.finances.budget.serverless.services.operations.spi.SPIExceptionsHandler;
+import io.github.vzwingma.finances.budget.services.communs.api.APIExceptionsHandler;
+import io.github.vzwingma.finances.budget.services.communs.spi.SPIExceptionsHandler;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DonneeCorrompueException;
 import jakarta.ws.rs.core.Response;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
@@ -860,7 +860,7 @@ class BudgetServiceTest {
 
         // Test
         CompletionException exception = Assertions.assertThrows(CompletionException.class,
-                () -> budgetAppProvider.addOrUpdateOperationInBudget("idBudget", MockDataOperations.getOperationPrelevement(), "userTest").await().indefinitely());
+                () -> budgetAppProvider.addOrUpdateOperationInBudget(MockDataBudgets.getBudgetInactifCompteC1().getId(), MockDataOperations.getOperationPrelevement(), "userTest").await().indefinitely());
         assertEquals(CompteClosedException.class, exception.getCause().getClass());
 
     }

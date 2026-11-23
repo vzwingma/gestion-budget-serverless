@@ -1,5 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
+import io.github.vzwingma.finances.budget.services.communs.api.metrics.MetricsLog;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ class RestClientMetricsFilterTest {
         when(response.getStatus()).thenReturn(status);
 
         StringBuilder captured = new StringBuilder();
-        Logger jul = Logger.getLogger(AbstractRestClientMetricsFilter.class.getName());
+        Logger jul = Logger.getLogger(MetricsLog.CATEGORIE);
         Handler handler = new Handler() {
             @Override
             public void publish(LogRecord record) {
@@ -77,6 +78,11 @@ class RestClientMetricsFilterTest {
     void parametrages_reponseEnErreur_statutTrace() {
         String line = logLine(new ParametragesRestClientMetricsFilter(), "GET", 503);
         assertTrue(line.matches("^\\[REST-METRIC] client=parametrages method=GET status=503 durationMs=\\d+$"), line);
+    }
+
+    @Test
+    void statutNonPositif_aucuneLigne() {
+        assertEquals("", logLine(new ComptesRestClientMetricsFilter(), "GET", 0));
     }
 
     @Test

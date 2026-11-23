@@ -13,12 +13,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.RestPath;
-import org.jboss.resteasy.reactive.server.ServerRequestFilter;
-import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,18 +68,6 @@ public class ParametragesResource extends AbstractAPIInterceptors {
                     }
                 })
                 .invoke(l -> BusinessTraceContext.get().remove(BusinessTraceContextKeyEnum.USER));
-    }
-
-    @Override
-    @ServerRequestFilter(preMatching = true)
-    public void preMatchingFilter(ContainerRequestContext requestContext) {
-        super.preMatchingFilter(requestContext);
-    }
-
-    @Override
-    @ServerResponseFilter
-    public void postMatchingFilter(ContainerResponseContext responseContext) {
-        super.postMatchingFilter(responseContext);
     }
 
 }

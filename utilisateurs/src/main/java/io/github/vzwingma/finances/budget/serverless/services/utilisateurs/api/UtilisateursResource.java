@@ -16,16 +16,12 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
-import org.jboss.resteasy.reactive.server.ServerRequestFilter;
-import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,19 +116,6 @@ public class UtilisateursResource extends AbstractAPIInterceptors {
         } else {
             return Uni.createFrom().failure(new UserAccessForbiddenException("Propriétaire introuvable"));
         }
-    }
-
-
-    @Override
-    @ServerRequestFilter(preMatching = true)
-    public void preMatchingFilter(ContainerRequestContext requestContext) {
-        super.preMatchingFilter(requestContext);
-    }
-
-    @Override
-    @ServerResponseFilter
-    public void postMatchingFilter(ContainerResponseContext responseContext) {
-        super.postMatchingFilter(responseContext);
     }
 
 }
