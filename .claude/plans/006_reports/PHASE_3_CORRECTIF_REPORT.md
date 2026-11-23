@@ -4,7 +4,7 @@
 **Responsable :** 🟣 DOCly  
 **Date début :** 2026-11-23  
 **Date fin :** 2026-11-23  
-**Statut :** ✅ DOCUMENTATION COMPLÉTÉE — Gate #4 en attente
+**Statut :** ✅ COMPLÉTÉE — Gate #4 GO
 
 ## Audit et tâches
 
@@ -29,18 +29,17 @@
   `mvn install -B -Pci-sans-mongo --file pom.xml` et
   `mvn verify -B -Psonar,ci-sans-mongo --file pom.xml` : chacun 817 tests, sans échec ni erreur.
   `mvn install -B -Pci-sans-mongo --file communs/pom.xml` : 260 tests, sans échec ni erreur.
-- Aucune commande Maven ni sonde exécutée durant cette phase documentaire. Le commit `91d3b62`
-  contenant le correctif a été poussé ; les runs CI `45261325421` et `45261337008` sont en cours.
+- Aucune commande Maven ni sonde exécutée durant cette phase documentaire. Les runs de branche
+  `45271823819` et de PR `45271838757` ont réussi sur le commit `7b183ab` : Sonar, les quatre
+  builds natifs, les builds JVM et le déploiement QUA sont verts.
 
 ## Synthèse
 
-**Tâches :** T3.1 et préparation T3.2 complétées ; initiative non clôturée.  
-**Risques :** CI avec Docker en cours après publication du correctif ; effet sur le runner et disparition du blocage
-Sonar non confirmés ; causalité non établie. Les cinq classes Mongo réel restent non validées. La sonde
+**Tâches :** T3.1 et T3.2 complétées ; clôture validée par 👤 le 2026-11-23.  
+**Risques :** le run Sonar est désormais vert après correction, sans prouver la causalité exacte du blocage
+précédent. Les cinq classes Mongo réel restent non validées. La sonde
 locale vérifie la configuration reçue, pas l'absence de conteneur sur un runner Docker. Les autres limites
 de phase 3, dont la couverture de branches ciblées à 52 %, restent applicables.  
 **Périmètre :** aucun code, test, POM, workflow ou fichier d'environnement modifié ; changement indépendant
 utilisateur dans `.github/workflows/build-on-master.yml` conservé. Aucun commit ni push.  
-**Questions pour 👤 via MAINa :** déterminer le suivi de la validation Mongo réelle et autoriser, le cas
-échéant, publication et nouveau run CI ; ne pas présumer de leur résultat.  
-**Prochaine étape :** relais à MAINa pour Gate #4, avec validation CI distante restant à effectuer avant clôture.
+**Suivi :** exécuter séparément les cinq classes Mongo réel sur une infrastructure adaptée.
