@@ -231,7 +231,7 @@ class BudgetsResourceTest {
                 .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
                 .when().get(url)
                 .then()
-                .statusCode(500);
+                .statusCode(400);
     }
 
 

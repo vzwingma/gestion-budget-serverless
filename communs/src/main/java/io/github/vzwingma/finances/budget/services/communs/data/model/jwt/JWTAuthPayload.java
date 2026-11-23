@@ -1,11 +1,14 @@
 package io.github.vzwingma.finances.budget.services.communs.data.model.jwt;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @RegisterForReflection
+@JsonPropertyOrder({"iss", "azp", "aud", "sub", "email", "email_verified", "at_hash",
+        "name", "picture", "given_name", "family_name", "locale", "iat", "exp"})
 @Setter
 @Getter
 @NoArgsConstructor
