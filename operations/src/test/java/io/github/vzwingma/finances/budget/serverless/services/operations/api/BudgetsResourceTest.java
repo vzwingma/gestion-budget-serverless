@@ -3,7 +3,9 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.api;
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.BudgetService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.OperationsService;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.BudgetMensuel;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.budget.ProjectionBudgetSoldes;
+import io.github.vzwingma.finances.budget.serverless.services.operations.business.model.operation.LigneOperation;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
@@ -21,10 +23,15 @@ import jakarta.ws.rs.core.HttpHeaders;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.HashMap;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static io.restassured.RestAssured.given;
@@ -42,6 +49,9 @@ class BudgetsResourceTest {
 
     @Inject
     IJwtSigningKeyReadRepository jwtSigningKeyReadRepository;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     @BeforeAll
     static void init() {
@@ -144,6 +154,63 @@ class BudgetsResourceTest {
                 .body(Matchers.containsString("TEST1"));
     }
 
+    @Test
+    void budgetRetourneDatesLisiblesEtConserveLeursValeurs() {
+        BudgetMensuel budget = MockDataBudgets.getBudgetActifCompteC1et1operationPrevue();
+        LocalDateTime miseAJour = LocalDateTime.of(2026, 2, 11, 12, 34, 56);
+        LocalDateTime creation = LocalDateTime.of(2026, 2, 10, 9, 8, 7);
+        LocalDateTime modification = LocalDateTime.of(2026, 2, 11, 10, 11, 12);
+        budget.setDateMiseAJour(miseAJour);
+        LigneOperation operation = budget.getListeOperations().getFirst();
+        operation.getAutresInfos().setDateCreate(creation);
+        operation.getAutresInfos().setDateMaj(modification);
+        operation.getAutresInfos().setDateOperation(LocalDate.of(2026, 2, 10));
+        operation.setMensualite(new LigneOperation.Mensualite());
+        operation.getMensualite().setDateFin(LocalDate.of(2026, 12, 31));
+        // Le service métier est mocké ; la sérialisation HTTP Quarkus reste réelle.
+        when(budgetService.getBudgetMensuel(anyString())).thenReturn(Uni.createFrom().item(budget));
+
+        var response = given()
+                .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader())
+                .header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
+                .when().get(OperationsAPIEnum.BUDGET_BASE
+                        + OperationsAPIEnum.BUDGET_ID.replace(OperationsAPIEnum.PARAM_ID_BUDGET, "1"))
+                .then().statusCode(200).extract().response();
+
+        BudgetMensuel relu = objectMapper.readValue(response.asString(), BudgetMensuel.class);
+        assertEquals(miseAJour, relu.getDateMiseAJour());
+        assertEquals(creation, relu.getListeOperations().getFirst().getAutresInfos().getDateCreate());
+        assertEquals(modification, relu.getListeOperations().getFirst().getAutresInfos().getDateMaj());
+        assertEquals("2026-02-11T12:34:56", response.jsonPath().getString("dateMiseAJour"));
+        assertEquals("2026-02-10T09:08:07", response.jsonPath().getString("listeOperations[0].autresInfos.dateCreate"));
+        assertEquals("2026-02-11T10:11:12", response.jsonPath().getString("listeOperations[0].autresInfos.dateMaj"));
+        assertEquals("2026-02-10", response.jsonPath().getString("listeOperations[0].autresInfos.dateOperation"));
+        assertEquals("2026-12-31", response.jsonPath().getString("listeOperations[0].mensualite.dateFin"));
+    }
+
+    @Test
+    void datesJsonSontDeserialiseesAvecNullEtChampsAbsents() {
+        String json = """
+                {"mois":"FEBRUARY","annee":2026,"idCompteBancaire":"C1",
+                 "listeOperations":[
+                   {"autresInfos":{"dateOperation":"2026-02-10"},
+                    "mensualite":{"dateFin":"2026-12-31"}},
+                   {"autresInfos":{"dateOperation":null},"mensualite":{"dateFin":null}},
+                   {"autresInfos":{},"mensualite":{}}
+                 ]}
+                """;
+
+        BudgetMensuel budget = objectMapper.readValue(json, BudgetMensuel.class);
+
+        LigneOperation operation = budget.getListeOperations().getFirst();
+        assertEquals(LocalDate.of(2026, 2, 10), operation.getAutresInfos().getDateOperation());
+        assertEquals(LocalDate.of(2026, 12, 31), operation.getMensualite().getDateFin());
+        for (int i = 1; i < 3; i++) {
+            assertNull(budget.getListeOperations().get(i).getAutresInfos().getDateOperation());
+            assertNull(budget.getListeOperations().get(i).getMensualite().getDateFin());
+        }
+    }
+
 
     @Test
     void testGetBudgetsUtilisateurByParams() {
@@ -231,7 +298,7 @@ class BudgetsResourceTest {
                 .header(HttpHeaders.AUTHORIZATION, getTestJWTAuthHeader()).header(AbstractAPISecurityFilter.HTTP_HEADER_API_KEY, "123")
                 .when().get(url)
                 .then()
-                .statusCode(500);
+                .statusCode(400);
     }
 
 

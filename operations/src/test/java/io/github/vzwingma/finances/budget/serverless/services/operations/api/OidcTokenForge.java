@@ -1,7 +1,7 @@
 package io.github.vzwingma.finances.budget.serverless.services.operations.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -101,7 +101,7 @@ final class OidcTokenForge {
     static String b64Json(Map<String, Object> map) {
         try {
             return B64.encodeToString(MAPPER.writeValueAsBytes(map));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException(e);
         }
     }

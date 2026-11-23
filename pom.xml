@@ -29,7 +29,7 @@
 
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-        <quarkus.platform.version>3.40.1.2</quarkus.platform.version>
+        <quarkus.platform.version>4.0.0</quarkus.platform.version>
         <lombok.version>1.18.48</lombok.version>
         <surefire-plugin.version>3.6.1</surefire-plugin.version>
         <jacoco.version>0.8.16</jacoco.version>
@@ -101,6 +101,28 @@
     </build>
     <!-- Profiles -->
     <profiles>
+        <profile>
+            <id>ci-sans-mongo</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <quarkus.mongodb.devservices.enabled>false</quarkus.mongodb.devservices.enabled>
+                            </systemPropertyVariables>
+                            <excludes>
+                                <exclude>**/io/github/vzwingma/finances/budget/services/communs/migrations/TestMigrationRepository.java</exclude>
+                                <exclude>**/io/github/vzwingma/finances/budget/services/communs/migrations/TestMigrationRepositoryConcurrence.java</exclude>
+                                <exclude>**/io/github/vzwingma/finances/budget/services/communs/migrations/TestMigrationRepositoryPersistence.java</exclude>
+                                <exclude>**/io/github/vzwingma/finances/budget/serverless/services/utilisateurs/spi/UtilisateurDatabaseAdaptorMongoTest.java</exclude>
+                                <exclude>**/io/github/vzwingma/finances/budget/serverless/services/operations/spi/OperationDatabaseAdaptorMongoTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>native</id>
             <activation>
