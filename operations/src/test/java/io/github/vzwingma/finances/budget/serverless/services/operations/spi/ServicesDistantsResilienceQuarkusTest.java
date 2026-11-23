@@ -193,6 +193,7 @@ class ServicesDistantsResilienceQuarkusTest {
         assertInstanceOf(ServiceDistantIndisponibleException.class, e);
         assertFalse(e instanceof ServiceDistantTransitoireException, "un timeout n'est jamais rejoué");
         assertEquals(1, appelsComptes.get());
+        assertEquals(1, metriques.stream().filter(m -> m.contains("[REST-METRIC]")).count(), "une seule ligne REST-METRIC sur timeout : " + metriques);
         assertEquals(1, metriques.stream().filter(m -> m.contains("status=timeout")).count(), metriques.toString());
         String ligneTimeout = metriques.stream().filter(m -> m.contains("status=timeout")).findFirst().orElseThrow();
         assertTrue(ligneTimeout.matches("^\\[REST-METRIC] client=comptes method=GET status=timeout durationMs=\\d+$"), ligneTimeout);

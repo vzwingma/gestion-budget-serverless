@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
  *   <li>Ni chemin, ni identifiant, ni jeton, ni en-tête n'est tracé : seuls le nom logique du client, la méthode
  *   HTTP, le statut et la durée le sont.</li>
  *   <li>Réponse en erreur (4xx / 5xx) : le filtre de réponse s'exécute, la ligne est tracée avec le statut reçu.</li>
+ *   <li>Statut {@code <= 0} (pas de réponse HTTP) : rien n'est émis ici, pour éviter un doublon avec l'intercepteur.</li>
  *   <li>Exception avant réponse (timeout, connexion refusée) : le filtre de réponse n'est <b>pas</b> exécuté ; la ligne
  *   est alors émise par {@link TraductionErreursServiceDistantInterceptor} avec {@code status=timeout} ou
  *   {@code status=connect-error}.</li>
@@ -39,6 +40,10 @@ public abstract class AbstractRestClientMetricsFilter implements ClientRequestFi
 
     @Override
     public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) {
+        if (responseContext.getStatus() <= 0) {
+            // pas de réponse HTTP exploitable : la ligne est émise par l'intercepteur (timeout / connect-error)
+            return;
+        }
         Object start = requestContext.getProperty(START_PROPERTY);
         long durationMs = start instanceof Long nanos ? TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - nanos) : -1L;
         MetricsLog.info(format(clientName, requestContext.getMethod(), responseContext.getStatus(), durationMs));
