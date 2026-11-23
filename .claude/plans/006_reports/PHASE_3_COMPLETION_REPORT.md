@@ -4,7 +4,7 @@
 **Responsable :** 🟣 DOCly  
 **Date début :** 2026-11-23  
 **Date fin :** 2026-11-23  
-**Statut :** ⚠️ DOCUMENTATION COMPLÉTÉE — clôture en attente de la CI PR
+**Statut :** ⚠️ DOCUMENTATION COMPLÉTÉE — clôture bloquée par la CI Sonar
 
 ## Tâches
 
@@ -27,13 +27,14 @@
 
 **État CI issu des rapports précédents :**
 - Run branche `45213357903`, commit `4de9e84` : deux builds JVM CI réussis.
-- Run PR `45213370042`, même commit : quatre jobs natifs Mandrel et `Build Communs` réussis ; déploiement QUA réussi. `Scan Sonar` était toujours en cours après environ 3 h 02 dans l'étape `Build with Maven` ; les logs du job en cours n'étaient pas disponibles. Aucun échec n'est établi.
+- Run PR `45213370042`, même commit : quatre jobs natifs Mandrel et `Build Communs` réussis ; déploiement QUA réussi. Le 👤 a annulé le run après un blocage de `Scan Sonar`. Le dump Quarkus indique une absence d'activité pendant 10 minutes ; le thread principal attend dans `NettyStream.write` lors de `MongoClientImpl.close` pendant un changement de profil `@QuarkusTest`. La cause exacte reste à confirmer.
+- Dev Services MongoDB a effectivement démarré dans la CI et les migrations V001/V002 se sont exécutées, bien que les cinq classes d'intégration Mongo soient exclues. Une correction candidate est de désactiver explicitement Dev Services MongoDB dans le seul profil `ci-sans-mongo`, puis de valider la suite et le job CI ; cette correction n'est pas encore implémentée.
 - Nouveaux tests de `BudgetsResourceTest` non commités : absents de ces runs CI. Tests locaux phase 2 : 242 ciblés réussis ; `mvn -B verify -Psonar,ci-sans-mongo --file pom.xml` réussi, 817 tests, avant trois assertions complémentaires ensuite testées séparément.
 
 ## Synthèse
 
 **Tâches complétées :** 2/2 — documentation et préparation de clôture ; initiative non clôturée.  
 **Critères :** documentation alignée sur le POM et les configurations consultées ; liens vérifiés dans la limite indiquée ; preuves et risques préparés pour Gate #4.  
-**Risques :** Mongo réel non validé ; commandes ciblées proposées non exécutées ; couverture branches ciblées 52 % (< 80 %) en phase 2 ; Sonar distant toujours en cours et non validé ; nouveaux tests non commités non couverts par la CI distante. Docker requis pour natif CI et SAM. La synchronisation automatique des versions documentaires n'est pas configurée dans `renovate.json` ; vigilance manuelle.  
+**Risques :** Mongo réel non validé ; commandes ciblées proposées non exécutées ; couverture branches ciblées 52 % (< 80 %) en phase 2 ; Sonar CI annulé et non validé ; nouveaux tests non commités non couverts par la CI distante. Docker requis pour natif CI et SAM. La synchronisation automatique des versions documentaires n'est pas configurée dans `renovate.json` ; vigilance manuelle.  
 **Questions pour 👤 :** via MAINa, décider de la validation Mongo réelle et du suivi des limites ; toute publication ou tout nouveau déploiement exige l'accord approprié.  
-**Prochaine étape :** obtenir le résultat de Sonar ou un arbitrage sur le run avant Gate #4 ; ne pas clôturer avant validation.
+**Prochaine étape :** faire valider la reprise du code et la correction candidate, puis revérifier la CI avant Gate #4 ; ne pas clôturer avant validation.

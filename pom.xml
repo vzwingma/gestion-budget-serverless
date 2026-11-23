@@ -108,6 +108,9 @@
                     <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
+                            <systemPropertyVariables>
+                                <quarkus.mongodb.devservices.enabled>false</quarkus.mongodb.devservices.enabled>
+                            </systemPropertyVariables>
                             <excludes>
                                 <exclude>**/io/github/vzwingma/finances/budget/services/communs/migrations/TestMigrationRepository.java</exclude>
                                 <exclude>**/io/github/vzwingma/finances/budget/services/communs/migrations/TestMigrationRepositoryConcurrence.java</exclude>

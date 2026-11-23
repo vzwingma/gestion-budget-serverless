@@ -1,7 +1,7 @@
 # Plan d'Action 006 — Upgrade Quarkus 4 et migration Jackson 3
 
 **Date de création :** 2026-11-23  
-**Statut :** ⚠️ Bloqué — résultat Sonar CI PR en attente  
+**Statut :** 🔄 En cours — documentation du correctif  
 **Branche :** `renovate/major-quarkus.platform.version`  
 **Responsable :** ⚫ MAINa  
 **ADR :** aucun nouvel ADR prévu : adaptation à la version majeure déjà proposée par Renovate, sans changement de stratégie d'authentification ni d'architecture. Toute décision structurante découverte sera soumise au 👤.
@@ -22,7 +22,7 @@ Le 2026-11-23, 👤 a choisi l'option A : migrer les usages concernés vers Jack
 - Hors périmètre : déploiement, changement fonctionnel de l'authentification, ajout volontaire d'une seconde pile Jackson, et corrections sans lien avec l'upgrade.
 - Ajustement accepté par 👤 le 2026-11-23 : isoler explicitement les cinq classes d'intégration Mongo réel dans les builds CI sans MongoDB ni Docker, tout en conservant leur exécution séparée. Le profil sans Mongo ne prouve pas la persistance, les index ou l'atomicité Mongo.
 
-## Phase 1 — Adapter le code et débloquer les builds — ✅
+## Phase 1 — Adapter le code et débloquer les builds — ✅ correctif local
 
 **Dépendance :** Gate #1 GO.  
 **Responsable :** 🔵 DEVon.
@@ -54,6 +54,14 @@ Le 2026-11-23, 👤 a choisi l'option A : migrer les usages concernés vers Jack
 - **Fichiers candidats :** `pom.xml`, `.github/workflows/build-on-all.yml`, `.github/workflows/build-on-master.yml`, `.github/workflows/build-on-tags.yml`.
 - **Scope :** profil Maven `ci-sans-mongo` excluant uniquement `TestMigrationRepository`, `TestMigrationRepositoryConcurrence`, `TestMigrationRepositoryPersistence`, `UtilisateurDatabaseAdaptorMongoTest` et `OperationDatabaseAdaptorMongoTest` ; activation explicite dans les builds CI exécutant des tests ; indication visible de l'exclusion. Sans ce profil, conserver la possibilité d'exécuter les tests d'intégration réels.
 - **Acceptation :** builds JVM du profil réussis et nombres de tests/exclusions documentés ; validation de l'absence d'exclusion lorsque le profil est inactif. Les builds natifs et SAM qui utilisent Docker restent un blocage distinct tant qu'une infrastructure ou solution compatible n'est pas validée.
+
+### T1.4 — Désactiver MongoDB Dev Services dans le seul profil CI sans Mongo
+
+- **Agent :** 🔵 DEVon.
+- **Fichier :** `pom.xml`.
+- **Contexte :** le run Sonar annulé `45213370042` a lancé MongoDB Dev Services malgré l'exclusion des cinq classes Mongo ; le thread principal s'est ensuite bloqué à la fermeture du client Mongo lors d'un changement de profil de test. La causalité exacte reste à confirmer.
+- **Scope :** désactiver explicitement MongoDB Dev Services uniquement pour les tests exécutés avec `ci-sans-mongo` ; ne pas changer les profils par défaut ou de production, ni les cinq exclusions approuvées.
+- **Acceptation :** POM effectifs vérifiés avec et sans `ci-sans-mongo`, y compris combiné à `sonar` et `native` ; suite JVM ciblée et builds du profil vérifiés ; la confirmation sur le runner CI reste nécessaire avant clôture. Le 👤 valide à nouveau le code et les tests après cette reprise.
 
 ## Phase 2 — Vérifier les contrats et la non-régression — ✅
 
@@ -111,7 +119,7 @@ Le 2026-11-23, 👤 a choisi l'option A : migrer les usages concernés vers Jack
 
 | Agent | Tâches | Livrable |
 |---|---|---|
-| 🔵 DEVon | T1.1–T1.2 | Code adapté et builds existants |
+| 🔵 DEVon | T1.1–T1.4 | Code adapté et builds existants |
 | 🟢 QALvin | T2.1–T2.2 | Tests ciblés et preuves de non-régression |
 | 🟣 DOCly | T3.1–T3.2 | Documentation et rapport |
 
@@ -133,4 +141,7 @@ Le 2026-11-23, 👤 a choisi l'option A : migrer les usages concernés vers Jack
 | Ajustement | 2026-11-23 | CI sans Mongo ni Docker | ✅ GO | Isolation explicite des cinq classes Mongo réel ; test HTTP adapté à 400 à la demande du 👤. |
 | #2 | 2026-11-23 | Validation du code | ✅ GO | CI de branche verte ; cinq classes Mongo isolées ; CI native en cours. |
 | #3 | 2026-11-23 | Validation des tests | ✅ GO | Limites Mongo réel, branches et Sonar distant présentées. |
+| Ajustement | 2026-11-23 | Reprise corrective après annulation Sonar | ✅ GO | Désactiver MongoDB Dev Services uniquement avec `ci-sans-mongo` ; nouvelle validation code et tests requise. |
+| #2 correctif | 2026-11-23 | Validation du code correctif | ✅ GO | Builds JVM locaux verts ; vérification sur runner CI encore nécessaire. |
+| #3 correctif | 2026-11-23 | Validation des tests du correctif | ✅ GO | Sondes locales et mutation vérifiées ; CI avec Docker encore à confirmer. |
 | #4 | — | Clôture documentaire | ⏳ En attente | — |
