@@ -81,6 +81,11 @@ class RestClientMetricsFilterTest {
     }
 
     @Test
+    void statutNonPositif_aucuneLigne() {
+        assertEquals("", logLine(new ComptesRestClientMetricsFilter(), "GET", 0));
+    }
+
+    @Test
     void sansDebut_pasDException() {
         ClientRequestContext request = mock(ClientRequestContext.class);
         when(request.getMethod()).thenReturn("GET");
