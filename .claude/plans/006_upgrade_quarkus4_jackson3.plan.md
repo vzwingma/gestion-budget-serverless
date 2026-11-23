@@ -1,7 +1,7 @@
 # Plan d'Action 006 — Upgrade Quarkus 4 et migration Jackson 3
 
 **Date de création :** 2026-11-23  
-**Statut :** 🔄 En cours — documentation du correctif  
+**Statut :** 🔄 En cours — validation CI du correctif  
 **Branche :** `renovate/major-quarkus.platform.version`  
 **Responsable :** ⚫ MAINa  
 **ADR :** aucun nouvel ADR prévu : adaptation à la version majeure déjà proposée par Renovate, sans changement de stratégie d'authentification ni d'architecture. Toute décision structurante découverte sera soumise au 👤.
@@ -89,7 +89,7 @@ Le 2026-11-23, 👤 a choisi l'option A : migrer les usages concernés vers Jack
 - **Scope :** exécuter les tests pertinents de jetons valides/invalides, absence de fuite et propagation ; vérifier les builds natifs selon les commandes effectives de la CI, sans déployer. Ne pas élargir les tests de sécurité aux comportements non affectés.
 - **Acceptation :** résultats et prérequis documentés pour chaque vérification ; toute validation indisponible reste explicitement bloquée.
 
-## Phase 3 — Synchroniser la documentation et clôturer — ⚠️
+## Phase 3 — Synchroniser la documentation et clôturer — ✅ documentation
 
 **Dépendance :** Phase 2 terminée et Gate #3 GO.  
 **Responsable :** 🟣 DOCly.

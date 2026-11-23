@@ -147,7 +147,13 @@ mvn clean install -B -Pci-sans-mongo --file pom.xml
 
 Surefire exclut cinq classes : `TestMigrationRepository`, `TestMigrationRepositoryConcurrence`,
 `TestMigrationRepositoryPersistence`, `UtilisateurDatabaseAdaptorMongoTest` et
-`OperationDatabaseAdaptorMongoTest`. Cette CI ne valide pas l'atomicité, la persistance ni les index MongoDB.
+`OperationDatabaseAdaptorMongoTest`. Il définit aussi la propriété système
+`quarkus.mongodb.devservices.enabled=false` pendant les tests. Sans `ci-sans-mongo`, le comportement par
+défaut reste inchangé. Cette CI ne valide pas l'atomicité, la persistance ni les index MongoDB.
+
+Ce réglage répond à un run Sonar où le runner CI a effectivement lancé MongoDB Dev Services, puis où le
+job est resté bloqué lors de la fermeture du client MongoDB. Le lien causal n'est pas établi.
+La disparition du blocage doit être confirmée par un run CI complet avec Docker.
 
 Pour exécuter séparément ces tests **sans** `ci-sans-mongo`, avec Java 25 et Maven depuis la racine,
 utiliser les commandes proposées ci-dessous (non exécutées lors de l'upgrade) :

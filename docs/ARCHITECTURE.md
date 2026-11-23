@@ -520,8 +520,14 @@ V002 liste d'abord les index existants et ne crée l'index que si aucun index de
 
 Le profil Maven `ci-sans-mongo` exclut exactement cinq classes Surefire :
 `TestMigrationRepository`, `TestMigrationRepositoryConcurrence`, `TestMigrationRepositoryPersistence`,
-`UtilisateurDatabaseAdaptorMongoTest` et `OperationDatabaseAdaptorMongoTest`. Les tests restants peuvent utiliser
-des mocks ; leur succès ne valide ni l'atomicité, ni la persistance, ni les index MongoDB.
+`UtilisateurDatabaseAdaptorMongoTest` et `OperationDatabaseAdaptorMongoTest`. Il configure aussi la propriété
+système Surefire `quarkus.mongodb.devservices.enabled=false` pendant les tests. Sans ce profil, le comportement
+par défaut reste inchangé. Les tests restants peuvent utiliser des mocks ; leur succès ne valide ni l'atomicité,
+ni la persistance, ni les index MongoDB.
+
+Lors d'un run Sonar, le runner CI a réellement lancé MongoDB Dev Services malgré les exclusions, puis le job
+est resté bloqué lors de la fermeture du client MongoDB. La causalité exacte n'est pas établie.
+La disparition du blocage doit être confirmée par un run CI complet avec Docker.
 
 Les deux tests d'adaptateurs utilisent `MongoDbTestResource` et Testcontainers (`mongo:7.0`) : Docker
 fonctionnel et accès à l'image sont requis ; Dev Services y est désactivé. Les trois tests de migrations
