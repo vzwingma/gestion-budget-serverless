@@ -1,7 +1,7 @@
 # Plan d'Action 006 — Upgrade Quarkus 4 et migration Jackson 3
 
 **Date de création :** 2026-11-23  
-**Statut :** 🔄 En cours — validation CI du correctif  
+**Statut :** ✅ Complété — Gate #4 GO  
 **Branche :** `renovate/major-quarkus.platform.version`  
 **Responsable :** ⚫ MAINa  
 **ADR :** aucun nouvel ADR prévu : adaptation à la version majeure déjà proposée par Renovate, sans changement de stratégie d'authentification ni d'architecture. Toute décision structurante découverte sera soumise au 👤.
@@ -89,7 +89,7 @@ Le 2026-11-23, 👤 a choisi l'option A : migrer les usages concernés vers Jack
 - **Scope :** exécuter les tests pertinents de jetons valides/invalides, absence de fuite et propagation ; vérifier les builds natifs selon les commandes effectives de la CI, sans déployer. Ne pas élargir les tests de sécurité aux comportements non affectés.
 - **Acceptation :** résultats et prérequis documentés pour chaque vérification ; toute validation indisponible reste explicitement bloquée.
 
-## Phase 3 — Synchroniser la documentation et clôturer — ✅ documentation
+## Phase 3 — Synchroniser la documentation et clôturer — ✅ clôturée
 
 **Dépendance :** Phase 2 terminée et Gate #3 GO.  
 **Responsable :** 🟣 DOCly.
@@ -144,4 +144,4 @@ Le 2026-11-23, 👤 a choisi l'option A : migrer les usages concernés vers Jack
 | Ajustement | 2026-11-23 | Reprise corrective après annulation Sonar | ✅ GO | Désactiver MongoDB Dev Services uniquement avec `ci-sans-mongo` ; nouvelle validation code et tests requise. |
 | #2 correctif | 2026-11-23 | Validation du code correctif | ✅ GO | Builds JVM locaux verts ; vérification sur runner CI encore nécessaire. |
 | #3 correctif | 2026-11-23 | Validation des tests du correctif | ✅ GO | Sondes locales et mutation vérifiées ; CI avec Docker encore à confirmer. |
-| #4 | — | Clôture documentaire | ⏳ En attente | — |
+| #4 | 2026-11-23 | Clôture documentaire | ✅ GO | CI et Sonar verts ; cinq classes Mongo réel restent à exécuter séparément. |
