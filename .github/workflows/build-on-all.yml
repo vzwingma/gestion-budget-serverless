@@ -38,7 +38,9 @@ jobs:
             ${{ runner.os }}-maven-
       # Runs the Build with Maven
       - name: Build Communs with Maven
-        run: mvn clean install -B --file communs/pom.xml
+        run: |
+          echo "ci-sans-mongo: Surefire exclut TestMigrationRepository, TestMigrationRepositoryConcurrence, TestMigrationRepositoryPersistence, UtilisateurDatabaseAdaptorMongoTest et OperationDatabaseAdaptorMongoTest"
+          mvn clean install -B -Pci-sans-mongo --file communs/pom.xml
   # BUILD
   build:
     # The type of runner that the job will run on
@@ -63,4 +65,6 @@ jobs:
             ${{ runner.os }}-maven-
       # Runs the Build with Maven
       - name: Build with Maven
-        run: mvn clean install -B --file pom.xml
+        run: |
+          echo "ci-sans-mongo: Surefire exclut TestMigrationRepository, TestMigrationRepositoryConcurrence, TestMigrationRepositoryPersistence, UtilisateurDatabaseAdaptorMongoTest et OperationDatabaseAdaptorMongoTest"
+          mvn clean install -B -Pci-sans-mongo --file pom.xml

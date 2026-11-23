@@ -4,7 +4,7 @@
 **Responsable :** 🔵 DEVon ; vérifications complémentaires ⚫ MAINa  
 **Date début :** 2026-11-23  
 **Date fin :** à déterminer  
-**Statut :** ⚠️ BLOQUÉE — builds complets non validés
+**Statut :** 🔄 EN_COURS — profil CI sans MongoDB approuvé, builds complets non validés
 
 ## T1.1 — Migrer les usages de production concernés
 
@@ -36,12 +36,12 @@ Java 25 est disponible via Maven 3.9.3. Aucun serveur MongoDB local, exécutable
 ## Points bloquants
 
 1. Les builds complets et les tests d'intégration nécessitent MongoDB et Docker/Testcontainers, indisponibles localement. Le build racine complet n'a pas été validé.
-2. Le 👤 indique que Docker et MongoDB sont également absents de la CI/CD. L'architecture proposée doit être arbitrée : isoler explicitement les cinq classes nécessitant Mongo réel et conserver une exécution séparée, ou utiliser un double Mongo en mémoire dont la fidélité reste à prouver. Une suite sans Mongo ne valide pas la persistance, les index ni l'atomicité Mongo.
+2. Le 👤 indique que Docker et MongoDB sont également absents de la CI/CD et a approuvé l'isolation explicite des cinq classes Mongo réel avec exécution séparée. Une suite sans Mongo ne valide pas la persistance, les index ni l'atomicité Mongo ; le profil et les workflows restent à adapter et vérifier.
 3. Les commandes CI exactes avec `clean`, les contrats JSON/dates, les builds natifs et la CI distante ne sont pas validés. Aucun déploiement, commit ou push des corrections n'a été effectué.
 4. Les workflows de builds natifs et SAM utilisent également Docker ; isoler les tests Mongo ne suffit pas à les rendre compatibles avec une CI/CD sans Docker.
 
 ## Synthèse
 
-**Tâches complétées :** 0/2 au regard des critères du plan.  
-**Questions pour 👤 :** arbitrer l'isolement explicite des tests Mongo réels et leur exécution séparée ; préciser les moyens disponibles pour les builds natifs sans Docker.  
+**Tâches complétées :** 0/3 au regard des critères du plan.  
+**Questions pour 👤 :** préciser les moyens disponibles pour les builds natifs sans Docker et l'exécution séparée des tests Mongo réels.  
 **Prochaine étape :** lever les blocages, exécuter les vérifications, puis réaliser la revue avant Gate #2. La phase de nouveaux tests attend Gate #2 GO.

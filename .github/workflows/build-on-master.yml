@@ -43,7 +43,9 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
       # Runs the Build with Maven
       - name: Build Communs with Maven
-        run: mvn clean install -B --file communs/pom.xml
+        run: |
+          echo "ci-sans-mongo: Surefire exclut TestMigrationRepository, TestMigrationRepositoryConcurrence, TestMigrationRepositoryPersistence, UtilisateurDatabaseAdaptorMongoTest et OperationDatabaseAdaptorMongoTest"
+          mvn clean install -B -Pci-sans-mongo --file communs/pom.xml
       # Publish
       - name: Publish to GitHub Packages Apache Maven
         run: mvn --batch-mode deploy -DskipTests=true
@@ -103,7 +105,9 @@ jobs:
         run: mvn clean install -B -DskipTests --file communs/pom.xml
       # Runs a single command using the runners shell
       - name: Build with Maven
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -P sonar -Dsonar.host.url=$SONAR_HOST -Dsonar.token=$SONAR_TOKEN -Dsonar.organization=$SONAR_ORG -Dsonar.projectKey=vzwingma_gestion-budget-serverless --file pom.xml
+        run: |
+          echo "ci-sans-mongo: Surefire exclut TestMigrationRepository, TestMigrationRepositoryConcurrence, TestMigrationRepositoryPersistence, UtilisateurDatabaseAdaptorMongoTest et OperationDatabaseAdaptorMongoTest"
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -P sonar,ci-sans-mongo -Dsonar.host.url=$SONAR_HOST -Dsonar.token=$SONAR_TOKEN -Dsonar.organization=$SONAR_ORG -Dsonar.projectKey=vzwingma_gestion-budget-serverless --file pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -148,7 +152,9 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
       # Runs a single command using the runners shell
       - name: Build ${{ matrix.display }} Native App with Maven
-        run: mvn install -B -P native -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25 --file ${{ matrix.module }}/pom.xml
+        run: |
+          echo "ci-sans-mongo: Surefire exclut TestMigrationRepository, TestMigrationRepositoryConcurrence, TestMigrationRepositoryPersistence, UtilisateurDatabaseAdaptorMongoTest et OperationDatabaseAdaptorMongoTest"
+          mvn install -B -P native,ci-sans-mongo -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25 --file ${{ matrix.module }}/pom.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Upload Releases Snapshot

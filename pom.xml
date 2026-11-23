@@ -102,6 +102,25 @@
     <!-- Profiles -->
     <profiles>
         <profile>
+            <id>ci-sans-mongo</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/io/github/vzwingma/finances/budget/services/communs/migrations/TestMigrationRepository.java</exclude>
+                                <exclude>**/io/github/vzwingma/finances/budget/services/communs/migrations/TestMigrationRepositoryConcurrence.java</exclude>
+                                <exclude>**/io/github/vzwingma/finances/budget/services/communs/migrations/TestMigrationRepositoryPersistence.java</exclude>
+                                <exclude>**/io/github/vzwingma/finances/budget/serverless/services/utilisateurs/spi/UtilisateurDatabaseAdaptorMongoTest.java</exclude>
+                                <exclude>**/io/github/vzwingma/finances/budget/serverless/services/operations/spi/OperationDatabaseAdaptorMongoTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>native</id>
             <activation>
                 <property>
