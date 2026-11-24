@@ -197,6 +197,8 @@ mvn verify -Psonar
 
 Les microservices sont déployés sur **AWS Lambda** (256 Mo, natif GraalVM) via **SAM**. Les templates sont dans `communs/src/aws-deploy/`. Le paramétrage (URL base, secrets OIDC, niveaux de log...) passe par des `Parameters` SAM injectés au déploiement via `--parameter-overrides` (voir [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#-déploiement)), plus de placeholders texte remplacés par `sed`.
 
+Dans le pipeline **QUA**, une version d'affichage commune est calculée à partir du numéro majeur du POM racine et de l'heure courante en Europe/Paris (`majeur.yyyyMMdd-HHmm`). Elle est injectée au build Quarkus et transmise à SAM pour la description des Lambda ; elle alimente notamment `/_info` et la version du document OpenAPI. Ce calcul ne modifie ni la version ni les coordonnées Maven, et ne change pas le pipeline **PROD**. Voir le détail dans [Architecture — Déploiement](docs/ARCHITECTURE.md#-déploiement).
+
 ```bash
 # Déploiement (depuis communs/src/aws-deploy/)
 sam deploy --config-file samconfig.template.toml --parameter-overrides \

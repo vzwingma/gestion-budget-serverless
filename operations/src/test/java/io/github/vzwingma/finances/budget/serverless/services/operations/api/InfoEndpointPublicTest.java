@@ -3,6 +3,7 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.api;
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.ws.rs.core.HttpHeaders;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -60,7 +62,8 @@ class InfoEndpointPublicTest {
     void info_sansEnTete_200_jsonNomVersion() {
         given().when().get(INFO).then().statusCode(200)
                 .body("nom", notNullValue())
-                .body("version", notNullValue());
+                .body("version", notNullValue())
+                .body("version", equalTo(ConfigProvider.getConfig().getValue("quarkus.application.version", String.class)));
     }
 
     @ParameterizedTest(name = "{0}")

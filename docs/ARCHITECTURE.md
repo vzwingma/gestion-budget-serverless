@@ -632,16 +632,21 @@ BusinessTraceContext.getclear()
 ### Pipeline CI/CD (GitHub Actions)
 
 ```
-1. Build communs        → mvn clean install -Pci-sans-mongo + publish sur GitHub Packages
-2. Génération SAM       → sed sur samconfig.template.toml (stack_name/s3_prefix uniquement)
-3. Build µServices (parallèle)
+1. Calcul version QUA  → majeur du POM racine + date/heure Europe/Paris (yyyyMMdd-HHmm)
+2. Build communs        → mvn clean install -Pci-sans-mongo + publish sur GitHub Packages
+3. Génération SAM       → sed sur samconfig.template.toml (stack_name/s3_prefix uniquement)
+4. Build µServices (parallèle)
    ├── parametrages    → mvn install -Pnative,ci-sans-mongo + build natif Docker
    ├── utilisateurs    → mvn install -Pnative,ci-sans-mongo + build natif Docker
    ├── comptes         → mvn install -Pnative,ci-sans-mongo + build natif Docker
    └── operations      → mvn install -Pnative,ci-sans-mongo + build natif Docker
-4. Déploiement SAM      → sam deploy --parameter-overrides (Lambda + API Gateway)
-5. SonarCloud           → mvn verify -Psonar,ci-sans-mongo (workflow master, après build communs)
+5. Déploiement SAM      → sam deploy --parameter-overrides (Lambda + API Gateway)
+6. SonarCloud           → mvn verify -Psonar,ci-sans-mongo (workflow master, après build communs)
 ```
+
+Le workflow [`.github/workflows/build-on-master.yml`](../.github/workflows/build-on-master.yml) extrait le numéro majeur de la version effective du POM racine, puis forme une version d'affichage `majeur.yyyyMMdd-HHmm` avec l'horloge Europe/Paris. La valeur unique produite par `build-communs` est transmise aux builds natifs via `-Dquarkus.application.version` : l'endpoint `/_info` et `info.version` dans OpenAPI reflètent ainsi la même version. Ce paramètre de build n'altère pas la version ni les coordonnées Maven.
+
+La même valeur est transmise au déploiement SAM comme paramètre `Version` ; le [template SAM natif](../communs/src/aws-deploy/sam.native.template.yaml) l'insère dans la description de chacune des quatre fonctions Lambda. Cette génération concerne le pipeline QUA uniquement ; le pipeline PROD par tags n'est pas modifié.
 
 > ℹ️ Sonar et les builds natifs dépendent de `build-communs` et peuvent tourner en parallèle. Les workflows JVM de branche, natifs et Sonar activent `ci-sans-mongo` pour les tests. Les builds natifs CI utilisent Docker et l'image Mandrel JDK 25 ; SAM utilise également Docker. L'exclusion Mongo ne rend donc pas les builds natifs ou SAM indépendants de Docker.
 
