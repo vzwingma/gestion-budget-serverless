@@ -866,6 +866,42 @@ class BudgetServiceTest {
     }
 
     @Test
+    void testCreateOperationConserveIdClientValide() {
+        when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getBudgetActifCompteC1et1operationPrevue()));
+        when(mockCompteServiceProvider.getCompteById(anyString()))
+                .thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+        when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
+
+        LigneOperation ligneOperation = MockDataOperations.getOperationPrelevement();
+        String idClient = "7f1c2a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6";
+        ligneOperation.setId(idClient);
+        BudgetMensuel budget = budgetAppProvider.createOperationInBudget("C1_2022_01", ligneOperation, "userTest").await().indefinitely();
+
+        assertEquals(idClient, ligneOperation.getId());
+        assertTrue(budget.getListeOperations().stream().anyMatch(o -> idClient.equals(o.getId())));
+    }
+
+    @Test
+    void testCreateOperationRegenereIdEnCollisionOuInvalide() {
+        for (String idForge : new String[]{"pas-un-uuid", null, "EXISTANT"}) {
+            BudgetMensuel budgetMock = MockDataBudgets.getBudgetActifCompteC1et1operationPrevue();
+            String idExistant = budgetMock.getListeOperations().getFirst().getId();
+            when(mockOperationDataProvider.chargeBudgetMensuel(anyString())).thenReturn(Uni.createFrom().item(budgetMock));
+            when(mockCompteServiceProvider.getCompteById(anyString())).thenReturn(Uni.createFrom().item(MockDataBudgets.getCompteC1()));
+            when(mockOperationDataProvider.sauvegardeBudgetMensuel(any(BudgetMensuel.class))).thenReturn(Uni.createFrom().item(new BudgetMensuel()));
+
+            LigneOperation ligneOperation = MockDataOperations.getOperationPrelevement();
+            ligneOperation.setId("EXISTANT".equals(idForge) ? idExistant : idForge);
+            budgetAppProvider.createOperationInBudget("C1_2022_01", ligneOperation, "userTest").await().indefinitely();
+
+            assertNotEquals(idForge, ligneOperation.getId());
+            assertNotEquals(idExistant, ligneOperation.getId());
+            assertDoesNotThrow(() -> java.util.UUID.fromString(ligneOperation.getId()));
+        }
+    }
+
+    @Test
     void testUpdateBudget() {
         // When
         when(mockOperationDataProvider.chargeBudgetMensuel(anyString()))

@@ -23,6 +23,7 @@ import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategori
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContext;
 import io.github.vzwingma.finances.budget.services.communs.data.trace.BusinessTraceContextKeyEnum;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.ConflictException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
@@ -689,6 +690,15 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      */
     @Override
     public Uni<BudgetMensuel> addOrUpdateOperationInBudget(String idBudget, LigneOperation ligneOperation, String auteur) {
+        return addOrUpdateOperationInBudget(idBudget, ligneOperation, auteur, false);
+    }
+
+    @Override
+    public Uni<BudgetMensuel> createOperationInBudget(String idBudget, LigneOperation ligneOperation, String auteur) {
+        return addOrUpdateOperationInBudget(idBudget, ligneOperation, auteur, true);
+    }
+
+    private Uni<BudgetMensuel> addOrUpdateOperationInBudget(String idBudget, LigneOperation ligneOperation, String auteur, boolean creation) {
 
         // #125 : Type de la catégorie = ESSENTIEL si non défini
         if (ligneOperation.getSsCategorie() != null && ligneOperation.getSsCategorie().getType() == null) {
@@ -698,8 +708,13 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
         Uni<BudgetMensuel> budgetSurCompteActif = getBudgetAndCompteActif(idBudget)
                 // Si pas d'erreur, update de l'opération
                 .onItem()
-                .transform(Tuple2::getItem1);
-        BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, ligneOperation.getId());
+                .transform(Tuple2::getItem1)
+                .invoke(budget -> {
+                    if (creation) {
+                        ligneOperation.setId(BudgetDataUtils.resoudreIdCreation(ligneOperation.getId(), idsOperations(budget)));
+                    }
+                    BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.OPERATION, ligneOperation.getId());
+                });
 
 
         return Uni.combine().all().unis(
@@ -743,6 +758,15 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      */
     @Override
     public Uni<BudgetMensuel> createOperationsVirementInterne(String idBudget, final LigneOperation ligneOperation, String idCompteDestination, String auteur) {
+        return virementInterne(idBudget, ligneOperation, idCompteDestination, auteur, false);
+    }
+
+    @Override
+    public Uni<BudgetMensuel> createNouvelleOperationVirementInterne(String idBudget, final LigneOperation ligneOperation, String idCompteDestination, String auteur) {
+        return virementInterne(idBudget, ligneOperation, idCompteDestination, auteur, true);
+    }
+
+    private Uni<BudgetMensuel> virementInterne(String idBudget, final LigneOperation ligneOperation, String idCompteDestination, String auteur, boolean creation) {
 
         try {
             final String idCompteSource = BudgetDataUtils.getCompteFromBudgetId(idBudget);
@@ -781,7 +805,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
                             LOGGER.error("Virement interne refusé : le compte de destination {} est clos", idCompteDestination);
                             return Uni.createFrom().failure(new CompteClosedException("Impossible de créer un virement vers le compte " + idCompteDestination + " : il est cloturé"));
                         }
-                        return virementInterneSequentiel(tuple.getItem1(), compteDestination, idCompteSource, idBudget, moisFromBudgetId, anneeFromBudgetId, ligneOperation, auteur);
+                        return virementInterneSequentiel(tuple.getItem1(), compteDestination, idCompteSource, idBudget, moisFromBudgetId, anneeFromBudgetId, ligneOperation, auteur, creation);
                     })
                     .invoke(budgetSource -> BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource));
 
@@ -810,11 +834,14 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      * @return budget source sauvegardé
      */
     private Uni<BudgetMensuel> virementInterneSequentiel(BudgetMensuel budgetSource, CompteBancaire compteDestination, String idCompteSource,
-                                                         String idBudget, Month mois, int annee, LigneOperation ligneOperation, String auteur) {
+                                                         String idBudget, Month mois, int annee, LigneOperation ligneOperation, String auteur, boolean creation) {
         final String libelleOperation = ligneOperation.getLibelle();
         // L'id est garanti avant toute écriture : la compensation ciblée ($pull / $set / $push) en dépend.
-        // L'API le génère déjà (UUID, BudgetsResource) ; en appel direct du service on applique le même mécanisme.
-        if (ligneOperation.getId() == null || ligneOperation.getId().isBlank()) {
+        // Création : id client conservé s'il est un UUID valide et libre dans le budget source, sinon généré (aucun écrasement possible).
+        // Modification (appel direct du service) : id fourni conservé, généré s'il est absent.
+        if (creation) {
+            ligneOperation.setId(BudgetDataUtils.resoudreIdCreation(ligneOperation.getId(), idsOperations(budgetSource)));
+        } else if (ligneOperation.getId() == null || ligneOperation.getId().isBlank()) {
             ligneOperation.setId(UUID.randomUUID().toString());
         }
         final String idOperation = ligneOperation.getId();
@@ -827,7 +854,7 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
         // 1. Écriture source
         return ecrireOperationVirementSource(budgetSource, compteDestination, idBudget, ligneOperation, libelleOperation, auteur)
                 // 2. Écriture cible, puis compensation de la source en cas d'échec (l'erreur d'origine est propagée)
-                .chain(budgetSourceSauvegarde -> ecrireOperationVirementCible(compteDestination, idCompteSource, mois, annee, ligneOperation, libelleOperation, auteur)
+                .chain(budgetSourceSauvegarde -> ecrireOperationVirementCible(compteDestination, idCompteSource, mois, annee, ligneOperation, libelleOperation, auteur, creation)
                         .replaceWith(budgetSourceSauvegarde)
                         .onFailure().recoverWithUni(erreur -> {
                             LOGGER.error("Echec de l'écriture du virement sur le compte {} : compensation de l'opération {} du compte {}", compteDestination.getId(), idOperation, idCompteSource, erreur);
@@ -862,15 +889,32 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
      * Ajout de l'opération de virement (rentrée) dans le budget du compte de destination, recalcul et sauvegarde.
      */
     private Uni<BudgetMensuel> ecrireOperationVirementCible(CompteBancaire compteDestination, String idCompteSource, Month mois, int annee,
-                                                            LigneOperation ligneOperation, String libelleOperation, String auteur) {
+                                                            LigneOperation ligneOperation, String libelleOperation, String auteur, boolean creation) {
         return chargerBudgetMensuelSurCompteActif(compteDestination, mois, annee, ModeChargement.ECRITURE)
-                .invoke(budgetCible -> {
+                .chain(budgetCible -> {
+                    // Création : l'id doit être libre côté cible (sinon l'opération existante serait écrasée) ; l'échec déclenche la compensation de la source
+                    if (creation && contientIdOperation(budgetCible, ligneOperation.getId())) {
+                        return Uni.createFrom().<BudgetMensuel>failure(new ConflictException("Virement interne impossible : l'id d'opération " + ligneOperation.getId() + " existe déjà sur le compte de destination"));
+                    }
                     BusinessTraceContext.get().put(BusinessTraceContextKeyEnum.BUDGET, budgetCible.getId()).put(BusinessTraceContextKeyEnum.COMPTE, idCompteSource);
                     String libelleOperationCible = "[depuis " + idCompteSource + "] " + libelleOperation;
+                    int nombreOperationsAvant = budgetCible.getListeOperations().size();
                     this.operationsAppProvider.addOperationVirementInterne(budgetCible.getListeOperations(), ligneOperation, libelleOperationCible, auteur);
+                    if (creation) {
+                        budgetCible.getListeOperations().get(nombreOperationsAvant).setId(ligneOperation.getId());
+                    }
+                    return Uni.createFrom().item(budgetCible);
                 })
                 .invoke(this::recalculSoldes)
                 .call(this::sauvegardeBudget);
+    }
+
+    private static List<String> idsOperations(BudgetMensuel budget) {
+        return budget.getListeOperations().stream().map(LigneOperation::getId).toList();
+    }
+
+    private static boolean contientIdOperation(BudgetMensuel budget, String idOperation) {
+        return idsOperations(budget).stream().anyMatch(id -> id != null && id.equalsIgnoreCase(idOperation));
     }
 
     /**

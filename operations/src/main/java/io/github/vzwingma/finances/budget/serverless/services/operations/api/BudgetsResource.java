@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.Month;
-import java.util.UUID;
 
 /**
  * Controleur REST -
@@ -241,6 +240,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "200", description = "Budget actif"),
             @APIResponse(responseCode = "423", description = "Budget inactif"),
             @APIResponse(responseCode = "400", description = "Paramètres incorrects"),
+            @APIResponse(responseCode = "409", description = "Collision d'identifiant d'opération"),
             @APIResponse(responseCode = "401", description = "Utilisateur non authentifié"),
             @APIResponse(responseCode = "403", description = "Opération non autorisée"),
             @APIResponse(responseCode = "404", description = "Données introuvables")
@@ -326,8 +326,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
         BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         LOG.trace("createOperation");
         if (operation != null && idBudget != null) {
-            operation.setId(UUID.randomUUID().toString());
-            return budgetService.addOrUpdateOperationInBudget(idBudget, operation, super.getAuthenticatedUser());
+            return budgetService.createOperationInBudget(idBudget, operation, super.getAuthenticatedUser());
         } else {
             return Uni.createFrom().failure(new BadParametersException("Les paramètres idBudget et operation sont obligatoires"));
         }
@@ -346,6 +345,7 @@ public class BudgetsResource extends AbstractAPIInterceptors {
             @APIResponse(responseCode = "200", description = "Opération mise à jour",
                     content = {@Content(mediaType = "application/json", schema = @Schema(implementation = BudgetMensuel.class))}),
             @APIResponse(responseCode = "400", description = "Paramètres incorrects"),
+            @APIResponse(responseCode = "409", description = "Collision d'identifiant d'opération"),
             @APIResponse(responseCode = "401", description = "Utilisateur non authentifié"),
             @APIResponse(responseCode = "403", description = "Opération non autorisée"),
             @APIResponse(responseCode = "404", description = "Données introuvables"),
@@ -361,14 +361,12 @@ public class BudgetsResource extends AbstractAPIInterceptors {
             @RestPath("idCompte") String idCompte,
             LigneOperation operation) {
 
-        String uuidOperation = UUID.randomUUID().toString();
-        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.OPERATION, uuidOperation).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
+        BusinessTraceContext.getclear().put(BusinessTraceContextKeyEnum.BUDGET, idBudget).put(BusinessTraceContextKeyEnum.USER, super.getAuthenticatedUser());
         if (operation != null && idBudget != null) {
             idBudget = idBudget.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
             idCompte = idCompte.replaceAll(SecurityUtils.ESCAPE_INPUT_REGEX, "_");
             LOG.trace("Create Operation Virement interne [->{}]", idCompte);
-            operation.setId(uuidOperation);
-            return budgetService.createOperationsVirementInterne(idBudget, operation, idCompte, super.getAuthenticatedUser());
+            return budgetService.createNouvelleOperationVirementInterne(idBudget, operation, idCompte, super.getAuthenticatedUser());
         } else {
             return Uni.createFrom().failure(new BadParametersException("Les paramètres idBudget, idOperation et idCompte sont obligatoires"));
         }

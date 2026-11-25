@@ -396,4 +396,33 @@ public class BudgetDataUtils {
         return Arrays.stream(sousCatsFraisRemboursables)
                 .anyMatch(id -> id.getId().equals(sousCategorieOperation.getId()));
     }
+
+    private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+
+    /**
+     * Identifiant d'une opération à créer : l'id fourni par le client est conservé s'il est un UUID valide
+     * absent de {@code idsExistants}. Sinon (absent, mal formé, en collision), un nouvel UUID est généré.
+     * Un id forgé ne peut ainsi jamais écraser une opération existante.
+     *
+     * @param idClient     id fourni par le client (peut être null)
+     * @param idsExistants ids des opérations déjà présentes
+     * @return id à utiliser pour la création (en minuscules)
+     */
+    public static String resoudreIdCreation(String idClient, Collection<String> idsExistants) {
+        if (idClient != null && UUID_PATTERN.matcher(idClient).matches()) {
+            String idNormalise = idClient.toLowerCase(Locale.ROOT);
+            if (!idExiste(idsExistants, idNormalise)) {
+                return idNormalise;
+            }
+        }
+        String idGenere;
+        do {
+            idGenere = UUID.randomUUID().toString();
+        } while (idExiste(idsExistants, idGenere));
+        return idGenere;
+    }
+
+    private static boolean idExiste(Collection<String> idsExistants, String idRecherche) {
+        return idsExistants.stream().anyMatch(id -> id != null && id.equalsIgnoreCase(idRecherche));
+    }
 }

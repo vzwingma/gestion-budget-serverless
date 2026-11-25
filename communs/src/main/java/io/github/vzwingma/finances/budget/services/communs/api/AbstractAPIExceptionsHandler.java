@@ -19,7 +19,10 @@ public abstract class AbstractAPIExceptionsHandler implements ExceptionMapper<Ab
 
     @Override
     public Response toResponse(AbstractBusinessException e) {
-        if (e instanceof BadParametersException) {
+        if (e instanceof ConflictException) {
+            LOGGER.error("Statut HTTP : [409] Conflict : {}", e.getLibelle());
+            return Response.status(Response.Status.CONFLICT).entity(e.getLibelle()).build();
+        } else if (e instanceof BadParametersException) {
             LOGGER.error("Statut HTTP : [400] Bad parameters : {}", e.getLibelle());
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getLibelle()).build();
         } else if (e instanceof DataNotFoundException) {
