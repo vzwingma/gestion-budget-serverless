@@ -27,6 +27,13 @@ class APIExceptionsHandlerTest {
     }
 
     @Test
+    void testToResponseConflictException() {
+        try (Response response = handler.toResponse(new ConflictException("Identifiant déjà utilisé"))) {
+            assertEquals(Response.Status.CONFLICT.getStatusCode(), response.getStatus());
+        }
+    }
+
+    @Test
     void testToResponseDataNotFoundException() {
         try (Response response = handler.toResponse(new DataNotFoundException("Donnée introuvable"))) {
             assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());

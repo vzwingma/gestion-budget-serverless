@@ -30,6 +30,22 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class BudgetDataUtilsTest {
 
+    @Test
+    void testResoudreIdCreation() {
+        String valide = "7f1c2a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6";
+        assertEquals(valide, BudgetDataUtils.resoudreIdCreation(valide, List.of()));
+        assertEquals(valide, BudgetDataUtils.resoudreIdCreation(valide.toUpperCase(), List.of("autre")));
+
+        for (String invalide : new String[]{null, "", "abc", "7f1c2a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6'; drop", "../../x"}) {
+            String genere = BudgetDataUtils.resoudreIdCreation(invalide, List.of());
+            assertNotEquals(invalide, genere);
+            assertEquals(genere, java.util.UUID.fromString(genere).toString());
+        }
+        String regenere = BudgetDataUtils.resoudreIdCreation(valide, List.of(valide));
+        assertNotEquals(valide, regenere);
+        assertNotEquals(valide.toUpperCase(), BudgetDataUtils.resoudreIdCreation("invalide", List.of(valide.toUpperCase())));
+    }
+
     /**
      * Horloge fixe (ADR-004) pour rendre déterministe le clonage des opérations (dateMaj) — vigilance
      * particulière {@code cloneOperationToMoisSuivant}/{@code cloneOperationPeriodiqueToMoisSuivant}

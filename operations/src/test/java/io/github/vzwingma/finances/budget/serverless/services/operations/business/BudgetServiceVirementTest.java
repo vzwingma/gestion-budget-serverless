@@ -14,6 +14,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.test.da
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.ConflictException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.WebApplicationException;
@@ -36,6 +37,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -163,6 +165,46 @@ class BudgetServiceVirementTest {
         verify(comptes, times(1)).getCompteById("C2");
         assertTrue(budgetSource.getListeOperations().stream().anyMatch(op -> "[vers C2] Épargne".equals(op.getLibelle())));
         assertTrue(budgetDestination.getListeOperations().stream().anyMatch(op -> op.getLibelle() != null && op.getLibelle().startsWith("[depuis C1]")));
+    }
+
+    // ====== id fourni par le client (issue #238) ======
+
+    @Test
+    void testVirementCreation_conserveIdClientValide() {
+        String idClient = "7f1c2a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6";
+        LigneOperation virement = virement(idClient, "Épargne");
+
+        budgetService.createNouvelleOperationVirementInterne(budgetSource.getId(), virement, "C2", "userTest").await().indefinitely();
+
+        assertEquals(idClient, virement.getId());
+        assertTrue(budgetSource.getListeOperations().stream().anyMatch(op -> idClient.equals(op.getId())));
+        assertTrue(budgetDestination.getListeOperations().stream().anyMatch(op -> idClient.equals(op.getId())));
+    }
+
+    @Test
+    void testVirementCreation_idForgeEnCollision_regenere() {
+        String idExistant = budgetSource.getListeOperations().getFirst().getId();
+        LigneOperation virement = virement(idExistant, "Épargne");
+
+        budgetService.createNouvelleOperationVirementInterne(budgetSource.getId(), virement, "C2", "userTest").await().indefinitely();
+
+        org.junit.jupiter.api.Assertions.assertNotEquals(idExistant, virement.getId());
+        assertEquals(1, budgetSource.getListeOperations().stream().filter(op -> idExistant.equals(op.getId())).count());
+    }
+
+    @Test
+    void testVirementCreation_collisionSurCompteCible_retourne409EtCompenseSource() {
+        String idClient = "7f1c2a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6";
+        LigneOperation operationExistante = MockDataOperations.getOperationPrelevement();
+        operationExistante.setId(idClient);
+        budgetDestination.getListeOperations().add(operationExistante);
+
+        Throwable erreur = erreur(budgetService.createNouvelleOperationVirementInterne(
+                budgetSource.getId(), virement(idClient, "Épargne"), "C2", "userTest"));
+
+        assertInstanceOf(ConflictException.class, erreur);
+        assertFalse(budgetSource.getListeOperations().stream().anyMatch(op -> idClient.equals(op.getId())));
+        assertEquals(1, budgetDestination.getListeOperations().stream().filter(op -> idClient.equals(op.getId())).count());
     }
 
     // ====== gardes ======

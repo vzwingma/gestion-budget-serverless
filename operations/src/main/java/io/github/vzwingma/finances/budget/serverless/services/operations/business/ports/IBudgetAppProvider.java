@@ -52,7 +52,21 @@ public interface IBudgetAppProvider {
     Uni<BudgetMensuel> addOrUpdateOperationInBudget(String idBudget, final LigneOperation ligneOperation, String auteur);
 
     /**
-     * Création d'une opération de virements internes
+     * Création d'une ligne de dépense. L'id fourni est conservé s'il est un UUID valide absent du budget, sinon un id est généré.
+     *
+     * @param idBudget       identifiant de budget
+     * @param ligneOperation ligne de dépense (son id est résolu)
+     */
+    Uni<BudgetMensuel> createOperationInBudget(String idBudget, final LigneOperation ligneOperation, String auteur);
+
+    /**
+     * Création d'une opération de virement interne (nouvelle opération) : même résolution d'id que
+     * {@link #createOperationInBudget}, l'id doit de plus être libre dans le budget du compte de destination.
+     */
+    Uni<BudgetMensuel> createNouvelleOperationVirementInterne(String idBudget, LigneOperation ligneOperation, String idCompteDestination, String auteur);
+
+    /**
+     * Création des opérations de virements internes (création ou modification, selon l'id fourni)
      *
      * @param idBudget            id du budget source
      * @param ligneOperation      opération virement interne source
