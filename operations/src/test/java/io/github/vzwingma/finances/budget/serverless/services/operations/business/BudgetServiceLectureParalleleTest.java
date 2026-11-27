@@ -8,6 +8,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.test.da
 import io.github.vzwingma.finances.budget.services.communs.api.APIExceptionsHandler;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BudgetNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DonneeCorrompueException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.ServiceDistantIndisponibleException;
 import io.smallrye.mutiny.Uni;
@@ -113,5 +114,26 @@ class BudgetServiceLectureParalleleTest {
 
         assertInstanceOf(CompteClosedException.class, erreur);
         assertEquals(406, new APIExceptionsHandler().toResponse((CompteClosedException) erreur).getStatus());
+    }
+
+    @Test
+    void idBudgetInvalide_budgetNotFound404_sansAucunAppel() {
+        Throwable erreur = erreur(budgetService.reinitialiserBudgetMensuel("id-sans-suffixe-mois"));
+
+        assertInstanceOf(BudgetNotFoundException.class, erreur);
+        assertEquals(404, new APIExceptionsHandler().toResponse((BudgetNotFoundException) erreur).getStatus());
+        verify(comptes, never()).getCompteById(any());
+        verify(repository, never()).chargeBudgetMensuel(any(String.class));
+    }
+
+    @Test
+    void compteInconnuDeLAval_reponseVide_dataNotFound404() {
+        when(repository.chargeBudgetMensuel(budget.getId())).thenReturn(Uni.createFrom().item(budget));
+        when(comptes.getCompteById("C1")).thenReturn(Uni.createFrom().nullItem());
+
+        Throwable erreur = erreur(budgetService.reinitialiserBudgetMensuel(budget.getId()));
+
+        assertInstanceOf(DataNotFoundException.class, erreur);
+        assertEquals(404, new APIExceptionsHandler().toResponse((DataNotFoundException) erreur).getStatus());
     }
 }
