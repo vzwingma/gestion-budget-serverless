@@ -1,7 +1,7 @@
 # Plan d'Action 004 — Revue architecture backend : sécurisation, fiabilisation, modernisation Quarkus/Mongo
 
 **Date création :** 2026-10-25
-**Statut :** 🔵 En cours — Phases 0 et 1 ✅ clôturées (PR #220, #224, #225, #226 mergées ; QUA déployé, contrôle QUA par le 👤) ; Phase 2 : code + tests mergés (#233-#235, #241), **Gate #4 en attente** (T2.10/T2.11 documentation réalisées, 2026-11-27)
+**Statut :** 🔵 En cours — Phases 0 et 1 ✅ clôturées (PR #220, #224, #225, #226 mergées ; QUA déployé, contrôle QUA par le 👤) ; Phase 2 ✅ clôturée (Gate #4 GO 2026-11-27 ; #233-#235, #241 mergées) ; Phases 3 à 5 à venir (après le plan IHM 011)
 **Porteur :** ⚫ MAINa
 **ADR liés :** [ADR-005 — Authentification JWT via extension Quarkus](../../docs/adr/005-authentification-jwt-extension-quarkus.md) (`Acceptée` pour le principe ; choix final oidc / smallrye-jwt par essai Phase 0) · ADR-002 (migrations maison, maintenu) · ADR-004 (`Clock`, maintenu)
 
@@ -236,7 +236,7 @@ Piste D : T1.2c
 
 ---
 
-## Phase 2 — Mutualisation `communs` + appels inter-services (Lots 3 et 4) — 🔵 code + tests mergés (#233-#235, #241), Gate #4 en attente (Gate #1 GO 2026-11-20, Gates #2 et #3 GO 2026-11-27)
+## Phase 2 — Mutualisation `communs` + appels inter-services (Lots 3 et 4) — ✅ clôturée (Gate #4 GO 2026-11-27 ; Gate #1 GO 2026-11-20, Gates #2 et #3 GO 2026-11-27)
 
 **ADR :** [ADR-009 — Mutualisation `communs` et résilience des appels inter-services](../../docs/adr/009-mutualisation-communs-et-resilience-appels-inter-services.md) (`Acceptée`)
 **Branche :** `docs/ap004-phase2` pour le plan et l'ADR, depuis master 5ee159e. **Une seule PR pour toute la Phase 2** (décision 👤) : l'implémentation se poursuit sur cette branche, ou sur `feat/ap004-phase2` qui la reprend (choix à faire au Gate #1).
@@ -509,12 +509,13 @@ Chaque phase : Gate #2 (code) → Gate #3 (tests) ; Gate #4 global en fin de pla
 | #2 (Phase 2) | 2026-11-27 | Validation code (2e passage) | ✅ GO | Corrections 1/2/4/6/7/8 + retrait du bloc resources + doublon REST-METRIC. Commit 4cfbc36 conservé tel quel. Code mergé sur master par le 👤 (PR #233/#234/#235) avant T2.8 ; master depuis en Quarkus 4.0.1 (#237, #240) et #239 |
 | #3 (Phase 2) | 2026-11-27 | Validation tests T2.8 | ✅ GO | 74 tests ajoutés, 871 tests verts, couverture des classes de la Phase 2 ≥ 81 % branches, régression prouvée (mapper, retry). PR #241 mergée, CI verte sur Quarkus 4.0.1 (OIDC, Mongo, natif) |
 | T2.10 / T2.11 | 2026-11-27 | Documentation Phase 2 | ℹ️ Réalisées, **Gate #4 en attente** | `ARCHITECTURE.md`, ADR-008 / ADR-009, `.claude/CLAUDE.md`, README, index, wiki backend `Conception-globale.md` (commit par le 👤). Traçabilité IHM : texte à ajouter au plan IHM 011 fourni en T2.10 |
+| #4 (Phase 2) | 2026-11-27 | Documentation + clôture Phase 2 | ✅ GO | **Phase 2 clôturée.** Décision actée : exclusion `*MongoTest` (et tests de migration Mongo) maintenue en CI via le profil Maven `ci-sans-mongo` (commit 4de9e84 du 2026-11-23, compte 👤), donc le retrait tenté en T2.3 n'est pas appliqué, sans tâche DEVon. Le 409 du virement reste un cas rare (rejeu ou doublon) : l'IHM génère l'id d'opération côté client (uuid v7, `OperationDetailPage.extservices.ts:27`). PR docs et wiki backend poussés / commités par le 👤. Le texte T2.10 doit être injecté dans le plan IHM 011 via la session IHM |
 
 ### ⚠️ Dette et limites connues (Phase 2)
 
 - **Pire cas Mongo de 16 s accepté** (décision 👤, Q8) : il dépasse les 15 s de la Lambda ; hors périmètre de la Phase 2, aucun correctif prévu.
 - **Risque : ajout futur d'une méthode de client REST sans la liaison d'intercepteur.** Une méthode de `IComptesServiceProvider` / `IParametragesServiceProvider` sans `@TraductionErreursServiceDistant` n'a ni traduction des timeouts et connexions refusées (donc pas de 503 typé ni de retry ciblé), ni `[REST-METRIC]` d'échec de transport. Aucun garde-fou automatique (test ou règle de build) à date : documenté dans `ARCHITECTURE.md` (sections Appels inter-services et Conventions) et dans la note de mise en œuvre de l'ADR-009.
-- **Exclusion des `*MongoTest` du natif non retirée** : le profil `ci-sans-mongo` est toujours utilisé par les builds natifs (master, tags) et exclut les 5 classes Mongo réelles ; Docker requis pour les `@QuarkusTest` hors `ci-sans-mongo` (Dev Services, décision 👤 Gate #2).
+- **Exclusion des `*MongoTest` du natif non retirée (décision actée au Gate #4, commit 4de9e84)** : le profil `ci-sans-mongo` est toujours utilisé par les builds natifs (master, tags) et exclut les 5 classes Mongo réelles ; Docker requis pour les `@QuarkusTest` hors `ci-sans-mongo` (Dev Services, décision 👤 Gate #2).
 
 - **`@OpenAPIDefinition` non appliquée au schéma généré** (tags, contact, licence absents de `/q/openapi`). Défaut **préexistant**, hors périmètre de la Phase 2 : à traiter dans un ticket séparé, ne pas corriger ici. Le test `OpenApiSchemaVersionTest` ne vérifie que `info.version`.
 
