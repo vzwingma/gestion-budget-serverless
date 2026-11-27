@@ -70,4 +70,10 @@ class EffectiveConfigLoggerTest {
                 || ligne.contains("quarkus.mongodb.read-timeout=" + EffectiveConfigLogger.VALEUR_NON_RESOLUE), ligne);
         assertFalse(ligne.contains("${"), ligne);
     }
+
+    @Test
+    void onStart_journaliseSansException() {
+        // Observateur de démarrage : lit la configuration réelle et les profils actifs, sans lever d'exception
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> new EffectiveConfigLogger().onStart(null));
+    }
 }

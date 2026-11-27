@@ -83,4 +83,46 @@ class CommunsConfigurationTest {
         assertTrue(config().getOptionalValue("quarkus.http.cors.origins", String.class).isEmpty());
         assertTrue(config().getOptionalValue("quarkus.http.cors.access-control-allow-credentials", String.class).isEmpty());
     }
+
+    @Test
+    void categorieDesMetriques_infoEffectif() {
+        assertEquals("INFO", valeur("quarkus.log.category.\"io.github.vzwingma.finances.budget.metrics\".level", String.class));
+        Logger metriques = Logger.getLogger("io.github.vzwingma.finances.budget.metrics");
+        assertEquals(Level.INFO.intValue(), metriques.getLevel().intValue(), "les lignes [HTTP-METRIC] / [REST-METRIC] doivent rester en INFO");
+    }
+
+    @Test
+    void versionOpenApi_alignee_surLaVersionDeLApplication() {
+        assertEquals(valeur("quarkus.application.version", String.class), valeur("quarkus.smallrye-openapi.info-version", String.class));
+    }
+
+    /**
+     * AP004 T2.8 : les clés communes ne sont plus redéfinies dans {@code src/test/resources/application.properties} ; la valeur
+     * effective provient bien du {@code META-INF/microprofile-config.properties} de {@code communs} (et non d'un doublon de test).
+     * À l'inverse, les clés réellement propres aux tests viennent bien du fichier de test, et {@code tenant-paths} du module.
+     */
+    @Test
+    void valeursCommunesProviennentDeCommuns_etCellesDeTestDuFichierDeTest() {
+        for (String cle : new String[]{
+                "quarkus.oidc.application-type",
+                "quarkus.oidc.client-id",
+                "quarkus.oidc.token.audience",
+                "quarkus.oidc.token.issuer",
+                "quarkus.oidc.token.principal-claim",
+                "quarkus.oidc.info-public.tenant-enabled",
+                "quarkus.log.category.\"io.quarkus.oidc.runtime.OidcProvider\".level",
+                "quarkus.mongodb.read-timeout",
+                "quarkus.rest.jackson.optimization.enable-reflection-free-serializers"}) {
+            String source = config().getConfigValue(cle).getSourceName();
+            assertTrue(source != null && source.contains("microprofile-config.properties") && !source.contains("test-classes"),
+                    cle + " doit provenir de la configuration commune de communs, source = " + source);
+        }
+        String sourceTenant = config().getConfigValue("quarkus.oidc.info-public.tenant-paths").getSourceName();
+        assertTrue(sourceTenant != null && sourceTenant.contains("application.properties") && !sourceTenant.contains("test-classes"),
+                "tenant-paths est propre au module (application.properties de main), source = " + sourceTenant);
+        for (String cle : new String[]{"oidc.jwt.id.appusercontent", "quarkus.oidc.public-key", "quarkus.oidc.devservices.enabled"}) {
+            String source = config().getConfigValue(cle).getSourceName();
+            assertTrue(source != null && source.contains("test-classes"), cle + " est propre aux tests, source = " + source);
+        }
+    }
 }

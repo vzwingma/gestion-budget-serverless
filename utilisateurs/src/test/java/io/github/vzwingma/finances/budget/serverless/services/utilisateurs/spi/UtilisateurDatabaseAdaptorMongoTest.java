@@ -27,11 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * le {@code $set} ne modifie que {@code dernierAcces}, la date relue par le codec est égale à la date écrite, un login
  * inconnu ne crée aucun document.
  * <p>
- * <b>MongoDB de test</b> : {@code src/main/resources/dev/application.properties} déclare {@code quarkus.mongodb.connection-string}
- * <em>sans préfixe de profil</em> (contrairement à {@code operations}/{@code comptes} : {@code %dev.}), ce qui désactive Quarkus
- * Dev Services : aucun conteneur, et le test était ignoré (assumption) en CI. {@link MongoDbTestResource} (Testcontainers)
- * fournit désormais la chaîne de connexion, Dev Services est désactivé par le {@link TestProfile} : le test s'exécute
- * réellement quel que soit le profil Maven (Docker requis, donc CI).
+ * <b>MongoDB de test</b> : {@link MongoDbTestResource} (Testcontainers) fournit la chaîne de connexion et Dev Services est désactivé par le
+ * {@link TestProfile} : le test s'exécute réellement, indépendamment de Dev Services et du profil Quarkus actif (la chaîne de connexion
+ * n'est définie que pour {@code %dev} / {@code %prod}, AP004 T2.3 ; Docker requis, donc CI).
  *
  * @author QALvin
  */

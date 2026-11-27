@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
@@ -45,8 +46,6 @@ class InfoPublicTenantConfigTest {
     /**
      * Lecture directe des fichiers (AP004 T2.3 : plus de fichiers dev/ et prod/, un seul {@code application.properties} par module).
      * Le chemin {@code /_info} est propre au module ; la désactivation du tenant est commune (fichier de communs).
-     * Le fichier de test est lu explicitement car la config runtime est aussi alimentée par l'application.properties
-     * de main (copié dans target/classes), ce qui masquerait la suppression de la ligne côté test.
      */
     @Test
     void configFichierModule_tenantPathsEgalAuSeulChemin_info() throws IOException {
@@ -64,12 +63,17 @@ class InfoPublicTenantConfigTest {
         assertEquals("false", props.getProperty(ENABLED, "").trim(), ENABLED + " dans communs");
     }
 
+    /**
+     * AP004 T2.8 : le fichier de test ne redéfinit ni la désactivation du tenant (commune, dans communs) ni {@code tenant-paths}
+     * (propre au module, dans son {@code application.properties} de main) : pas de doublon qui masquerait une dérive de la source réelle.
+     * La provenance effective des valeurs est vérifiée par {@code CommunsConfigurationTest}.
+     */
     @Test
-    void configFichierTest_tenantInfoPublic() throws IOException {
+    void configFichierTest_neRedefinitPasLeTenantInfoPublic() throws IOException {
         Path fichier = Path.of("src/test/resources/application.properties");
         Properties props = charger(fichier);
-        assertEquals("false", props.getProperty(ENABLED, "").trim(), ENABLED + " dans " + fichier);
-        assertEquals(INFO, props.getProperty(PATHS, "").trim(), PATHS + " dans " + fichier);
+        assertFalse(props.containsKey(ENABLED), ENABLED + " ne doit pas être dupliqué dans " + fichier);
+        assertFalse(props.containsKey(PATHS), PATHS + " ne doit pas être dupliqué dans " + fichier);
     }
 
     private static Properties charger(Path fichier) throws IOException {

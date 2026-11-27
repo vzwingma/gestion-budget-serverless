@@ -8,6 +8,12 @@ import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.spi.J
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DonneeCorrompueException;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.BadParametersException;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.ConflictException;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.ServiceDistantIndisponibleException;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.UserAccessForbiddenException;
+import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.UserNotAuthorizedException;
+import com.mongodb.MongoTimeoutException;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
@@ -95,6 +101,36 @@ class CommunsProvidersRestTest {
     @Test
     void erreurMongo_503() {
         assertEquals(503, statutAvecErreur(new MongoException("base indisponible")));
+    }
+
+    @Test
+    void parametresInvalides_400() {
+        assertEquals(400, statutAvecErreur(new BadParametersException("parametre invalide")));
+    }
+
+    @Test
+    void conflit_409() {
+        assertEquals(409, statutAvecErreur(new ConflictException("conflit")));
+    }
+
+    @Test
+    void accesInterdit_403() {
+        assertEquals(403, statutAvecErreur(new UserAccessForbiddenException("interdit")));
+    }
+
+    @Test
+    void utilisateurNonAutorise_401() {
+        assertEquals(401, statutAvecErreur(new UserNotAuthorizedException("non autorise")));
+    }
+
+    @Test
+    void serviceDistantIndisponible_503() {
+        assertEquals(503, statutAvecErreur(new ServiceDistantIndisponibleException("aval indisponible")));
+    }
+
+    @Test
+    void timeoutMongo_503() {
+        assertEquals(503, statutAvecErreur(new MongoTimeoutException("serveur injoignable")));
     }
 
     @Test

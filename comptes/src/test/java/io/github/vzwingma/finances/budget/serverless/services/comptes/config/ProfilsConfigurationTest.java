@@ -98,4 +98,28 @@ class ProfilsConfigurationTest {
         assertEquals("Content-Type,Authorization,X-Api-Key", brut(c, "quarkus.http.cors.headers"));
         assertEquals("ERROR", brut(c, "quarkus.log.category.\"io.quarkus.oidc.runtime.OidcProvider\".level"));
     }
+
+    /**
+     * AP004 T2.8 : configuration effective commune aux 3 profils (dev, test, prod) : timeouts MongoDB, catégorie des métriques
+     * {@code [HTTP-METRIC]} / {@code [REST-METRIC]} toujours en INFO (jamais sous {@code QUARKUS_LOG_LEVEL}), masquage du jeton
+     * par {@code OidcProvider} en ERROR, version OpenAPI alignée sur l'application, tenant {@code /_info} public propre au module.
+     */
+    @Test
+    void tousProfils_configurationEffectiveCommune() throws IOException {
+        for (String profil : new String[]{"dev", "test", "prod"}) {
+            SmallRyeConfig c = config(profil);
+            assertEquals("5S", brut(c, "quarkus.mongodb.server-selection-timeout"), profil);
+            assertEquals("3S", brut(c, "quarkus.mongodb.connect-timeout"), profil);
+            assertEquals("8S", brut(c, "quarkus.mongodb.read-timeout"), profil);
+            assertEquals("10", brut(c, "quarkus.mongodb.max-pool-size"), profil);
+            assertEquals("INFO", brut(c, "quarkus.log.category.\"io.github.vzwingma.finances.budget.metrics\".level"), profil + " : catégorie des métriques en INFO");
+            assertEquals("ERROR", brut(c, "quarkus.log.category.\"io.quarkus.oidc.runtime.OidcProvider\".level"), profil + " : masquage du jeton");
+            assertEquals("${quarkus.application.version}", brut(c, "quarkus.smallrye-openapi.info-version"), profil);
+            assertEquals("/comptes/v2/_info", brut(c, "quarkus.oidc.info-public.tenant-paths"), profil);
+            assertEquals("false", brut(c, "quarkus.oidc.info-public.tenant-enabled"), profil);
+            assertEquals("any", brut(c, "quarkus.oidc.token.issuer"), profil);
+            assertEquals("email", brut(c, "quarkus.oidc.token.principal-claim"), profil);
+            assertEquals("service", brut(c, "quarkus.oidc.application-type"), profil);
+        }
+    }
 }
