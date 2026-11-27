@@ -11,7 +11,7 @@ microservices sont compiles en binaires natifs GraalVM et deployes sous forme de
 | Propriété | Valeur |
 |---|---|
 | **Type** | Backend – API REST serverless |
-| **Stack principale** | Java 25 (Mandrel 25 natif) + Quarkus 4.0.0 + Mutiny + MongoDB Panache |
+| **Stack principale** | Java 25 (Mandrel 25 natif) + Quarkus 4.0.1 + Mutiny + MongoDB Panache |
 | **Plateforme cible** | AWS Lambda (natif GraalVM/Mandrel) |
 | **Version applicative** | 26.0.0-SNAPSHOT |
 | **Statut** | En développement actif |
@@ -24,7 +24,7 @@ Le projet est un **monorepo Maven multi-modules**. Chaque microservice est un pr
 
 ```
 gestion-budget-serverless/
-├── communs/          → Bibliothèque partagée (modèles, sécurité, exceptions)
+├── communs/          → Bibliothèque partagée (modèles, sécurité, exceptions, providers JAX-RS, configuration commune)
 ├── parametrages/     → µService paramètres système   → /parametres/v2/
 ├── utilisateurs/     → µService auth / profils        → /utilisateurs/v2/
 ├── comptes/          → µService comptes bancaires     → /comptes/v2/
@@ -38,7 +38,7 @@ Client (IHM React)
     → API Gateway AWS (HTTPS + X-Api-Key)
     → AWS Lambda (Quarkus natif)
         → Authentification quarkus-oidc (signature, iss, aud, exp) + JwtRolesAugmentor
-        → Filtre AbstractAPISecurityFilter (identité validée + X-Api-Key)
+        → Filtres de `communs` : JwtSecurityFilter (identité validée + X-Api-Key), APITraceFilters (trace + [HTTP-METRIC])
         → Ressource REST (JAX-RS)
         → Service métier (Mutiny Uni<T>)
         → Repository MongoDB Panache
@@ -52,15 +52,13 @@ Client (IHM React)
 
 Chaque microservice respecte strictement l'architecture hexagonale. **Règle absolue** : chaque couche ne dépend que de la couche suivante via une **interface**.
 
-> Note : quelques points d'assemblage contrôlés existent dans `api/override` pour des préoccupations transverses, sans exposer de contrat SPI au niveau REST.
+> Note : `api/override` ne contient plus que `RootAPIResource` (chemin `/_info` lié à `tenant-paths`, [ADR-008](./adr/008-endpoint-info-public-tenant-oidc-desactive.md)). Les providers JAX-RS transverses (filtre de sécurité, mappers d'exceptions, filtres de trace) sont **mutualisés dans `communs`** ([ADR-009](./adr/009-mutualisation-communs-et-resilience-appels-inter-services.md), voir [Mutualisation](#-mutualisation-dans-communs-et-configuration)).
 
 ```
 api/
   ├── XxxResource.java          ← Contrôleur JAX-RS (@Path, @GET, @RolesAllowed)
   ├── override/
-  │   ├── RootAPIResource.java  ← Endpoint /_info
-  │   ├── JwtSecurityFilter.java← Filtre sécurité (surcharge AbstractAPISecurityFilter)
-  │   └── APIExceptionsHandler.java ← Mapper d'exceptions HTTP
+  │   └── RootAPIResource.java  ← Endpoint /_info (propre à chaque module)
   ├── enums/
   │   └── XxxAPIEnum.java       ← Constantes de routes et rôles (source de vérité)
   └── spi/codecs/               ← Codecs Panache si nécessaire
@@ -78,8 +76,8 @@ spi/
   └── RequestJWTHeaderFactory.java ← Propagation JWT entre µServices
 
 config/
-  ├── OpenAPIConfig.java        ← Configuration Swagger/OpenAPI
-  └── JwtReflectionConfig.java  ← Hints GraalVM pour la sérialisation native
+  ├── OpenAPIConfig.java        ← Configuration Swagger/OpenAPI (propre à chaque module)
+  └── JwtReflectionConfig.java  ← Hints GraalVM (code JWT maison mort, suppression prévue T4.0)
 
 utils/                          ← Helpers métier
 ```
@@ -106,11 +104,18 @@ gestion-budget-serverless/
 │   ├── src/main/java/...communs/
 │   │   ├── api/
 │   │   │   ├── AbstractAPIResource.java          # Endpoint GET /info
-│   │   │   ├── AbstractAPIInterceptors.java       # Logs requête/réponse
-│   │   │   ├── AbstractAPIExceptionsHandler.java  # Mapper exceptions → HTTP
+│   │   │   ├── AbstractAPIInterceptors.java       # Logs requête/réponse + [HTTP-METRIC]
+│   │   │   ├── AbstractAPIExceptionsHandler.java  # Mapper exceptions → HTTP (logique)
+│   │   │   ├── APIExceptionsHandler.java          # @Provider concret (Jandex), mutualisé ×4
+│   │   │   ├── APITraceFilters.java               # Filtres pre/post-matching de trace, mutualisés ×4
+│   │   │   ├── metrics/
+│   │   │   │   ├── HttpMetricsRecorder.java       # Ligne [HTTP-METRIC]
+│   │   │   │   └── MetricsLog.java                # Catégorie de log des métriques (INFO)
 │   │   │   ├── security/
 │   │   │   │   ├── AbstractAPISecurityFilter.java # Identité validée + propagation du jeton
+│   │   │   │   ├── JwtSecurityFilter.java         # @Provider @PreMatching concret, mutualisé ×4
 │   │   │   │   ├── JwtRolesAugmentor.java         # Contrôle issuer, email, rôles applicatifs
+│   │   │   │   ├── InfoPublicTenantResolver.java  # Tenant OIDC /_info (ADR-008)
 │   │   │   │   └── IJwtSecurityContext.java
 │   │   │   └── spi/codecs/
 │   │   │       └── ComptePanacheCodec.java
@@ -123,15 +128,20 @@ gestion-budget-serverless/
 │   │   │   └── trace/
 │   │   │       ├── BusinessTraceContext.java      # MDC réinitialisé après chaque réponse
 │   │   │       └── BusinessTraceContextKeyEnum.java
+│   │   ├── config/
+│   │   │   └── EffectiveConfigLogger.java        # Log [CONFIG] au démarrage
 │   │   ├── spi/
-│   │   │   └── AbstractBDDExceptionsHandler.java
+│   │   │   ├── AbstractBDDExceptionsHandler.java
+│   │   │   └── SPIExceptionsHandler.java          # @Provider concret (MongoException → 503), mutualisé ×4
 │   │   └── utils/
 │   │       ├── security/
 │   │       │   ├── JWTUtils.java                 # Parsing JWT maison (hors chemin d'authentification, suppression Phase 4)
 │   │       │   └── SecurityUtils.java            # Sanitisation des inputs
-│   │       ├── exceptions/                       # Exceptions typées
+│   │       ├── exceptions/                       # Exceptions typées (dont ServiceDistantIndisponibleException, ConflictException)
 │   │       └── data/
 │   │           └── BudgetDateTimeUtils.java
+│   ├── src/main/resources/META-INF/
+│   │   └── microprofile-config.properties        # Configuration COMMUNE aux 4 services (ordinal 100)
 │   └── src/aws-deploy/
 │       ├── sam.native.template.yaml              # Template SAM (Lambda + API Gateway)
 │       └── samconfig.template.toml               # Config déploiement SAM
@@ -162,8 +172,12 @@ gestion-budget-serverless/
 │   │   └── model/budget/
 │   │       └── ProjectionBudgetSoldes.java       # Projection métier des soldes de budget
 │   ├── spi/
-│   │   ├── IComptesServiceProvider.java          # Client REST → µService comptes
-│   │   └── IParametragesServiceProvider.java     # Client REST → µService parametrages
+│   │   ├── IComptesServiceProvider.java          # Client REST → µService comptes (@Retry, intercepteur de traduction)
+│   │   ├── IParametragesServiceProvider.java     # Client REST → µService parametrages (+ cache des catégories)
+│   │   ├── ServicesDistantsResponseExceptionMapper.java      # Réponse HTTP en erreur → exception typée
+│   │   ├── TraductionErreursServiceDistant*.java             # Liaison + intercepteur CDI : échecs de transport → exception typée
+│   │   ├── ServiceDistantTransitoireException.java           # Seul cas rejoué par @Retry
+│   │   └── AbstractRestClientMetricsFilter.java              # Ligne [REST-METRIC] (+ 2 filtres, un par client)
 │   └── utils/
 │       └── BudgetDataUtils.java                  # Clonage opérations, calculs
 │
@@ -180,7 +194,7 @@ gestion-budget-serverless/
 
 | Catégorie | Librairie | Version | Rôle |
 |---|---|---|---|
-| Framework | Quarkus | **4.0.0** | Runtime Lambda natif |
+| Framework | Quarkus | **4.0.1** | Runtime Lambda natif |
 | Sécurité | Quarkus OIDC (`quarkus-oidc`) | (via Quarkus BOM) | Validation des `id_token` Google, mode `service` ([ADR-005](./adr/005-authentification-jwt-extension-quarkus.md)) |
 | Langage | Java | **25** (Mandrel 25 en natif) | LTS, Records, Pattern Matching |
 | Réactif | SmallRye Mutiny | (via Quarkus BOM) | `Uni<T>` / `Multi<T>` |
@@ -188,6 +202,8 @@ gestion-budget-serverless/
 | API | RESTEasy Reactive (JAX-RS) | (via Quarkus BOM) | Endpoints REST |
 | OpenAPI | MicroProfile OpenAPI | (via Quarkus BOM) | Documentation Swagger |
 | Métriques | Micrometer | (via Quarkus BOM) | Monitoring Lambda |
+| Résilience | SmallRye Fault Tolerance (`quarkus-smallrye-fault-tolerance`, `operations`) | (via Quarkus BOM) | `@Retry` ciblé des clients REST inter-services ([ADR-009](./adr/009-mutualisation-communs-et-resilience-appels-inter-services.md)) |
+| Cache | `quarkus-cache` (Caffeine, `operations`) | (via Quarkus BOM) | Cache des catégories, TTL 1 h |
 | Utilitaires | Lombok | **1.18.48** | `@Getter`, `@Setter`, etc. |
 | Tests | JUnit 5 + @QuarkusTest | (via Quarkus BOM) | Tests unitaires et intégration |
 | Tests | Mockito | **5.x** | Mocking |
@@ -267,19 +283,32 @@ gestion-budget-serverless/
 
 ## 🚦 Codes HTTP et gestion des erreurs
 
-Les exceptions sont traduites en HTTP par deux mappers du module `communs`, repris dans chaque service (`APIExceptionsHandler`, `SPIExceptionsHandler`).
+Les exceptions sont traduites en HTTP par deux mappers concrets du module `communs` (`APIExceptionsHandler`, `SPIExceptionsHandler`), découverts par Jandex dans les 4 services : plus aucune copie par module.
 
 | Exception | Code | Mapper |
 |---|---|---|
 | `BadParametersException` | **400** | `AbstractAPIExceptionsHandler` |
 | `DataNotFoundException`, `BudgetNotFoundException` | **404** | `AbstractAPIExceptionsHandler` |
 | `CompteClosedException` | **406** | `AbstractAPIExceptionsHandler` |
+| `ConflictException` (virement : id d'opération déjà présent sur le compte destination, PR #239) | **409** | `AbstractAPIExceptionsHandler` |
 | `UserNotAuthorizedException` / `UserAccessForbiddenException` | 401 / 403 | `AbstractAPIExceptionsHandler` |
 | `DonneeCorrompueException` (ex. budget sans `mois`, soldes absents) | **500** | `AbstractAPIExceptionsHandler` |
+| `ServiceDistantIndisponibleException` / `ServiceDistantTransitoireException` (aval en panne, lent, ou réponse 4xx/5xx inattendue) | **503** | `AbstractAPIExceptionsHandler` (repli) |
 | Autre `AbstractBusinessException` (repli) | 503 | `AbstractAPIExceptionsHandler` |
 | **Toute `MongoException`** (configuration, timeout, serveur indisponible, socket, commande, écriture…) | **503** | `AbstractBDDExceptionsHandler` |
 
 Le 500 est réservé aux données corrompues : une indisponibilité de la base est toujours un 503. Le corps d'une `MongoException` est un message générique (« Erreur d'accès à la base de données »), sans détail interne.
+
+### Appels vers un autre service (`operations` → `comptes` / `parametrages`)
+
+Changements de code HTTP de la Phase 2 du plan 004 ([ADR-009](./adr/009-mutualisation-communs-et-resilience-appels-inter-services.md)), visibles par l'IHM :
+
+| Situation | Avant | Maintenant |
+|---|---|---|
+| Compte inconnu (création / modification / suppression d'opération, `GET /budgets/v2/query`), hors virement | 500 | **404** |
+| Service aval en panne, connexion refusée, timeout, ou réponse 400/401/403/406/429/5xx de l'aval | 500 | **503** |
+
+Un 401 ou un 403 renvoyé par l'aval n'est **jamais** transmis à l'IHM (voir [Appels inter-services](#-appels-inter-services-et-résilience)). Le virement garde ses codes (404 compte destination inconnu, 406 clos, 400 gardes), complétés par 409 et 503 (tableau du virement ci-dessous).
 
 ### Lecture d'un budget : absence ≠ erreur technique (R5)
 
@@ -310,6 +339,8 @@ Gardes, avant toute écriture :
 | Opération qui n'est pas un virement interne, `etat` absent, ou compte source = compte destination | **400** |
 | Compte destination inconnu (404 du service `comptes` traduit en `DataNotFoundException`) | **404** |
 | Compte destination clos | **406** |
+| Service `comptes` en panne ou en timeout (lecture du compte source ou destination) | **503**, aucune écriture |
+| **Création** : l'id d'opération existe déjà sur le compte destination (`ConflictException`, PR #239) | **409**, source compensée |
 | Erreur Mongo (y compris sur M-1 du compte destination) | **503**, source compensée |
 
 Limites acceptées : soldes et totaux de la compensation calculés sur l'instantané mémoire (R2) ; clôture de M-1 par relecture puis enregistrement du document entier, sans verrou optimiste (R2 bis, verrou prévu en Phase 4 / T4.2). Voir l'ADR-007.
@@ -335,6 +366,128 @@ Limites acceptées : soldes et totaux de la compensation calculés sur l'instant
 
 ---
 
+## 🧩 Mutualisation dans `communs` et configuration
+
+Décision : [ADR-009](./adr/009-mutualisation-communs-et-resilience-appels-inter-services.md) (plan 004, Phase 2).
+
+### Providers mutualisés
+
+Le code transverse vivant et générique est déclaré **une seule fois** dans `communs`, sous forme de classes concrètes découvertes par **Jandex** (`jandex-maven-plugin` du pom racine) dans chacun des 4 services :
+
+| Classe (`communs`) | Rôle |
+|---|---|
+| `api/APIExceptionsHandler` (`@Provider`) | Mapper des exceptions métier → HTTP |
+| `spi/SPIExceptionsHandler` (`@Provider`) | Mapper de `MongoException` → 503 |
+| `api/security/JwtSecurityFilter` (`@Provider @PreMatching`) | Identité validée (`quarkus-oidc`) + `X-Api-Key` |
+| `api/APITraceFilters` (`@ServerRequestFilter(preMatching = true)` / `@ServerResponseFilter`) | Trace des requêtes + `[HTTP-METRIC]` |
+
+Restent dans **chaque module** : `RootAPIResource` (chemin `/_info` lié à `tenant-paths`, ADR-008) et `OpenAPIConfig` (titre propre à chaque service ; `info.version` = version de l'application via `quarkus.smallrye-openapi.info-version`). Les ressources REST gardent `extends AbstractAPIInterceptors` pour `getAuthenticatedUser()`.
+
+> ⚠️ Un module construit contre un SNAPSHOT `communs` obsolète perd ses mappers **sans erreur de compilation**. Toujours lancer `mvn clean install` depuis la racine ; un test REST par module (`CommunsProvidersRestTest`) vérifie les codes HTTP et le log de trace unique.
+
+### Configuration : `communs` + un seul `application.properties` par module
+
+| Fichier | Ordinal | Contenu |
+|---|---|---|
+| `communs/src/main/resources/META-INF/microprofile-config.properties` | 100 | Configuration **commune** : bloc MongoDB (connexion, timeouts, pool), OIDC (`application-type`, audience, issuer, timeouts, tenant `info-public` désactivé), CORS, logs, masquage `OidcProvider`, contournement Quarkus #55278, `info-version` OpenAPI |
+| `<module>/src/main/resources/application.properties` | 250 | Clés **propres au service** : `application.name`, ports `%dev,test.`, catégorie de log du module, `tenant-paths` (ADR-008) ; `operations` : URL, timeouts et scope des clients REST, TTL du cache |
+| `<module>/src/test/resources/application.properties` | — | Tests uniquement : clé publique OIDC de test, `devservices` OIDC/Keycloak désactivés |
+
+- **Profils Quarkus** (fin des profils Maven `dev/` et `prod/` et des répertoires de ressources associés) : sans préfixe = dev + test + prod ; `%dev,prod.` = tout sauf les tests ; `%prod.` = Lambda uniquement. Les tests JVM et natifs lisent donc la **même** configuration.
+- Le préfixe `%dev,prod.` est posé sur ce qui ne doit pas s'appliquer aux tests : `quarkus.mongodb.connection-string` (sans elle, Dev Services démarre un conteneur MongoDB), `quarkus.oidc.auth-server-url` (sinon appel à Google pendant les tests : la clé publique locale de test est utilisée), `quarkus.http.cors.origins`.
+- ⚠️ **Piège** : SmallRye résout `%profil.clé` dans **toutes** les sources avant `clé`. Ne jamais définir la même clé avec préfixe de profil dans `communs` et sans préfixe dans un module : la version préfixée gagnerait toujours (c'est pourquoi la catégorie de log des métriques n'a volontairement aucune variante `%prod.`).
+- **Log `[CONFIG]` au démarrage** (`EffectiveConfigLogger`, INFO) : profils actifs et valeurs **effectives** d'une liste blanche de clés non sensibles (timeouts et pool Mongo, timeouts OIDC, issuer, timeouts des clients REST, niveau de masquage d'`OidcProvider`). Jamais de chaîne de connexion, d'URL ni de jeton ; toute valeur qui ressemble à une URL avec identifiants est remplacée par `<masquée>`. Sert à vérifier en QUA que la configuration de `communs` est bien prise en compte en natif.
+
+---
+
+## 🔁 Appels inter-services et résilience
+
+Décision : [ADR-009](./adr/009-mutualisation-communs-et-resilience-appels-inter-services.md). Concerne les clients REST `IComptesServiceProvider` et `IParametragesServiceProvider` du module `operations` (appels via l'API Gateway, JWT propagé par `RequestJWTHeaderFactory`). Contexte : budget Lambda de **15 s**, Mongo inclus ; avant la Phase 2, aucun timeout (défauts Quarkus 15 s / 30 s).
+
+### Timeouts et retry
+
+| Élément | Valeur |
+|---|---|
+| Timeout de connexion (`quarkus.rest-client."<client>".connect-timeout`) | **1500 ms** |
+| Timeout de lecture (`read-timeout`) | **4000 ms** |
+| `@Retry` (SmallRye Fault Tolerance) | `maxRetries = 1`, `delay = 200 ms`, `jitter = 100 ms`, sur les **lectures** seulement |
+| Rejoué (`retryOn = ServiceDistantTransitoireException`) | connexion impossible (refusée, hôte inconnu, connexion coupée) et réponses **429, 502, 503, 504** |
+| **Jamais rejoué** | timeout (un retry provoquerait un 2ᵉ démarrage à froid de l'aval), 404, autres 4xx, autres 5xx |
+| Circuit breaker, fallback | **Aucun** (l'état d'un circuit breaker est par conteneur, inutile sous Lambda ; un fallback masquerait un échec) |
+
+Un aval lent donne un **503 en moins de 6 s** (4 s de lecture, sans retry). Le pire cas Mongo cumulé de 16 s (timeouts du client Mongo) dépasse les 15 s de la Lambda : **accepté** par le 👤 (ADR-009, plan 004 Q8).
+
+### Traduction des erreurs de l'aval
+
+| Réponse ou échec de l'aval | Exception | Code renvoyé à l'IHM |
+|---|---|---|
+| 404 | `DataNotFoundException` | **404** |
+| 429, 502, 503, 504 | `ServiceDistantTransitoireException` (rejouée 1×) | **503** |
+| Tout autre code (**dont 401 et 403**, autres 4xx, autres 5xx) | `ServiceDistantIndisponibleException` | **503** |
+| Timeout (connexion ou lecture) | `ServiceDistantIndisponibleException` | **503** |
+| Connexion impossible | `ServiceDistantTransitoireException` (rejouée 1×) | **503** |
+
+- **401/403 de l'aval → 503, jamais 401/403 vers l'IHM** : la requête entrante est déjà authentifiée par `operations`, donc un 401/403 de l'aval est un défaut de configuration inter-services, pas une session expirée ; le transmettre déconnecterait l'utilisateur (déconnexion IHM sur 401 et 403). Écart par rapport au texte initial de l'ADR-009 (401 propagé) : décision 👤 du Gate #2, 2026-11-22.
+- Le corps de la réponse de l'aval n'est ni lu ni recopié dans les messages d'erreur.
+- **Réponses HTTP** : `ServicesDistantsResponseExceptionMapper` (`@RegisterProvider` sur les 2 clients).
+- **Échecs de transport** (timeout, connexion refusée) : les `ResponseExceptionMapper` et `ClientResponseFilter` ne les voient pas. Ils sont traduits par un **intercepteur CDI** (`TraductionErreursServiceDistantInterceptor`, lié par `@TraductionErreursServiceDistant(client, method)` sur chaque méthode de client). Il est *interne* à l'intercepteur de fault tolerance : le `@Retry` voit déjà l'exception typée et distingue connexion refusée (rejeu) et timeout (pas de rejeu). Client et méthode sont lus dans la liaison d'intercepteur (`ArcInvocationContext`), **sans réflexion** (sûr en natif), avec repli sur un libellé `inconnu`.
+
+> ⚠️ **Risque** : une méthode de client ajoutée **sans** la liaison `@TraductionErreursServiceDistant` n'aurait ni traduction des timeouts / connexions refusées, ni retry ciblé, ni `[REST-METRIC]` d'échec de transport (seules les réponses HTTP resteraient traduites par le mapper). Toute nouvelle méthode des interfaces `I*ServiceProvider` doit porter la liaison (et `@Retry` si c'est une lecture rejouable).
+
+### Lecture en parallèle du compte et du budget
+
+`BudgetService.getBudgetAndCompteActif(idBudget)` (création, modification, suppression d'opération, réinitialisation d'un budget, virement : côté source, lu avec le compte destination) lance **en parallèle** la lecture du budget (Mongo) et celle du compte (service `comptes`, identifiant déduit de l'`idBudget` par le suffixe `_AAAA_MM`). Ainsi, le pire cas REST (~7,2 s selon l'ADR-009) reste sous le `read-timeout` Mongo de 8 s. Règles : budget introuvable → 404, **prioritaire** sur une erreur de lecture du compte ; compte stocké dans le budget différent de celui de l'id → `DonneeCorrompueException` (500) ; compte clos → 406. La lecture `GET /budgets/v2/query` (`getBudgetMensuel(idCompte, mois, annee)`) lit le compte d'abord (404 si inconnu, 503 si l'aval est en panne), puis le budget.
+
+### Cache des catégories
+
+- `@CacheResult(cacheName = "categories")` (`quarkus-cache`, Caffeine) sur `IParametragesServiceProvider.getCategories()` et `getSsCategorieParId(id)` ; `quarkus.cache.caffeine."categories".expire-after-write=1H`.
+- Deux lectures dans le TTL = **un seul appel HTTP**. Une **erreur n'est jamais mise en cache** (le cache ne mémorise que les succès). Log DEBUG `[CACHE] miss` (nom du cache et client, sans paramètre donc sans identifiant).
+- **Copie défensive** : les catégories en cache ne sont jamais modifiées par les appelants (`OperationsService` travaille sur une copie locale de la sous-catégorie de remboursement).
+- Le **compte n'est pas mis en cache** : un compte clos resterait vu actif et contournerait la garde 406 (reporté, ADR-009).
+- Le TTL Caffeine n'utilise pas la `Clock` de l'[ADR-004](./adr/004-clock-injection-convention.md). Les catégories étant modifiées à la main en base, elles peuvent être périmées jusqu'à 1 h par instance Lambda.
+
+---
+
+## 📈 Instrumentation (logs `[HTTP-METRIC]` et `[REST-METRIC]`)
+
+Deux lignes INFO, exploitables en **CloudWatch Logs Insights**. Elles ne contiennent **jamais** d'identifiant, de chemin, de corps, d'email, de clé API ni de jeton.
+
+| Ligne | Émise par | Exemple |
+|---|---|---|
+| `[HTTP-METRIC] op=<Ressource.méthode> status=<code> durationMs=<n> cold=<bool>` | `HttpMetricsRecorder` (via `APITraceFilters`), une par requête entrante | `[HTTP-METRIC] op=BudgetsResource.getBudget status=200 durationMs=42 cold=false` |
+| `[REST-METRIC] client=<comptes\|parametrages> method=<GET> status=<code\|timeout\|connect-error> durationMs=<n>` | `AbstractRestClientMetricsFilter` (réponses HTTP) et `TraductionErreursServiceDistantInterceptor` (timeout, connexion) | `[REST-METRIC] client=comptes method=GET status=timeout durationMs=4003` |
+
+- `op` est la classe et la méthode JAX-RS (`SimpleResourceInfo`, sans réflexion, sûr en natif), `unmatched` si aucune ressource n'est sélectionnée. `cold=true` uniquement pour la première requête de l'instance. `durationMs=-1` si l'heure de début est inconnue. Durées mesurées avec `System.nanoTime()` (horloge monotone).
+- Catégorie de log dédiée `io.github.vzwingma.finances.budget.metrics`, **fixée à INFO** dans `communs` pour tous les profils : les métriques restent émises quel que soit `QUARKUS_LOG_LEVEL`.
+
+Exemples de requêtes CloudWatch Logs Insights (non exécutés dans le cadre de la Phase 2 ; à adapter au groupe de logs de la Lambda) :
+
+```
+# Latence par opération, chaud / froid
+fields @timestamp, @message
+| filter @message like /\[HTTP-METRIC\]/
+| parse @message "op=* status=* durationMs=* cold=*" as op, status, durationMs, cold
+| filter durationMs >= 0
+| stats count() as n, pct(durationMs, 50) as p50, pct(durationMs, 95) as p95, max(durationMs) as max by op, cold
+| sort p95 desc
+
+# Appels inter-services : volumes, erreurs et latence par client et statut
+fields @timestamp, @message
+| filter @message like /\[REST-METRIC\]/
+| parse @message "client=* method=* status=* durationMs=*" as client, method, status, durationMs
+| stats count() as n, pct(durationMs, 95) as p95 by client, status
+| sort n desc
+
+# Pannes de l'aval seulement
+fields @timestamp, @message
+| filter @message like /\[REST-METRIC\]/ and (@message like /status=timeout/ or @message like /status=connect-error/)
+| stats count() as n by bin(5m)
+```
+
+Les lignes `REPORT` de la Lambda (`Duration`, `Init Duration`) complètent ces métriques. La comparaison avant/après du p95 prévue au plan (T2.9) a été **abandonnée** (décision 👤 du 2026-11-22) ; l'instrumentation reste en place pour un suivi ultérieur.
+
+---
+
 ## 🔐 Sécurité
 
 - **Authentification** : `id_token` Google OIDC passé dans le header `Authorization: Bearer <token>`, validé par l'extension `quarkus-oidc` en mode `service` ([ADR-005](./adr/005-authentification-jwt-extension-quarkus.md), plan 004 Phase 0).
@@ -343,7 +496,7 @@ Limites acceptées : soldes et totaux de la compensation calculés sur l'instant
 
 ### Validation du jeton (`quarkus-oidc`)
 
-Configuration dans `{comptes,operations,parametrages,utilisateurs}/src/main/resources/{dev,prod}/application.properties` :
+Configuration **commune** dans `communs/src/main/resources/META-INF/microprofile-config.properties` (voir [Mutualisation](#-mutualisation-dans-communs-et-configuration)), sauf `tenant-paths` (dans l'`application.properties` de chaque module) :
 
 | Propriété | Valeur | Rôle |
 |---|---|---|
@@ -355,14 +508,14 @@ Configuration dans `{comptes,operations,parametrages,utilisateurs}/src/main/reso
 | `quarkus.oidc.connection-timeout` | `3S` | Durée max d'une requête discovery / JWKS |
 | `quarkus.oidc.connection-delay` | `4S` | Fenêtre de retry de la connexion initiale (pire cas ~7 s < budget d'init Lambda ~10 s) |
 
-Les propriétés `auth-server-url` et timeouts sont limitées aux profils `%dev`/`%prod` : le profil de test utilise une clé publique locale (`quarkus.oidc.public-key`) et n'appelle pas Google.
+La propriété `auth-server-url` est préfixée `%dev,prod.` : le profil de test utilise une clé publique locale (`quarkus.oidc.public-key`) et n'appelle pas Google.
 
 `JwtRolesAugmentor` (`communs/.../api/security/`) complète la validation de l'extension. Comme `issuer=any`, il est la **seule barrière sur l'issuer** :
 - contrôle **strict** des 2 formes d'issuer (`accounts.google.com`, `https://accounts.google.com`) ; toute autre valeur est refusée (dont `evilaccounts.google.com`, `accounts.google.com.evil.com`) ;
 - claim `email` requis (non vide) et `email_verified` = `true` (booléen ou chaîne `"true"`, les deux formes étant émises par Google) ;
 - rôles applicatifs (`app.security.roles`, défaut `USER_COMPTES,USER_OPERATIONS,USER_UTILISATEURS`) attribués à **tout utilisateur authentifié** (pas de contrôle de propriété ni de rôle admin : hors périmètre, second temps).
 
-`AbstractAPISecurityFilter` ne décode plus le jeton : il expose l'identité validée (email, jeton brut pour la propagation inter-µServices par `RequestJWTHeaderFactory`) et l'`X-Api-Key`. Les logs « Aucune identité authentifiée. Accès anonyme. » et « Clé API non trouvée » sont en **DEBUG** pour un chemin finissant par `/_info` (accès anonyme attendu), en **WARN** ailleurs.
+`AbstractAPISecurityFilter` (concrétisé par `JwtSecurityFilter` dans `communs`, mutualisé) ne décode plus le jeton : il expose l'identité validée (email, jeton brut pour la propagation inter-µServices par `RequestJWTHeaderFactory`) et l'`X-Api-Key`. Les logs « Aucune identité authentifiée. Accès anonyme. » et « Clé API non trouvée » sont en **DEBUG** pour un chemin finissant par `/_info` (accès anonyme attendu), en **WARN** ailleurs.
 
 ### Retiré du chemin d'authentification
 
@@ -386,7 +539,7 @@ Les endpoints protégés (`@RolesAllowed`) sont inchangés.
 
 ### `/_info` public : tenant `info-public` (ADR-008)
 
-Avec l'authentification proactive de `quarkus-oidc`, tout jeton présent est validé avant l'autorisation, même sur `@PermitAll`. Pour que `/_info` (nom, version, description fixe : rien de sensible) reste lisible avec un jeton invalide, un tenant OIDC nommé `info-public` est déclaré dans les `application.properties` (`{dev,prod}` et test) de chaque service :
+Avec l'authentification proactive de `quarkus-oidc`, tout jeton présent est validé avant l'autorisation, même sur `@PermitAll`. Pour que `/_info` (nom, version, description fixe : rien de sensible) reste lisible avec un jeton invalide, un tenant OIDC nommé `info-public` est déclaré : `tenant-enabled` dans la configuration commune de `communs`, `tenant-paths` dans l'`application.properties` de chaque service :
 
 | Propriété | Valeur | Rôle |
 |---|---|---|
@@ -400,7 +553,7 @@ Avec l'authentification proactive de `quarkus-oidc`, tout jeton présent est val
 - **Risque** : un second bean `TenantResolver` fait échouer le démarrage (`IllegalStateException`, visible).
 - **Verrouillé par des tests** : `TestInfoPublicTenantResolver`, `InfoEndpointPublicTest` ×4, `InfoPublicTenantNonRegressionTest` (`comptes`, `parametrages`), `ProtectedEndpointNonRegressionTest`.
 
-> ⚠️ **À revérifier à chaque montée de version de `quarkus-oidc`** (ordre des resolvers, comportement « tenant désactivé → identité nulle »). Validé sur Quarkus 3.40.1.1.
+> ⚠️ **À revérifier à chaque montée de version de `quarkus-oidc`** (ordre des resolvers, comportement « tenant désactivé → identité nulle »). Validé sur Quarkus 3.40.1.1 ; comportement du tenant `info-public` et de l'ordre des resolvers **revalidé sur Quarkus 4.0.1** par les tests CI (PR #241, 2026-11-27).
 
 ### Limites connues
 
@@ -409,7 +562,7 @@ Avec l'authentification proactive de `quarkus-oidc`, tout jeton présent est val
 
 ### Logs : masquage du jeton
 
-`quarkus-oidc` (`io.quarkus.oidc.runtime.OidcProvider`) loggue le jeton complet en WARN sur signature invalide. Masquage par configuration : `quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".level=ERROR` (présente dans les `application.properties` des modules ; tests de fuite dans `comptes`). Effet de bord : les WARN légitimes d'`OidcProvider` (jeton expiré…) ne sont plus visibles. **À revérifier à chaque montée de version de `quarkus-oidc`** (la protection repose sur la configuration seule). Résiduel : `OidcUtils` WARN `Failed to decrypt a token` (JWE uniquement, non utilisé par Google).
+`quarkus-oidc` (`io.quarkus.oidc.runtime.OidcProvider`) loggue le jeton complet en WARN sur signature invalide. Masquage par configuration : `quarkus.log.category."io.quarkus.oidc.runtime.OidcProvider".level=ERROR` (présente dans la configuration commune de `communs` ; tests de fuite dans `comptes`). Effet de bord : les WARN légitimes d'`OidcProvider` (jeton expiré…) ne sont plus visibles. **À revérifier à chaque montée de version de `quarkus-oidc`** (la protection repose sur la configuration seule). Résiduel : `OidcUtils` WARN `Failed to decrypt a token` (JWE uniquement, non utilisé par Google).
 
 - **Sanitisation des entrées** : tous les path params sont sanitisés via `SecurityUtils.ESCAPE_INPUT_REGEX` avant tout traitement.
 - **Données sensibles** : aucun secret dans le code source ; tout via variables d'environnement injectées par SAM/GitHub Secrets.
@@ -423,9 +576,9 @@ Avec l'authentification proactive de `quarkus-oidc`, tout jeton présent est val
 - **Driver** : Quarkus MongoDB Panache — pattern **Repository** (pas Active Record)
 - **Base de données dev** : `v12-app-dev` (localhost:27017)
 - **Base de données prod** : variable d'environnement `QUARKUS_MONGODB_DATABASE`
-- **Configuration** :
-  - Dev : `src/main/resources/dev/application.properties` dans chaque module
-  - Prod : `src/main/resources/prod/application.properties` + SAM template
+- **Configuration** : bloc MongoDB commun dans `communs/src/main/resources/META-INF/microprofile-config.properties` ; `application.properties` unique par module (profils Quarkus `%dev` / `%prod`) ; variables d'environnement via le template SAM en prod.
+  - Dev : `quarkus.mongodb.connection-string` = `QUARKUS_MONGODB_CONNECTION_STRING`, défaut `mongodb://localhost:27017`
+  - Tests : pas de chaîne de connexion (Dev Services démarre un conteneur MongoDB si Docker est disponible)
 
 ### Collections principales
 
@@ -450,7 +603,7 @@ Avec l'authentification proactive de `quarkus-oidc`, tout jeton présent est val
 
 ### Client MongoDB : timeouts et pool
 
-Définis dans le bloc Mongo des 8 `application.properties` (`{comptes,operations,parametrages,utilisateurs}/src/main/resources/{dev,prod}/`) :
+Définis dans le bloc Mongo de la configuration commune (`communs/.../META-INF/microprofile-config.properties`, identiques pour les 4 services et tous les profils) :
 
 | Propriété | Valeur | Rôle |
 |---|---|---|
@@ -517,6 +670,10 @@ V002 liste d'abord les index existants et ne crée l'index que si aucun index de
 | Intégration Mongo (`*MongoTest`) | @QuarkusTest + MongoDB réel (Testcontainers `mongo:7.0`) | `operations`, `utilisateurs` (`src/test/java/`) | `mvn test` (Docker requis) |
 | Intégration Mongo (`communs`) | @QuarkusTest + MongoDB réel ou Dev Services | `communs/src/test/java/.../migrations/` | `mvn test` (MongoDB accessible ou Docker pour Dev Services) |
 | Couverture | JaCoCo | `target/jacoco-report/` | `mvn verify -Psonar` |
+
+**Docker et MongoDB de test (depuis la Phase 2 du plan 004)** : la chaîne de connexion MongoDB est préfixée `%dev,prod.` dans `communs` ; en profil de test, **Quarkus Dev Services démarre donc un conteneur MongoDB** pour les `@QuarkusTest` de tous les modules, dont `parametrages` et `utilisateurs` qui n'avaient auparavant pas besoin de Docker (profil Maven `dev/` avec `localhost:27017`). **Docker est requis** pour ces tests (décision 👤 du Gate #2, 2026-11-22). Sans Docker, la Phase 2 a été validée localement avec 871 tests verts (journal de bruit `Could not find a valid Docker environment` puis `[MIGRATIONS] Echec inattendu ... MongoTimeoutException`), mais sans que MongoDB soit réellement exercé. Le profil `ci-sans-mongo` désactive Dev Services (voir ci-dessous).
+
+**Faux service aval** : les tests de résilience de `operations` s'appuient sur `test/aval/FauxAval` (`HttpServer` du JDK, sans nouvelle dépendance : statut par numéro d'appel, délai piloté, ports partagés) et sur le profil `ProfilFauxAvalTimeoutsReels`, qui ne change que les URL des clients. Ils exercent les **vrais timeouts** 1,5 s / 4 s (`ServicesDistantsTimeoutsReelsQuarkusTest`, `ResilienceAvalBudgetEndToEndTest` en bout en bout avec jeton OIDC valide, `CacheCategoriesTtlCourtQuarkusTest` avec un TTL de 1 s) : surcoût d'environ 30 s en CI. Preuve de régression de la Phase 2 : sans l'enregistrement du `ResponseExceptionMapper`, 23 échecs + 1 erreur ; sans le `@Retry` ciblé, 9 échecs + 1 erreur (rapport `PHASE_2_TESTS_REPORT.md`). Un `CommunsProvidersRestTest` par module vérifie les codes HTTP et un `ProfilsConfigurationTest` / `CommunsConfigurationTest` par module vérifie la configuration effective et sa **provenance** (clés communes lues dans `microprofile-config.properties` de `communs`).
 
 Le profil Maven `ci-sans-mongo` exclut exactement cinq classes Surefire :
 `TestMigrationRepository`, `TestMigrationRepositoryConcurrence`, `TestMigrationRepositoryPersistence`,
@@ -619,6 +776,11 @@ BusinessTraceContext.getclear()
 - Jamais d'appel direct entre µServices.
 - Toujours via une interface SPI : `spi/IXxxServiceProvider` → client REST Quarkus.
 - Le JWT est propagé via `RequestJWTHeaderFactory`.
+- Toute méthode d'un client doit porter `@TraductionErreursServiceDistant` (et `@Retry` ciblé si c'est une lecture), et le client enregistrer `ServicesDistantsResponseExceptionMapper` : voir [Appels inter-services et résilience](#-appels-inter-services-et-résilience).
+
+### Providers et configuration transverses
+- Un nouveau provider JAX-RS générique (mapper, filtre) se déclare **dans `communs`**, pas dans un module.
+- Une clé de configuration commune va dans `communs/.../META-INF/microprofile-config.properties` ; jamais la même clé préfixée dans `communs` et non préfixée dans un module.
 
 ---
 
@@ -701,7 +863,7 @@ mvn clean package -Pnative -Dquarkus.native.container-build=true
 | [006](./adr/006-reservation-atomique-migrations-mongodb.md) | Réservation atomique par version des migrations MongoDB (complète l'ADR-002) | Acceptée |
 | [007](./adr/007-coherence-virement-ecriture-sequentielle-compensee.md) | Cohérence du virement interne : écriture séquentielle compensée, sans transaction MongoDB | Acceptée |
 | [008](./adr/008-endpoint-info-public-tenant-oidc-desactive.md) | Endpoint `/_info` public : tenant OIDC `info-public` désactivé par chemin + `InfoPublicTenantResolver` (complète l'ADR-005) | Acceptée (amendée le 2026-11-02) |
-| [009](./adr/009-mutualisation-communs-et-resilience-appels-inter-services.md) | Mutualisation partielle dans `communs`, configuration commune et résilience des appels REST inter-services (timeouts, retry ciblé, erreurs typées 503, cache catégories) | Acceptée |
+| [009](./adr/009-mutualisation-communs-et-resilience-appels-inter-services.md) | Mutualisation partielle dans `communs`, configuration commune et résilience des appels REST inter-services (timeouts, retry ciblé, erreurs typées 503, cache catégories) | Acceptée (mise en œuvre : PR #233, #234, #235, #241) |
 
 > 💡 Toute nouvelle décision architecturale majeure (nouveau framework, changement de pattern, décision de sécurité) doit faire l'objet d'un ADR délégué à l'agent 🟣 DOCly.
 

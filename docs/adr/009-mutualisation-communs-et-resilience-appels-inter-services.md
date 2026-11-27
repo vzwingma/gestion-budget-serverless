@@ -66,7 +66,7 @@ Le code JWT maison mort (`JwtReflectionConfig`, `JwsSigningKeysDatabaseAdaptor`)
 | Réponse de l'aval | Exception | Code renvoyé |
 |---|---|---|
 | 404 | `DataNotFoundException` | 404 |
-| 401 | (401 propagé) | 401 |
+| 401 | (401 propagé) — **modifié à la mise en œuvre : 503**, voir la note de mise en œuvre | ~~401~~ → **503** |
 | 403, 429, 5xx, échec de connexion, timeout | nouvelle `ServiceDistantIndisponibleException` | **503** |
 
   Un 403 renvoyé par l'aval **ne doit jamais être transmis en 403** : l'IHM déconnecterait l'utilisateur.
@@ -143,6 +143,27 @@ Le code JWT maison mort (`JwtReflectionConfig`, `JwsSigningKeysDatabaseAdaptor`)
 - **Fichiers impactés** : `communs` (mappers, filtre de sécurité, filtres de trace, `microprofile-config.properties`, `ServiceDistantIndisponibleException`), 8 `application.properties`, `pom.xml` (profils Maven), clients REST et `getBudgetAndCompteActif` dans `operations`.
 - **Tâches de suivi** : plan 004, tâches **T2.0 à T2.9**, en **une seule PR** (décision 👤).
 - **Date d'effet** : Phase 2 du plan 004.
+
+### Note de mise en œuvre (2026-11-27)
+
+Code et tests mergés sur `master` (Gates #2 et #3 de la Phase 2 : GO 👤) :
+
+| PR | Contenu |
+|---|---|
+| #233, #234, #235 | Code de la Phase 2 : instrumentation (T2.0, commit 5bc90cb), providers mutualisés, configuration commune et profils Quarkus, résilience des appels REST, parallélisation, cache des catégories, version OpenAPI (T2.1 à T2.7 ; commit 4cfbc36 conservé tel quel au 2ᵉ passage du Gate #2) |
+| #241 | Tests de la Phase 2 (T2.8) : 74 tests ajoutés, faux service aval, preuves de régression (mapper, retry) ; CI verte sur Quarkus 4.0.1 (OIDC, Mongo, natif) |
+
+Master est depuis passé en Quarkus 4.0.1 (#237, #240) ; #239 a ajouté `ConflictException` (409 sur un virement dont l'id d'opération existe déjà sur le compte destination), sans lien avec cette décision.
+
+**Écarts à la décision** (tous validés par le 👤) :
+- **401 de l'aval** : la décision (tableau § 3) prévoyait de propager le 401. Gate #2 du 2026-11-22 : **tout 4xx de l'aval hors 404 (401 compris) donne 503, sans retry**. Plus aucune `UserNotAuthorizedException` en sortie d'un client REST inter-services.
+- **Échecs de transport** : traduits par un **intercepteur CDI** (`TraductionErreursServiceDistantInterceptor`, lié par `@TraductionErreursServiceDistant` sur chaque méthode de client), car un `ResponseExceptionMapper` ne voit jamais un timeout ni une connexion refusée. Ajout de `ServiceDistantTransitoireException` (dans `operations`, sous-classe de `ServiceDistantIndisponibleException`) pour que `@Retry` ne rejoue que la connexion refusée et les 429/502/503/504. Risque résiduel : une future méthode de client sans cette liaison n'aurait ni traduction des échecs de transport ni retry.
+- **Mesure avant/après (§ 5)** : **non réalisée**, décision 👤 du 2026-11-22. Les logs `[HTTP-METRIC]` / `[REST-METRIC]` sont en place pour un suivi ultérieur ; la tâche T2.9 est abandonnée.
+- **Docker** : sans chaîne de connexion en profil de test, Dev Services démarre MongoDB pour les `@QuarkusTest` de `parametrages` et `utilisateurs` (Docker accepté comme prérequis, Gate #2). Le retrait de l'exclusion des `*MongoTest` des builds natifs, tenté en T2.3, **n'est pas appliqué** : le profil `ci-sans-mongo` (utilisé par les builds natifs, master et tags) exclut toujours les 5 classes.
+- **Pire cas Mongo de 16 s** : accepté (inchangé), hors périmètre.
+- **Suppressions de fichiers** (coquilles ×4 et `application.properties` `dev/` `prod/`) : faites par le 👤, aucun agent ne supprime.
+
+Voir `docs/ARCHITECTURE.md` (sections Mutualisation, Appels inter-services et résilience, Instrumentation) et le rapport `.claude/plans/004_reports/PHASE_2_TESTS_REPORT.md`.
 
 ---
 

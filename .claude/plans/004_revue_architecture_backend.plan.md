@@ -1,7 +1,7 @@
 # Plan d'Action 004 — Revue architecture backend : sécurisation, fiabilisation, modernisation Quarkus/Mongo
 
 **Date création :** 2026-10-25
-**Statut :** 🔵 En cours — Phases 0 et 1 ✅ clôturées (PR #220, #224, #225, #226 mergées ; QUA déployé, contrôle QUA par le 👤) ; Phase 2 en cadrage (Gate #0 GO 2026-11-20, Gate #1 en attente)
+**Statut :** 🔵 En cours — Phases 0 et 1 ✅ clôturées (PR #220, #224, #225, #226 mergées ; QUA déployé, contrôle QUA par le 👤) ; Phase 2 : code + tests mergés (#233-#235, #241), **Gate #4 en attente** (T2.10/T2.11 documentation réalisées, 2026-11-27)
 **Porteur :** ⚫ MAINa
 **ADR liés :** [ADR-005 — Authentification JWT via extension Quarkus](../../docs/adr/005-authentification-jwt-extension-quarkus.md) (`Acceptée` pour le principe ; choix final oidc / smallrye-jwt par essai Phase 0) · ADR-002 (migrations maison, maintenu) · ADR-004 (`Clock`, maintenu)
 
@@ -236,7 +236,7 @@ Piste D : T1.2c
 
 ---
 
-## Phase 2 — Mutualisation `communs` + appels inter-services (Lots 3 et 4) — 🔵 en cours (Gate #1 GO 2026-11-20)
+## Phase 2 — Mutualisation `communs` + appels inter-services (Lots 3 et 4) — 🔵 code + tests mergés (#233-#235, #241), Gate #4 en attente (Gate #1 GO 2026-11-20, Gates #2 et #3 GO 2026-11-27)
 
 **ADR :** [ADR-009 — Mutualisation `communs` et résilience des appels inter-services](../../docs/adr/009-mutualisation-communs-et-resilience-appels-inter-services.md) (`Acceptée`)
 **Branche :** `docs/ap004-phase2` pour le plan et l'ADR, depuis master 5ee159e. **Une seule PR pour toute la Phase 2** (décision 👤) : l'implémentation se poursuit sur cette branche, ou sur `feat/ap004-phase2` qui la reprend (choix à faire au Gate #1).
@@ -290,11 +290,11 @@ Piste D : T1.2c
 
 ### Tâches
 
-#### T2.0 — Instrumentation (DEVon) — premier commit de la PR
+#### T2.0 — Instrumentation (DEVon) — premier commit de la PR ✅ (5bc90cb)
 - **Fichiers :** `communs/.../api/AbstractAPIInterceptors.java` (heure de début au pre-matching, log INFO `[HTTP-METRIC] op=<Ressource.méthode> status durationMs cold`) ; `ClientRequestFilter`/`ClientResponseFilter` des 2 clients (`[REST-METRIC] client status durationMs`).
 - **Acceptation :** aucun id, jeton ni corps dans les logs (`grep eyJ` vide) ; tests unitaires.
 
-#### T2.1 — Mutualisation A3 (DEVon)
+#### T2.1 — Mutualisation A3 (DEVon) ✅
 - **Créer dans `communs` :**
   - `api/APIExceptionsHandler` (concret, `@Provider`) ;
   - `spi/SPIExceptionsHandler` (concret, `@Provider`) ;
@@ -308,17 +308,17 @@ Piste D : T1.2c
   - `{comptes,parametrages,utilisateurs}/src/test/java/.../APIExceptionsHandlerTest.java` (3 fichiers, à déplacer d'abord vers `communs`)
 - **Acceptation :** un `@QuarkusTest` REST par module prouve les codes 404, 406, 503 (Mongo) et 401, un log de trace **unique** (pas de doublon tant que les fichiers ne sont pas supprimés), et un `getAuthenticatedUser()` différent de ANONYME.
 
-#### T2.2 — Configuration commune B1 (DEVon)
+#### T2.2 — Configuration commune B1 (DEVon) ✅
 - **Fichiers :** création de `communs/src/main/resources/META-INF/microprofile-config.properties`. Il reçoit le bloc Mongo, le bloc OIDC commun (avec `%dev,prod.auth-server-url`), CORS, #55278 et le masquage `OidcProvider`. Retirer les mêmes lignes des modules. Uniformiser `rest-client.*`.
 - **Restent dans les modules :** `application.name`, ports, `tenant-paths` (ADR-008), catégorie de log, URL des clients REST, `jwt-signing-key-service` (T4.0).
 - **Acceptation :** test `ConfigProvider` par module sur au moins 8 clés, masquage = ERROR compris ; log INFO au démarrage en QUA avec les valeurs effectives ; prise en compte en natif démontrée (build natif CI et smoke QUA).
 
-#### T2.3 — Profils Quarkus B2 (DEVon)
+#### T2.3 — Profils Quarkus B2 (DEVon) ✅ (exclusion `*MongoTest` du natif : retrait non appliqué, `ci-sans-mongo` toujours utilisé par les builds natifs)
 - **Créer** un seul `src/main/resources/application.properties` par module, avec les profils `%dev`/`%prod`. **Retirer** les profils de ressources Maven `dev`/`native` des 4 `pom.xml`, en gardant le profil `native` pour la compilation native.
 - **Fichiers à supprimer, par le 👤 (Q2) :** `{comptes,operations,parametrages,utilisateurs}/src/main/resources/{dev,prod}/application.properties` (8 fichiers).
 - **Acceptation :** tableau de configuration effective dev / test / prod identique avant et après ; Dev Services de `communs` et `*MongoTest` verts (l'exclusion `*MongoTest` du natif est revue si elle n'est plus nécessaire) ; natif vert.
 
-#### T2.4 — Erreurs de l'aval, timeouts, retry (DEVon)
+#### T2.4 — Erreurs de l'aval, timeouts, retry (DEVon) ✅ (écart : tout 4xx hors 404, 401 compris → 503 sans retry, décision 👤 Gate #2 ; intercepteur CDI pour les échecs de transport)
 - **Fichiers :**
   - `communs/.../exceptions/ServiceDistantIndisponibleException.java` (→ 503 via le repli de `AbstractAPIExceptionsHandler`) ;
   - `operations/.../spi/ServicesDistantsResponseExceptionMapper.java`, enregistré par `@RegisterProvider` sur `IComptesServiceProvider` et `IParametragesServiceProvider` ;
@@ -333,17 +333,17 @@ Piste D : T1.2c
   - 403 de l'aval → 503 ;
   - codes du virement (404 / 406 / 400) inchangés.
 
-#### T2.5 — Parallélisation (DEVon)
+#### T2.5 — Parallélisation (DEVon) ✅
 - **Fichier :** `BudgetService.getBudgetAndCompteActif` (lignes 149-169 environ). La lecture du compte (déduit de `idBudget`) et celle du budget partent en parallèle. Garde `budget.idCompteBancaire == idCompte`, sinon `DonneeCorrompueException` (500). Un 404 sur le budget reste prioritaire.
 
-#### T2.6 — Cache des catégories, D1 (DEVon)
+#### T2.6 — Cache des catégories, D1 (DEVon) ✅
 - **Fichiers :** `operations/pom.xml` (`quarkus-cache`) ; `@CacheResult` sur `getCategories()` et `getSsCategorieParId(id)` ; `quarkus.cache.caffeine."categories".expire-after-write=1H` ; log au cache miss.
 - **Acceptation :** 2 appels → 1 seul appel HTTP ; une erreur n'est pas mise en cache ; TTL respecté (test avec un TTL court).
 
-#### T2.7 — `OpenAPIConfig.version` (DEVon)
+#### T2.7 — `OpenAPIConfig.version` (DEVon) ✅
 - Aligner la version sur celle de l'application (`quarkus.application.version`, ou `quarkus.smallrye-openapi.info-version`) dans les 4 modules, à la place de « 21.1.0 ».
 
-#### T2.8 — Tests (QALvin)
+#### T2.8 — Tests (QALvin) ✅ (PR #241 ; 74 tests ajoutés, 871 tests verts ; rapport [`004_reports/PHASE_2_TESTS_REPORT.md`](./004_reports/PHASE_2_TESTS_REPORT.md))
 - Non-régression des 5 modules. Faux service aval sous forme de ressource JAX-RS de test dans `operations` (délai et statut pilotés), sans nouvelle dépendance.
 - Tests : timeouts, retry (cas couverts et non couverts), mapper, parallélisation, cache, configuration effective, codes REST par module.
 - **Acceptation :** couverture ≥ 80 % des nouvelles classes ; preuve de régression (sans le mapper, le test passe au rouge).
@@ -354,14 +354,30 @@ Piste D : T1.2c
   - lignes `REPORT` : Duration et Init Duration.
 - **Protocole :** même compte et même budget ; 50 POST à chaud, 1 par seconde ; 5 démarrages à froid forcés ; mesure avant (après T2.0) et après (fin de PR). Ne conclure qu'au-delà d'environ 20 % d'écart.
 
-#### T2.10 — Traçabilité IHM (MAINa)
-- Codes visibles qui changent : compte inconnu hors virement → 404 ; panne ou timeout de l'aval → 503. **Proposition :** ajouter une ligne dans le **plan IHM 011, Phase 2**, déjà consacré aux états d'erreur 503/404 de la page budget et du virement, plutôt qu'un nouveau plan. À valider au Gate #1.
+#### T2.10 — Traçabilité IHM (MAINa) ✅ partie serverless (DOCly, 2026-11-27) ; ajout au plan IHM 011 à faire par le 👤 / MAINa
+- Codes visibles qui changent : compte inconnu hors virement → 404 ; panne ou timeout de l'aval → 503. Traçabilité dans le **plan IHM 011, Phase 2** (états d'erreur 503/404 de la page budget et du virement), plutôt que dans un nouveau plan (validé au Gate #1).
+- Le plan IHM 011 est dans le dépôt IHM : il n'a pas pu être modifié depuis ce dépôt. **Texte exact à ajouter au plan IHM 011, Phase 2** (à adapter au format de tableau du plan) :
 
-#### T2.11 — Documentation (DOCly)
-- `docs/ARCHITECTURE.md` : providers dans `communs`, configuration commune et profils, timeouts / retry / cache, 503 en cas de panne de l'aval, instrumentation.
-- ADR-009 passe en `Acceptée` au GO du Gate #1.
-- Index ; wiki backend (commité par le 👤).
-- Version Quarkus 3.40.1.2 déjà corrigée dans `ARCHITECTURE.md`, dans le commit du plan.
+> **Impacts IHM — plan serverless 004, Phase 2 (ADR-009 `Acceptée`, code mergé sur `master` : PR #233, #234, #235 ; tests : #241).**
+> Le service `operations` appelle `comptes` et `parametrages` avec des timeouts (1,5 s connexion / 4 s lecture) et un seul retry, uniquement sur connexion refusée ou réponse 429/502/503/504. Codes HTTP visibles par l'IHM :
+>
+> | Situation | Endpoints concernés | Avant | Maintenant |
+> |---|---|---|---|
+> | Compte inconnu (hors virement) | `GET /budgets/v2/query` ; création, modification et suppression d'opération (`POST` / `PUT` / `DELETE /budgets/v2/{idBudget}/operations…`) ; réinitialisation d'un budget | 500 | **404** |
+> | Panne, connexion refusée ou timeout de `comptes` ou de `parametrages` (réponse en 503 en moins de 6 s) | mêmes endpoints, plus les lectures qui chargent les catégories (ex. libellés connus) | 500 | **503** |
+> | Réponse inattendue de l'aval, **dont 401 et 403** | mêmes endpoints | 500 | **503** (jamais 401 ni 403 : l'IHM ne doit **pas** déconnecter l'utilisateur pour cette raison) |
+> | Virement (`POST /budgets/v2/{idBudget}/operations/versCompte/{idCompte}`) : compte destination inconnu / clos / source = destination | | 404 / 406 / 400 | **inchangé** |
+> | Virement : `comptes` en panne ou en timeout | | 500 | **503** (aucune écriture) |
+> | Virement, **création** : l'id d'opération existe déjà sur le compte destination (PR #239) | | 500 | **409** (source compensée) ; cas attendu rare |
+>
+> À traiter côté IHM : (1) 503 → message « service momentanément indisponible, réessayer », sans déconnexion, sans retry automatique ; (2) 404 sur compte inconnu → message dédié distinct du budget introuvable ; (3) 409 sur création de virement → message « opération déjà existante » ; (4) aucune régression sur 401/403 (déconnexion, plan IHM 010). Tests Vitest associés ; `npm run lint`, `npm run typecheck` et `npx vitest run` verts.
+
+- Réserve : « avant = 500 » reprend le texte de la décision Q5 (« 500 probable » dans le cadrage) ; le comportement exact avant la Phase 2 n'a pas été rejoué. Le cas 409 (création de virement) vient de la PR #239, hors Phase 2 ; sa fréquence réelle dépend de la génération des ids d'opération côté IHM, à vérifier par l'auteur du plan 011.
+
+#### T2.11 — Documentation (DOCly) ✅ (2026-11-27, Gate #4 en attente)
+- `docs/ARCHITECTURE.md` : version Quarkus 4.0.1 ; providers dans `communs` ; configuration commune et profils Quarkus ; appels inter-services (timeouts, retry, traduction des erreurs, parallélisation) ; cache des catégories ; codes HTTP (404 / 409 / 503) ; instrumentation `[HTTP-METRIC]` / `[REST-METRIC]` et requêtes Logs Insights ; tests (Docker, faux aval) ; index ADR.
+- ADR-009 `Acceptée` + note de mise en œuvre (écarts) ; ADR-008 : revalidation Quarkus 4.0.1 (PR #241).
+- `.claude/CLAUDE.md` du dépôt, `README.md` (version Quarkus), index des plans ; wiki backend `Conception-globale.md` (commit par le 👤).
 
 ### Ordre (une seule PR)
 ```
@@ -491,8 +507,14 @@ Chaque phase : Gate #2 (code) → Gate #3 (tests) ; Gate #4 global en fin de pla
 | T2.0 | 2026-11-20 | Instrumentation livrée | ℹ️ | 5bc90cb poussé par le 👤. **Décision 👤 : enchaîner T2.1 à T2.7 sans attendre la mesure « avant ». La baseline « avant » n'est PAS encore mesurée** : le 👤 la fera, ou décidera séparément, sur le déploiement QUA de 5bc90cb ou d'un équivalent. Si elle n'est jamais mesurée, la comparaison avant/après du p95 de T2.9 ne sera pas possible |
 | #2 (Phase 2) | 2026-11-22 | Revue du code Phase 2 | 🔧 AJUSTER | Décisions 👤 : (1) **Docker obligatoire accepté** pour les tests de `parametrages` et `utilisateurs` (Dev Services MongoDB) ; (2) **4xx de l'aval → 503 sans retry** (401 compris : plus de `UserNotAuthorizedException` en sortie d'un client REST inter-services) ; (3) **suppressions de fichiers faites par le 👤 avant T2.8** (aucun agent ne supprime) ; (4) **CLAUDE.md mis à jour en T2.11**. Corrections DEVon : id de compte extrait par le suffixe `_AAAA_MM` depuis la fin (ids avec `_`) ; intercepteur et métriques HTTP sans réflexion (natif) avec repli ; copie défensive des catégories en cache ; catégorie de log des métriques fixée à INFO ; test `/q/openapi` (4 modules). |
 | #2 (Phase 2) | 2026-11-27 | Validation code (2e passage) | ✅ GO | Corrections 1/2/4/6/7/8 + retrait du bloc resources + doublon REST-METRIC. Commit 4cfbc36 conservé tel quel. Code mergé sur master par le 👤 (PR #233/#234/#235) avant T2.8 ; master depuis en Quarkus 4.0.1 (#237, #240) et #239 |
+| #3 (Phase 2) | 2026-11-27 | Validation tests T2.8 | ✅ GO | 74 tests ajoutés, 871 tests verts, couverture des classes de la Phase 2 ≥ 81 % branches, régression prouvée (mapper, retry). PR #241 mergée, CI verte sur Quarkus 4.0.1 (OIDC, Mongo, natif) |
+| T2.10 / T2.11 | 2026-11-27 | Documentation Phase 2 | ℹ️ Réalisées, **Gate #4 en attente** | `ARCHITECTURE.md`, ADR-008 / ADR-009, `.claude/CLAUDE.md`, README, index, wiki backend `Conception-globale.md` (commit par le 👤). Traçabilité IHM : texte à ajouter au plan IHM 011 fourni en T2.10 |
 
 ### ⚠️ Dette et limites connues (Phase 2)
+
+- **Pire cas Mongo de 16 s accepté** (décision 👤, Q8) : il dépasse les 15 s de la Lambda ; hors périmètre de la Phase 2, aucun correctif prévu.
+- **Risque : ajout futur d'une méthode de client REST sans la liaison d'intercepteur.** Une méthode de `IComptesServiceProvider` / `IParametragesServiceProvider` sans `@TraductionErreursServiceDistant` n'a ni traduction des timeouts et connexions refusées (donc pas de 503 typé ni de retry ciblé), ni `[REST-METRIC]` d'échec de transport. Aucun garde-fou automatique (test ou règle de build) à date : documenté dans `ARCHITECTURE.md` (sections Appels inter-services et Conventions) et dans la note de mise en œuvre de l'ADR-009.
+- **Exclusion des `*MongoTest` du natif non retirée** : le profil `ci-sans-mongo` est toujours utilisé par les builds natifs (master, tags) et exclut les 5 classes Mongo réelles ; Docker requis pour les `@QuarkusTest` hors `ci-sans-mongo` (Dev Services, décision 👤 Gate #2).
 
 - **`@OpenAPIDefinition` non appliquée au schéma généré** (tags, contact, licence absents de `/q/openapi`). Défaut **préexistant**, hors périmètre de la Phase 2 : à traiter dans un ticket séparé, ne pas corriger ici. Le test `OpenApiSchemaVersionTest` ne vérifie que `info.version`.
 

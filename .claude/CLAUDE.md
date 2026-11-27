@@ -153,7 +153,7 @@ Tous microservices (`comptes`, `operations`, `parametrages`, `utilisateurs`) dé
 
 ### Couches architecture hexagonale (par microservice)
 ```
-api/          – Contrôleurs REST JAX-RS, enums des chemins d'API, surcharges exception/sécurité
+api/          – Contrôleurs REST JAX-RS, enums des chemins d'API, `override/RootAPIResource` (providers sécurité/exceptions/trace : dans `communs`)
 business/     – Logique métier (services @ApplicationScoped), interfaces de ports, modèles métier
 spi/          – Adaptateurs base de données (MongoDB Panache), providers REST inter-services
 config/       – Classes de configuration Quarkus (OpenAPI, hints de réflexion GraalVM)
@@ -181,21 +181,23 @@ public class ComptesResource extends AbstractAPIInterceptors {
 
 **Interfaces ports** : logique métier toujours masquée derrière interface dans `business/ports/` (ex. `IBudgetAppProvider`, `IComptesRepository`). Ressources REST injectent interface, pas implémentation.
 
-**Sécurité** : chaque microservice surcharge `AbstractAPISecurityFilter` + `IJwtSecurityContext` de `communs`. Endpoints déclarent `@RolesAllowed` avec constantes rôle de leur propre `*APIEnum`.
+**Sécurité** : `JwtSecurityFilter` (concrétisation d'`AbstractAPISecurityFilter` + `IJwtSecurityContext`) est **mutualisé dans `communs`** (découvert par Jandex), de même que les mappers d'exceptions (`APIExceptionsHandler`, `SPIExceptionsHandler`) et les filtres de trace (`APITraceFilters`) ; ne pas les recréer dans un module (seuls `RootAPIResource` et `OpenAPIConfig` restent par module). Endpoints déclarent `@RolesAllowed` avec constantes rôle de leur propre `*APIEnum`. Voir ADR-009 et `docs/ARCHITECTURE.md`.
 
-**Appels inter-services** : services besoin données autres microservices injectent interface provider dans `spi/` (ex. `IComptesServiceProvider`, `IParametragesServiceProvider`) appuyée client REST Quarkus.
+**Appels inter-services** : services besoin données autres microservices injectent interface provider dans `spi/` (ex. `IComptesServiceProvider`, `IParametragesServiceProvider`) appuyée client REST Quarkus (timeouts, `@Retry` ciblé, erreurs typées en 503 : ADR-009, `docs/ARCHITECTURE.md`).
 
 ### Base de données
 - **MongoDB** via Quarkus MongoDB Panache (pattern repository, pas Active Record).
 - Chaîne connexion : variable env `QUARKUS_MONGODB_CONNECTION_STRING` (défaut `localhost:27017` dev).
 - Base dev : `v12-app-dev`. Base prod : variable env `QUARKUS_MONGODB_DATABASE`.
-- Config dans `src/main/resources/dev/application.properties` et `src/main/resources/prod/application.properties` par module.
+- Config commune dans `communs/src/main/resources/META-INF/microprofile-config.properties` ; un seul `src/main/resources/application.properties` par module (profils Quarkus `%dev` / `%prod`, plus de profils Maven `dev/` `prod/`). Ne jamais définir la même clé avec préfixe dans `communs` et sans préfixe dans un module (ADR-009).
 
 ### `communs` module
 Partagé tous microservices :
 - `api/AbstractAPIResource` – endpoint base `/info`
 - `api/AbstractAPIInterceptors` – intercepteurs logs requête/réponse
-- `api/security/AbstractAPISecurityFilter` – validation JWT
+- `api/security/AbstractAPISecurityFilter` + `JwtSecurityFilter` – identité validée par `quarkus-oidc` (provider concret mutualisé)
+- `api/APIExceptionsHandler`, `spi/SPIExceptionsHandler`, `api/APITraceFilters` – providers concrets mutualisés (exceptions → HTTP, trace + `[HTTP-METRIC]`)
+- `META-INF/microprofile-config.properties` – configuration commune aux 4 services
 - `utils/security/JWTUtils`, `SecurityUtils` – parsing JWT, sanitation entrées
 - `utils/exceptions/` – exceptions typées (`DataNotFoundException`, `UserNotAuthorizedException`, etc.)
 - `data/trace/BusinessTraceContext` – contexte traçage style MDC réinitialisé après chaque réponse

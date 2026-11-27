@@ -26,7 +26,7 @@ forme de fonctions AWS Lambda natives.
 
 ### Frameworks utilisés
 
-- Quarkus **4.0.0** / Java **25**
+- Quarkus **4.0.1** / Java **25**
 - Mutiny ([guide](https://quarkus.io/guides/mutiny)): A reactive programming framework for Java.
 - MongoDB with Panache ([guide](https://quarkus.io/guides/mongodb-panache)): Simplify your persistence code for MongoDB
   via the active record or the repository pattern

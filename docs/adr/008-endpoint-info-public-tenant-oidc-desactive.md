@@ -119,6 +119,7 @@ Preuve : avec `null`, ces deux tests échouent ; avec `Default`, ils passent.
   - logs « Accès anonyme » et « Clé API non trouvée » en DEBUG pour `/_info` seulement (commit c24792a) ;
   - tests : `TestInfoPublicTenantResolver` (14 cas) ; `InfoPublicTenantNonRegressionTest` dans `comptes` et dans `parametrages` (`/parametres/v2/categories/info-public` + jeton invalide → 401 ; `/comptes/v2/info-public` + jeton valide → authentifié) ; 3 tests de niveau de log dans `TestAbstractAPISecurityFilter`.
 - **Note** : à revérifier à chaque montée de quarkus-oidc (ordre des resolvers).
+- **Revalidation (2026-11-27)** : comportement du tenant `info-public` et de l'ordre des resolvers revalidé sur Quarkus 4.0.1 par les tests CI (PR #241, 2026-11-27). Depuis l'[ADR-009](./009-mutualisation-communs-et-resilience-appels-inter-services.md), `tenant-enabled=false` est dans la configuration commune de `communs` et `tenant-paths` dans l'`application.properties` de chaque module.
 - **Tâches de suivi** : plan 005 — T1.1 à T1.4 (DEVon), T2.x (QALvin), T3 (DOCly) ; amendement : DEVon (`TenantResolver`, logs), QALvin (tests de non-régression).
 - **Date d'effet** : Phases 1 à 3 du plan 005.
 
