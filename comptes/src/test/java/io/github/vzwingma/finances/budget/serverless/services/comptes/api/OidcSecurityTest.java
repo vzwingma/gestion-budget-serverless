@@ -284,7 +284,7 @@ class OidcSecurityTest {
      * contenant le jeton : la capture peut légitimement être vide pour signature invalide / jeton expiré. La preuve « sans fuite » n'est donc pas
      * garantie par un volume de logs, mais par (1) le contrôle que le jeton est bien rejeté (401), (2) le test sentinelle
      * {@link #capture_logsApplicatifs_sentinelle} qui prouve que le handler reçoit bien les logs applicatifs, et (3) la preuve de régression :
-     * retirer la ligne de catégorie des application.properties fait échouer {@code logs_signatureInvalide_aucuneFuite}.
+     * retirer la ligne de catégorie de la configuration commune ({@code communs/src/main/resources/META-INF/microprofile-config.properties}) fait échouer {@code logs_signatureInvalide_aucuneFuite}.
      */
     private String logsPendantAppel(String token, String apiKey) {
         return logsPendantAppel(token, apiKey, true);

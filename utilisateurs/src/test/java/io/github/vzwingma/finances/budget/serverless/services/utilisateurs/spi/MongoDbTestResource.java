@@ -8,10 +8,10 @@ import java.util.Map;
 /**
  * Démarre un MongoDB Testcontainers dédié aux tests d'intégration et surcharge {@code quarkus.mongodb.connection-string}.
  * <p>
- * Pourquoi pas Quarkus Dev Services : Dev Services ne démarre aucun conteneur dès qu'une chaîne de connexion est configurée.
- * Or le profil Maven {@code native} (build CI « native snapshot apps ») embarque {@code src/main/resources/prod/application.properties}
- * qui la définit ({@code mongodb://localhost:27017} par défaut), et le {@code application.properties} dev de {@code utilisateurs}
- * la définit sans préfixe {@code %dev.}. Ce gestionnaire rend les tests indépendants du profil Maven (Docker requis).
+ * Pourquoi pas Quarkus Dev Services : depuis AP004 T2.3 (profils Quarkus, plus de profils Maven de ressources), la chaîne de connexion
+ * n'est définie que pour {@code %dev} et {@code %prod} (configuration commune de {@code communs}) : en profil {@code test}, Dev Services
+ * démarrerait un conteneur. Ce gestionnaire est conservé pour fixer l'image ({@code mongo:7.0}) et la connexion directe, et rendre ces
+ * tests indépendants de Dev Services (Docker requis, donc CI).
  * <p>
  * Utilisé uniquement via {@code QuarkusTestProfile#testResources()} des tests d'intégration Mongo : les autres tests
  * {@code @QuarkusTest} ne démarrent aucun conteneur.

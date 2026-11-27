@@ -50,10 +50,8 @@ import static org.mockito.Mockito.when;
  * BSON des POJO) et agrégation des libellés ({@code $group}).
  * <p>
  * <b>MongoDB de test</b> : {@link MongoDbTestResource} (Testcontainers) fournit la chaîne de connexion et Dev Services est
- * désactivé par le {@link TestProfile} ci-dessous. Raison : le profil Maven {@code native} (CI « native snapshot apps »)
- * embarque {@code prod/application.properties}, qui définit {@code quarkus.mongodb.connection-string} et empêche Dev Services
- * de démarrer ; le test tapait alors {@code localhost:27017} (MongoTimeoutException). Le test est ainsi indépendant du profil
- * Maven. Nommage {@code *Test} (et non {@code *IT}) : seul surefire est configuré pour les modules (failsafe n'existe que
+ * désactivé par le {@link TestProfile} ci-dessous : le test est ainsi indépendant de Dev Services et du profil Quarkus actif (la chaîne
+ * de connexion n'est définie que pour {@code %dev} / {@code %prod}, AP004 T2.3). Nommage {@code *Test} (et non {@code *IT}) : seul surefire est configuré pour les modules (failsafe n'existe que
  * dans le profil {@code native}), un {@code *IT} ne serait jamais exécuté par la CI.
  * <p>
  * Chaque test utilise un identifiant de compte unique : aucun nettoyage, aucune dépendance entre tests.
