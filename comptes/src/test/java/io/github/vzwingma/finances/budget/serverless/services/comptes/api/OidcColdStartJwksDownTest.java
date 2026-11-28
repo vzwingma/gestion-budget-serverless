@@ -16,8 +16,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * AP004 T0.5 (d) — récupération du JWKS en échec (500) lors de la première requête après démarrage : rejet fail-closed, sans blocage.
  * <p>
- * Constat documenté : l'{@code OIDCException} de quarkus-oidc n'est pas convertie en 401 mais en <b>500</b> (QuarkusErrorHandler). Aucune donnée
- * n'est servie ; côté IHM un 500 donne un toast d'erreur (pas de déconnexion). À valider en QUA (panne Google : comportement acceptable ?).
+ * AP004 T4.0-e (décision 👤 Gate #1 Q8) : l'{@code OIDCException} de quarkus-oidc, auparavant transformée en <b>500</b> par QuarkusErrorHandler,
+ * est désormais convertie en <b>503</b> par {@code OidcIndisponibleFailureHandler} (jamais 401 : le jeton n'est pas en cause). Aucune donnée
+ * n'est servie ; côté IHM un 503 donne un toast d'erreur (pas de déconnexion).
  */
 @QuarkusTest
 @TestProfile(OidcColdStartJwksDownTest.Profile.class)
@@ -40,8 +41,7 @@ class OidcColdStartJwksDownTest {
     @Test
     void recuperationJwksEnEchec_rejet_failClosed_sansBlocage() {
         int status = assertTimeoutPreemptively(Duration.ofSeconds(20), OidcColdStartSupport::statusWithValidToken);
-        assertTrue(status == 401 || status == 500, "JWKS indisponible => rejet attendu (401 ou 500), reçu " + status);
-        assertEquals(500, status, "comportement constaté (documenté) : JWKS en panne => 500, pas 401");
+        assertEquals(503, status, "JWKS en panne => 503 (T4.0-e), ni 401 (jeton non en cause) ni 500");
         assertTrue(OidcColdStartSupport.hits("jwks") >= 1, "JWKS non interrogé : la config de test n'est pas effective");
     }
 }

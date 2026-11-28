@@ -23,8 +23,8 @@ import java.util.Set;
  *   {@code quarkus.oidc.token.issuer=any} car Google émet des {@code id_token} avec {@code accounts.google.com} ou
  *   {@code https://accounts.google.com} alors que la discovery n'annonce que la seconde ;</li>
  *   <li>exigence d'un claim {@code email} non vide et {@code email_verified} à {@code true} (booléen ou chaîne) ;</li>
- *   <li>attribution des rôles applicatifs ({@code app.security.roles}) à tout utilisateur authentifié, comme l'ancien
- *   {@code JwtSecurityContext#isUserInRole}.</li>
+ *   <li>attribution des rôles applicatifs ({@code app.security.roles}) à tout utilisateur authentifié (seule source des
+ *   rôles : {@code SecurityIdentity}, contrôlée par {@code @RolesAllowed}).</li>
  * </ul>
  */
 @ApplicationScoped

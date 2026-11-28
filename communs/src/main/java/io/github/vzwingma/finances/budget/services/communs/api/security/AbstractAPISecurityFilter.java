@@ -1,9 +1,5 @@
 package io.github.vzwingma.finances.budget.services.communs.api.security;
 
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
-import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -45,10 +41,7 @@ public abstract class AbstractAPISecurityFilter implements ContainerRequestFilte
         boolean isInfoPath = isInfoPath(requestContext);
 
         if (identity != null && !identity.isAnonymous()) {
-            AccessTokenCredential credential = identity.getCredential(AccessTokenCredential.class);
-            JWTAuthPayload payload = new JWTAuthPayload();
-            payload.setEmail(identity.getPrincipal().getName());
-            securityContext.setJwtValidatedToken(new JWTAuthToken(new JwtAuthHeader(), payload, true, credential != null ? credential.getToken() : null));
+            securityContext.setIdentity(identity);
         }
         else {
             if (isInfoPath) {

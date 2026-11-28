@@ -1,15 +1,18 @@
 package io.github.vzwingma.finances.budget.services.communs.api.security;
 
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import jakarta.ws.rs.core.SecurityContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.security.Principal;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests unitaires de JwtSecurityContext
+ * Tests unitaires de JwtSecurityContext (contexte mince alimenté par la SecurityIdentity, AP004 T4.0-b)
  */
 class TestJwtSecurityContext {
 
@@ -20,68 +23,50 @@ class TestJwtSecurityContext {
         securityContext = new JwtSecurityContext();
     }
 
-    private JWTAuthToken buildToken(String email) {
-        JWTAuthPayload payload = new JWTAuthPayload();
-        payload.setEmail(email);
-        payload.setGiven_name("John");
-        payload.setFamily_name("Doe");
-
-        JwtAuthHeader header = new JwtAuthHeader();
-        header.setAlg("RS256");
-        header.setKid("kid123");
-        header.setTyp("JWT");
-
-        return new JWTAuthToken(header, payload, false, null);
+    private static SecurityIdentity identity(String email, String rawToken) {
+        Principal principal = () -> email;
+        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder().setPrincipal(principal);
+        if (rawToken != null) {
+            builder.addCredential(new AccessTokenCredential(rawToken));
+        }
+        return builder.build();
     }
 
     @Test
-    void testGetUserPrincipalSansToken() {
-        securityContext.setJwtValidatedToken(null);
+    void testGetUserPrincipalSansIdentite() {
+        securityContext.setIdentity(null);
         assertNull(securityContext.getUserPrincipal());
+        assertNull(securityContext.getRawToken());
     }
 
     @Test
-    void testGetUserPrincipalAvecToken() {
-        securityContext.setJwtValidatedToken(buildToken("user@test.com"));
+    void testGetUserPrincipalIdentiteAnonyme() {
+        securityContext.setIdentity(QuarkusSecurityIdentity.builder().setAnonymous(true).build());
+        assertNull(securityContext.getUserPrincipal());
+        assertNull(securityContext.getRawToken());
+    }
+
+    @Test
+    void testGetUserPrincipalAvecIdentite() {
+        securityContext.setIdentity(identity("user@test.com", "raw.jwt.token"));
         assertNotNull(securityContext.getUserPrincipal());
         assertEquals("user@test.com", securityContext.getUserPrincipal().getName());
+        assertEquals("raw.jwt.token", securityContext.getRawToken());
     }
 
     @Test
-    void testGetUserPrincipalAvecPayloadNull() {
-        JWTAuthToken token = new JWTAuthToken(new JwtAuthHeader(), null, false, null);
-        securityContext.setJwtValidatedToken(token);
+    void testIdentiteSansCredentialJeton() {
+        securityContext.setIdentity(identity("user@test.com", null));
+        assertEquals("user@test.com", securityContext.getUserPrincipal().getName());
+        assertNull(securityContext.getRawToken());
+    }
+
+    @Test
+    void testIdentiteAnonymeEffaceLIdentitePrecedente() {
+        securityContext.setIdentity(identity("user@test.com", "t"));
+        securityContext.setIdentity(null);
         assertNull(securityContext.getUserPrincipal());
-    }
-
-    @Test
-    void testIsUserInRoleSansToken() {
-        securityContext.setJwtValidatedToken(null);
-        assertFalse(securityContext.isUserInRole("ADMIN"));
-    }
-
-    @Test
-    void testIsUserInRoleAvecToken() {
-        securityContext.setJwtValidatedToken(buildToken("user@test.com"));
-        // L'implémentation retourne toujours true quand le token est présent
-        assertTrue(securityContext.isUserInRole("ADMIN"));
-    }
-
-    @Test
-    void testIsSecure() {
-        assertTrue(securityContext.isSecure());
-    }
-
-    @Test
-    void testGetAuthenticationSchemeSansToken() {
-        securityContext.setJwtValidatedToken(null);
-        assertNull(securityContext.getAuthenticationScheme());
-    }
-
-    @Test
-    void testGetAuthenticationSchemeAvecToken() {
-        securityContext.setJwtValidatedToken(buildToken("user@test.com"));
-        assertNotNull(securityContext.getAuthenticationScheme());
+        assertNull(securityContext.getRawToken());
     }
 
     @Test
@@ -91,16 +76,9 @@ class TestJwtSecurityContext {
     }
 
     @Test
-    void testGetterSetterToken() {
-        JWTAuthToken token = buildToken("user@test.com");
-        securityContext.setJwtValidatedToken(token);
-        assertEquals(token, securityContext.getJwtValidatedToken());
-    }
-
-    @Test
-    void testIsUserInRoleSansTokenAvecPrincipalNull() {
-        securityContext.setJwtValidatedToken(null);
-        // getUserPrincipal() retourne null mais ne doit pas provoquer de NPE
-        assertFalse(securityContext.isUserInRole("USER"));
+    void testContexteNeSurchargePasLeSecurityContextJaxRs() {
+        // J1 : plus de isUserInRole toujours vrai ; rôles et authentification relèvent de SecurityIdentity / @RolesAllowed
+        assertFalse(SecurityContext.class.isAssignableFrom(IJwtSecurityContext.class));
+        assertFalse(SecurityContext.class.isAssignableFrom(JwtSecurityContext.class));
     }
 }

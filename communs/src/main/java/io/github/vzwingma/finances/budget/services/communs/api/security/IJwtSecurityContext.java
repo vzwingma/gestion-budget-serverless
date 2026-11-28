@@ -1,32 +1,26 @@
 package io.github.vzwingma.finances.budget.services.communs.api.security;
 
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import jakarta.ws.rs.core.SecurityContext;
-
 import java.security.Principal;
 
 /**
- * Interface pour le contexte de sécurité basé sur les tokens JWT.
+ * Contexte de sécurité applicatif, mince (AP004 T4.0-b, J1) : expose ce que les services ont besoin de connaître de la
+ * requête courante. L'authentification et les rôles relèvent exclusivement de {@code quarkus-oidc} ({@code SecurityIdentity},
+ * {@code @RolesAllowed}) : ce contexte n'étend donc plus {@link jakarta.ws.rs.core.SecurityContext}.
  */
-public interface IJwtSecurityContext extends SecurityContext {
+public interface IJwtSecurityContext {
 
     /**
-     * Le token JWT validé.
+     * @return le principal (email) de l'identité authentifiée par {@code quarkus-oidc}, ou {@code null} si la requête est anonyme
      */
-    JWTAuthToken getJwtValidatedToken();
-    /**
-     * L'API Key.
-     */
-    String getApiKey();
-
     Principal getUserPrincipal();
 
     /**
-     * Vérifie si l'utilisateur est dans un rôle spécifique.
-     * @param role le rôle à vérifier
-     * @return true si l'utilisateur est dans le rôle spécifié, false sinon
+     * @return le jeton brut de l'identité authentifiée, pour le propager aux services aval ; {@code null} s'il est indisponible
      */
-    boolean isUserInRole(String role);
+    String getRawToken();
 
+    /**
+     * @return la clé API de la requête, ou {@code null} si absente
+     */
+    String getApiKey();
 }
-

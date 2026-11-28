@@ -2,9 +2,6 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
 import io.github.vzwingma.finances.budget.services.communs.api.security.IJwtSecurityContext;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -46,7 +43,7 @@ class RequestJWTHeaderFactoryTest {
 
     @Test
     void jetonEtCleApi_propagesDansLesHeaders() {
-        when(securityContext.getJwtValidatedToken()).thenReturn(new JWTAuthToken(new JwtAuthHeader(), new JWTAuthPayload(), true, "raw.jwt.token"));
+        when(securityContext.getRawToken()).thenReturn("raw.jwt.token");
         when(securityContext.getApiKey()).thenReturn("KEY-123");
 
         MultivaluedMap<String, String> headers = update();
@@ -57,7 +54,7 @@ class RequestJWTHeaderFactoryTest {
 
     @Test
     void sansJeton_pasDeHeaderAuthorization() {
-        when(securityContext.getJwtValidatedToken()).thenReturn(null);
+        when(securityContext.getRawToken()).thenReturn(null);
         when(securityContext.getApiKey()).thenReturn("KEY-123");
 
         MultivaluedMap<String, String> headers = update();
@@ -68,14 +65,14 @@ class RequestJWTHeaderFactoryTest {
 
     @Test
     void jetonSansContenuBrut_pasDeHeaderAuthorization() {
-        when(securityContext.getJwtValidatedToken()).thenReturn(new JWTAuthToken(new JwtAuthHeader(), new JWTAuthPayload(), true, null));
+        when(securityContext.getRawToken()).thenReturn(null);
 
         assertNull(update().getFirst(HttpHeaders.AUTHORIZATION), "pas de 'Bearer null'");
     }
 
     @Test
     void sansCleApi_pasDeHeaderCleApi() {
-        when(securityContext.getJwtValidatedToken()).thenReturn(new JWTAuthToken(new JwtAuthHeader(), new JWTAuthPayload(), true, "t"));
+        when(securityContext.getRawToken()).thenReturn("t");
         when(securityContext.getApiKey()).thenReturn(null);
 
         MultivaluedMap<String, String> headers = update();

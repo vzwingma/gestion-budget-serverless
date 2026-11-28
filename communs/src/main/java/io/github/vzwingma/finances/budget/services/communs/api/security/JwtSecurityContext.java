@@ -1,102 +1,54 @@
 package io.github.vzwingma.finances.budget.services.communs.api.security;
 
-import com.sun.security.auth.UserPrincipal;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.RequestScoped;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.core.SecurityContext;
-import lombok.Getter;
-import lombok.Setter;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.security.Principal;
 
 /**
- * Implémentation personnalisée de {@link SecurityContext} pour gérer la sécurité basée sur les tokens JWT OIDC de Google.
- * Cette classe permet de définir le contexte de sécurité en fonction d'un token JWT.
+ * Implémentation du contexte de sécurité applicatif, alimentée par la {@link SecurityIdentity} validée par {@code quarkus-oidc}
+ * (ADR-005) et par la clé API de la requête. Portée requête : aucune donnée n'est conservée d'une requête à l'autre.
  */
 @RequestScoped
-@Setter
-@Getter
 public class JwtSecurityContext implements IJwtSecurityContext {
 
-    private static final Logger LOG = LoggerFactory.getLogger(JwtSecurityContext.class);
-
-    /**
-     * Le token JWT validé.
-     */
-    private JWTAuthToken jwtValidatedToken;
-    /**
-     * L'API Key.
-     */
+    private Principal userPrincipal;
+    private String rawToken;
     private String apiKey;
 
-
-    @ConfigProperty(name = "oidc.jwt.id.appusercontent")
-    Instance<String> idAppUserContent; // Identifiant de l'application utilisateur, injecté depuis la configuration.
-
-
-    @Inject
-    public JwtSecurityContext() {
-        // Method pour injection
+    /**
+     * Alimente le contexte depuis l'identité authentifiée. Une identité nulle ou anonyme laisse le contexte sans utilisateur.
+     *
+     * @param identity identité issue de {@code quarkus-oidc}
+     */
+    public void setIdentity(SecurityIdentity identity) {
+        if (identity == null || identity.isAnonymous()) {
+            this.userPrincipal = null;
+            this.rawToken = null;
+            return;
+        }
+        this.userPrincipal = identity.getPrincipal();
+        AccessTokenCredential credential = identity.getCredential(AccessTokenCredential.class);
+        this.rawToken = credential != null ? credential.getToken() : null;
     }
 
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
 
-    /**
-     * Récupère le principal de l'utilisateur à partir du token JWT.
-     * Le principal est déterminé à partir du prénom et du nom de famille contenus dans le payload du token.
-     *
-     * @return Un {@link Principal} représentant l'utilisateur, ou null si le token est invalide.
-     */
     @Override
     public Principal getUserPrincipal() {
-        if (jwtValidatedToken != null && jwtValidatedToken.getPayload() != null) {
-            JWTAuthPayload p = this.jwtValidatedToken.getPayload();
-            return new UserPrincipal(p.getEmail());
-        }
-        else{
-            LOG.warn("L'utilisateur n'a pas de token JWT valide");
-        }
-        return null;
+        return userPrincipal;
     }
 
-    /**
-     * Vérifie si l'utilisateur est dans un rôle spécifique.
-     * Cette implémentation retourne toujours false et logge un avertissement si le token JWT n'est pas valide.
-     *
-     * @param role Le rôle à vérifier.
-     * @return toujours false dans cette implémentation.
-     */
     @Override
-    public boolean isUserInRole(String role) {
-        Principal userPrincipal = getUserPrincipal();
-        if (jwtValidatedToken == null) {
-            LOG.warn("L'utilisateur [{}] n'a pas de token JWT valide", userPrincipal != null ? userPrincipal.getName() : null);
-            return false;
-        }
-        else {
-            LOG.warn("L'utilisateur [{}] n'a pas le rôle [{}]", userPrincipal != null ? userPrincipal.getName() : null, role);
-        }
-        return true;
+    public String getRawToken() {
+        return rawToken;
     }
 
-    /**
-     * @return l'indicateur de sécurité
-     */
     @Override
-    public boolean isSecure() {
-        return true;
-    }
-
-    /**
-     * @return le schéma d'authentification
-     */
-    @Override
-    public String getAuthenticationScheme() {
-        return jwtValidatedToken != null ? jwtValidatedToken.getHeader().toString() : null;
+    public String getApiKey() {
+        return apiKey;
     }
 }

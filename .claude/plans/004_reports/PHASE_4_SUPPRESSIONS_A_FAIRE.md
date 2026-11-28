@@ -63,9 +63,14 @@ Après suppression, le répertoire `communs/src/test/…/data/model/jwt/` est vi
 
 ### A.4 Fichiers qui restent (retouchés par DEVon, ne pas supprimer)
 
-`JwtTestSupport` ×4 (autonomes), `RequestJWTHeaderFactory` (+ test), `JwtSecurityContext`, `IJwtSecurityContext`,
-`AbstractAPISecurityFilter`, `TestJwtSecurityContext` (réécrit pour le contexte mince), `MigrationReflectionConfig`
-(commentaire), les services et tests listés dans le commit `refactor(auth): retrait des usages JWT maison dans les modules`.
+- Étape T4.0-a : `JwtTestSupport` ×4 (autonomes, sans `JWTUtils`), `ComptesService`, `BudgetService`, `UtilisateursService`,
+  `ParametragesService`, `IParametrageAppProvider`, `parametrages/src/main/resources/application.properties`,
+  tests de ressources / services / configuration des 4 modules.
+- Étape T4.0-b/e : `IJwtSecurityContext` (contexte mince), `JwtSecurityContext`, `AbstractAPISecurityFilter`,
+  `RequestJWTHeaderFactory` (+ test), `TestJwtSecurityContext` et `TestAbstractAPISecurityFilter` (réécrits),
+  `MigrationReflectionConfig` et `JwtRolesAugmentor` (Javadoc), nouvelle classe `OidcIndisponibleFailureHandler` (503),
+  `OidcColdStartJwksDownTest` (500 → 503).
+- Aucun autre fichier mort détecté : toute classe de production restante est référencée par du code vivant.
 
 ---
 

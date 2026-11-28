@@ -59,10 +59,9 @@ class TestAbstractAPISecurityFilter {
         filter.identity = identity("a@b.com", "raw.jwt.token");
         filter.filter(request);
 
-        assertNotNull(securityContext.getJwtValidatedToken());
-        assertEquals("a@b.com", securityContext.getJwtValidatedToken().getPayload().getEmail());
-        assertEquals("raw.jwt.token", securityContext.getJwtValidatedToken().getRawContent(), "jeton brut propagé (Bearer inter-services)");
+        assertNotNull(securityContext.getUserPrincipal());
         assertEquals("a@b.com", securityContext.getUserPrincipal().getName());
+        assertEquals("raw.jwt.token", securityContext.getRawToken(), "jeton brut propagé (Bearer inter-services)");
     }
 
     @Test
@@ -70,8 +69,8 @@ class TestAbstractAPISecurityFilter {
         filter.identity = identity("a@b.com", null);
         filter.filter(request);
 
-        assertNotNull(securityContext.getJwtValidatedToken());
-        assertNull(securityContext.getJwtValidatedToken().getRawContent());
+        assertNotNull(securityContext.getUserPrincipal());
+        assertNull(securityContext.getRawToken());
     }
 
     @Test
@@ -80,7 +79,7 @@ class TestAbstractAPISecurityFilter {
         assertTrue(filter.identity.isAnonymous());
         filter.filter(request);
 
-        assertNull(securityContext.getJwtValidatedToken(), "aucune identité exposée pour un anonyme");
+        assertNull(securityContext.getUserPrincipal(), "aucune identité exposée pour un anonyme");
     }
 
     @Test
@@ -88,7 +87,7 @@ class TestAbstractAPISecurityFilter {
         filter.identity = null;
         filter.filter(request);
 
-        assertNull(securityContext.getJwtValidatedToken());
+        assertNull(securityContext.getUserPrincipal());
     }
 
     @Test

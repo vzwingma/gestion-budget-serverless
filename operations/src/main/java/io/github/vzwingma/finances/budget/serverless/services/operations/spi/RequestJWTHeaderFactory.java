@@ -3,7 +3,6 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.spi;
 import io.github.vzwingma.finances.budget.services.communs.api.AbstractAPIInterceptors;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
 import io.github.vzwingma.finances.budget.services.communs.api.security.IJwtSecurityContext;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.*;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
@@ -39,9 +38,9 @@ public class RequestJWTHeaderFactory implements ClientHeadersFactory {
         }
         // Ajout du JWT Token et Ajout de l'API Key
         if (securityContext != null) {
-            JWTAuthToken jwToken = securityContext.getJwtValidatedToken();
-            if (jwToken != null && jwToken.getRawContent() != null) {
-                headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + jwToken.getRawContent());
+            String rawToken = securityContext.getRawToken();
+            if (rawToken != null) {
+                headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + rawToken);
             } else {
                 LOG.warn("L'appel n'est pas authentifié : aucun JWT Token validé disponible");
             }

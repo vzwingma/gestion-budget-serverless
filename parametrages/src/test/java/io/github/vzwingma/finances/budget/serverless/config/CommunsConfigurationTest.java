@@ -85,12 +85,6 @@ class CommunsConfigurationTest {
     }
 
     @Test
-    void clientRest_jwtSigningKeyRetire() {
-        // AP004 T4.0 : plus de client REST vers les certificats Google (validation déléguée à quarkus-oidc)
-        assertTrue(config().getOptionalValue("quarkus.rest-client.jwt-signing-key-service.url", String.class).isEmpty());
-    }
-
-    @Test
     void categorieDesMetriques_infoEffectif() {
         assertEquals("INFO", valeur("quarkus.log.category.\"io.github.vzwingma.finances.budget.metrics\".level", String.class));
         Logger metriques = Logger.getLogger("io.github.vzwingma.finances.budget.metrics");
