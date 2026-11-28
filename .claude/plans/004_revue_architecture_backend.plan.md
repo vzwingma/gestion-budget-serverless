@@ -1,7 +1,7 @@
 # Plan d'Action 004 — Revue architecture backend : sécurisation, fiabilisation, modernisation Quarkus/Mongo
 
 **Date création :** 2026-10-25
-**Statut :** 🔵 En cours — Phases 0 et 1 ✅ clôturées (PR #220, #224, #225, #226 mergées ; QUA déployé, contrôle QUA par le 👤) ; Phase 2 ✅ clôturée (Gate #4 GO 2026-11-27 ; #233-#235, #241 mergées) ; Phases 3 à 5 à venir (après le plan IHM 011)
+**Statut :** 🔵 En cours — Phases 0 et 1 ✅ clôturées (PR #220, #224, #225, #226 mergées ; QUA déployé, contrôle QUA par le 👤) ; Phase 2 ✅ clôturée (Gate #4 GO 2026-11-27 ; #233-#235, #241 mergées) ; Phases 3 + 4 (PR unique) : Gate #0 GO 2026-11-28, **Gate #1 en attente** ; Phase 5 à venir
 **Porteur :** ⚫ MAINa
 **ADR liés :** [ADR-005 — Authentification JWT via extension Quarkus](../../docs/adr/005-authentification-jwt-extension-quarkus.md) (`Acceptée` pour le principe ; choix final oidc / smallrye-jwt par essai Phase 0) · ADR-002 (migrations maison, maintenu) · ADR-004 (`Clock`, maintenu)
 
@@ -401,33 +401,175 @@ T2.0 → [push, QUA, mesure avant 👤] → (T2.1 ∥ T2.2) → T2.3 → (T2.4 �
 
 ---
 
-## Phase 3 — Observabilité : évaluation (Lot 5)
+## Phases 3 + 4 — PR unique (décision 👤 Gate #0 Phase 3, 2026-11-28)
+
+- **Branche** : `feat/ap004-phase3-4`, créée depuis `docs/ap004-phase3`, qui contient le commit de clôture de la Phase 2 (a8436b4) et ce plan. Base : origin/master 26e4a42 (Quarkus 4.0.1). **Une seule PR**, sans push intermédiaire non convenu.
+- **SNAPSHOT `communs`** : aucune autre PR ne touche `communs` tant que celle-ci est ouverte. Toujours lancer `mvn clean install` depuis la racine. Les modules ne sont jamais construits seuls après une modification de `communs`.
+- **Gates** : un seul Gate #2 (code des Phases 3 et 4), un seul #3, un seul #4.
+- **Suppressions de fichiers et drop Mongo : 👤 uniquement.** Aucun agent ne lance `rm`, `git rm` ou `drop()`.
+
+## Phase 3 — Observabilité par logs (Lot 5, ADR-010)
+
+### Décisions Gate #0 (👤, 2026-11-28)
+- **O1** : retrait d'OpenTelemetry. Les logs CloudWatch deviennent la source unique (`[HTTP-METRIC]`, `[REST-METRIC]`, `REPORT`, Logs Insights).
+- **Corrélation `X-Amzn-Trace-Id`** : MDC `awsTraceId`, regex stricte, propagation par `operations`.
+- **#55278 (P2)** : `quarkus.rest.jackson.optimization.enable-reflection-free-serializers=false` gardé **explicitement**, avec un commentaire mis à jour : corrigé en 3.37.2, et valeur par défaut `false` depuis 3.39.
+- Abandonnés : T3.0 (mesure préalable), X-Ray (T3.2c). O4 (logs JSON) reporté.
 
 ### Critères de réussite
-- Note comparative X-Ray / ADOT / retrait OpenTelemetry avec coûts et services AWS disponibles → décision 👤 dédiée (pas de choix anticipé).
-- Contournement Quarkus #55278 revérifié (AP 001 T8.1) ; `quarkus.mongodb.metrics.enabled` sans Micrometer corrigé.
+1. Plus aucune dépendance `quarkus-opentelemetry`, ni dans les poms (`mvn dependency:tree | grep -i opentelemetry` vide) ni dans l'image native.
+2. Aucune propriété `quarkus.otel.*` ni `quarkus.mongodb.metrics.enabled`. Le format de log ne référence plus `traceId`/`spanId`/`parentId`.
+3. Une requête IHM vers `operations` qui appelle `comptes` et `parametrages` porte le **même `awsTraceId`** dans les logs des 3 Lambdas (contrôle QUA par le 👤, Logs Insights).
+4. Un en-tête `X-Amzn-Trace-Id` invalide (hors regex, CR/LF, > 256 caractères) est ignoré : MDC vide, aucune erreur, aucune propagation.
+5. MDC nettoyé en fin de requête : aucune fuite d'une invocation à l'autre sur un conteneur Lambda réutilisé.
+6. Build JVM + natif verts. `Init Duration` QUA notée avant/après (information, pas un critère bloquant).
 
 ### Tâches
-#### T3.1 — Évaluer options observabilité (ARCos) — livrable : comparatif + recommandation.
-#### T3.2 — Appliquer la décision + retrait #55278 si corrigé (DEVon), logs JSON éventuels.
+#### T3.1 — ✅ Évaluation (ARCos, 2026-11-28) : options O1 / O1b / O2 / O3 / O4, retenue O1 + corrélation.
+#### T3.2a — Retrait d'OTel + configuration (DEVon) — fichiers : `pom.xml` (racine, l. ~292-295), `communs/src/main/resources/META-INF/microprofile-config.properties` (l. 17 `mongodb.metrics`, l. 47-48 format, l. 71-74 commentaire #55278)
+- Retirer la dépendance, la ligne `mongodb.metrics` et `traceId/parentId/spanId` du format. Ajouter `%X{awsTraceId}`.
+- Vérifier : aucun import `io.opentelemetry` dans le code (grep), et tests de configuration (`CommunsConfigurationTest`, `ProfilsConfigurationTest`) mis à jour si nécessaire.
+#### T3.2b — Corrélation (DEVon) — fichiers : `communs/…/api/AbstractAPIInterceptors.java`, `communs/…/spi/RequestJWTHeaderFactory.java` (ou classe équivalente utilisée par les clients REST d'`operations`)
+- `preMatchingFilter` : lire `X-Amzn-Trace-Id` et en extraire `Root=`. Valider avec `^1-[0-9a-f]{8}-[0-9a-f]{24}$`. Si valide, `MDC.put("awsTraceId", root)`. Sinon, ignorer. Retrait du MDC dans le filtre de réponse.
+- `RequestJWTHeaderFactory` : propager `X-Amzn-Trace-Id: Root=<awsTraceId>` si le MDC est renseigné, sans recopier l'en-tête entrant brut.
+- **Séquentiel avec T4.0-b** (même fichier `RequestJWTHeaderFactory`).
+#### T3.3 — Tests Phase 3 (QALvin, au sein de T4.3) : regex nominale, en-tête absent, invalide, injection CR/LF ; propagation vers le client REST ; nettoyage du MDC ; format de log sans OTel.
+#### T3.5 — Documentation Phase 3 (DOCly, au sein de T4.5) : ADR-010 → `Acceptée` (au GO du Gate #1) ; `ARCHITECTURE.md` (observabilité, mentions OTel) ; notes dans ADR-001 / 003 / 009 ; plan 001 T8.1 clôturé ; requête Logs Insights de corrélation (wiki backend, commit par le 👤).
 
 ---
 
-## Phase 4 — Modernisation sans changement de contrat (option B, 1er temps : Lots 6 et 7)
+## Phase 4 — Modernisation sans changement de contrat (Lots 6 et 7, ADR-011)
+
+Analyse ARCos du 2026-11-28 : options et recommandations ci-dessous (**à valider au Gate #1**).
+
+### Options (synthèse ARCos)
+| Sujet | Options | Reco |
+|---|---|---|
+| Contexte sécurité (T4.0) | **J0** garder les modèles JWT maison (`JWTAuthToken`/`Payload`/`Header`) · **J1** contexte mince alimenté par `SecurityIdentity`, modèles maison supprimés, `IJwtSecurityContext` n'étend plus `SecurityContext` (supprime `isUserInRole` qui renvoie toujours `true`) · **J2** `SecurityIdentity` injecté directement dans les services | **J1** |
+| Ports purs (T4.2-P) | **P1** ports purs complets + mappers entité ↔ domaine · **P2** ports purs partiels : les interfaces n'étendent plus `ReactivePanacheMongoRepository`, l'adaptateur `implements IXxxRepository, ReactivePanacheMongoRepository<X>`, `org.bson.Document` remplacé par le record `LibelleBrutOperations(libelle, categorieId, ssCategorieId, n)`, injection circulaire `OperationsService` → `IBudgetAppProvider` retirée · **P3** statu quo documenté | **P2** |
+| Intégrité écritures (T4.2-V) | **V1** verrou optimiste seul · **V2** mises à jour ciblées seules · **V3** verrou optimiste + mises à jour ciblées pour compensation/admin + relance bornée + GET sans écriture dans le cas courant | **V3** |
+| Hibernate Validator | introduire maintenant / reporter | **Reporter** (contrat inchangé, gain faible) |
+| `@ConfigMapping` | migrer / abandonner | **Abandonné** (peu de propriétés, ADR-009 suffit) |
+| Virement transactionnel | transaction multi-documents / compensation ADR-007 | **Retiré du critère** (ADR-007 : compensation ; V3 ferme R2 bis) |
 
 ### Critères de réussite
-- ADR-005 tranché (`quarkus-oidc` vs `smallrye-jwt`) via spike ; JWTUtils / persistance JWKS / refresh `/_info` retirés du chemin d'authentification.
-- Ports repository purs (plus d'héritage Panache ni `org.bson.Document` dans les ports) ; sécurité hors domaine (H1-H3).
-- Mises à jour ciblées ou verrouillage optimiste ; virement transactionnel ; Hibernate Validator ; `@ConfigMapping`.
+1. **T4.0** : plus aucun code JWT maison ni JWKS persistant (grep `JWTUtils|JwksKeyCache|IJwtSigningKey|JwksAuthKey|JwtValidationParams|JwsSigningKeysDatabaseAdaptor|JwtReflectionConfig|jwks_auth_signing_keys|refreshJwksSigningKeys|jwt-signing-key-service` vide dans `src/`). Avec J1 : `JWTAuthToken|JWTAuthPayload|JwtAuthHeader` vide aussi.
+2. Authentification inchangée : jeton valide → 200 ; non signé, forgé ou expiré → 401 (tests T0.5 verts). `oidc.jwt.id.appusercontent` conservé.
+3. **Ports purs (P2)** : aucun port de `business/ports` n'importe `io.quarkus.mongodb.panache` ou `org.bson` (grep vide).
+4. **V3** :
+   - 2 écritures concurrentes sur un même budget donnent un succès et une relance, ou un 409 « modification concurrente » ; jamais une opération perdue (test d'intégration Mongo réel) ;
+   - un GET budget courant n'écrit plus (compteur d'écritures) sauf pour un nouveau budget ou un report de solde M-1 changé ;
+   - V003 idempotente, avec un verrou ADR-006 ;
+   - `version` absent du JSON de l'API (`@JsonIgnore`, test de sérialisation) ;
+   - OpenAPI inchangé (diff `/q/openapi`).
+5. Build JVM + natif verts ; couverture des classes touchées ≥ 80 % (branches) ; aucun test `@Disabled` ajouté.
+6. **Drop `jwks_auth_signing_keys`** exécuté par le 👤 en QUA puis en PROD, **après** le déploiement du code qui n'utilise plus la collection.
 
 ### Tâches
-#### T4.1 — ~~Spike auth standard + implémentation ADR-005~~ → avancé en Phase 0 (T0.6). Reste éventuel : nettoyage collection Mongo JWKS (sur décision 👤)
-#### T4.0 — Nettoyage post-bascule OIDC (DEVon retouches + 👤 suppressions)
-- **Inventaire :** [`004_reports/PHASE_4_SUPPRESSIONS_A_FAIRE.md`](./004_reports/PHASE_4_SUPPRESSIONS_A_FAIRE.md) (fichiers prod, tests, config, drop de la collection `jwks_auth_signing_keys`).
-- **Acceptation :** grep de vérification vide ; build + natif verts ; drop exécuté par le 👤 (QUA puis PROD).
 
-#### T4.2 — Ports purs + intégrité écritures (DEVon)
-#### T4.3 — Tests Phase 4 dont tests adaptateurs Dev Services (QALvin)
+#### T4.1 — ~~Spike auth standard + ADR-005~~ → avancé en Phase 0 (T0.6). Fait.
+
+#### T4.0 — Nettoyage post-bascule OIDC
+L'inventaire [`004_reports/PHASE_4_SUPPRESSIONS_A_FAIRE.md`](./004_reports/PHASE_4_SUPPRESSIONS_A_FAIRE.md) est **périmé** (anciens chemins `{dev,prod}`). L'inventaire de référence est celui ci-dessous, et DEVon met le fichier à jour en T4.0-a. Préfixe `C/` = `communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/`.
+
+**T4.0-a — Retouches modules (DEVon, parallélisable par module, sans modifier `communs`)**
+| Module | Fichier : retouche |
+|---|---|
+| comptes | `ComptesService` : retirer `implements IJwtSigningKeyService`, l'injection et le getter (l. ~5-6, 25, 39, 41, 71) |
+| operations | `BudgetService` : idem (l. ~18-19, 59, 83-84, 1013-1019) |
+| utilisateurs | `UtilisateursService` : idem (l. ~6-7, 26, 38, 103) |
+| parametrages | `ParametragesService` : idem + refresh JWKS (l. ~6-9, 30, 43-48, 58-74, 175-181) ; `IParametrageAppProvider:33` (`refreshJwksSigningKeys`) ; `application.properties:15-16` (`jwt-signing-key-service.url/.scope`) ; `CommunsConfigurationTest:89`, `ProfilsConfigurationTest:68,87` |
+| ×4 | `JwtTestSupport` : autonome, plus de dépendance à `JWTUtils` |
+
+**T4.0-b — Retouches `communs` (DEVon, séquentiel, après T3.2b)** : si J1, contexte de sécurité mince (`IJwtSecurityContext` sans `extends SecurityContext`, alimenté par `SecurityIdentity`) ; `JwtSecurityFilter` / `RequestJWTHeaderFactory` adaptés ; aucun usage restant des classes à supprimer.
+
+**T4.0-c — Suppressions de fichiers (👤 uniquement)** : point d'arrêt n° 1, après T4.0-a/b, **avant** T4.2. DEVon fournit la liste et le grep de contrôle ; le 👤 supprime ; DEVon relance `mvn clean install`.
+| Catégorie | Fichiers |
+|---|---|
+| communs prod | `C/utils/security/JWTUtils.java`, `C/utils/security/JwksKeyCache.java`, `C/business/ports/IJwtSigningKeyService.java`, `C/business/ports/IJwtSigningKeyReadRepository.java`, `C/business/ports/IJwtSigningKeyWriteRepository.java`, `C/data/model/jwt/JwksAuthKey.java`, `C/data/model/jwt/JwksAuthKeys.java`, `C/data/model/jwt/JwtValidationParams.java` |
+| communs prod (si J1) | `C/data/model/jwt/JWTAuthToken.java`, `JWTAuthPayload.java`, `JwtAuthHeader.java` |
+| modules prod | `{comptes,operations,parametrages,utilisateurs}/…/spi/JwsSigningKeysDatabaseAdaptor.java` (×4) ; `{…}/config/JwtReflectionConfig.java` (×4) ; `parametrages/…/spi/IJwtAuthSigningKeyServiceProvider.java` |
+| tests | `communs/…/utils/TestJWTUtils.java`, `communs/…/utils/security/TestJWTUtils.java` ; si J1 : `TestJwtModels.java` |
+
+**T4.0-d — Drop de la collection `jwks_auth_signing_keys` (👤 uniquement)** : après déploiement QUA (puis PROD) du code sans JWKS persistant.
+```javascript
+use <nom_base>
+db.jwks_auth_signing_keys.countDocuments()
+db.jwks_auth_signing_keys.getIndexes()
+// sauvegarde facultative : mongoexport --uri="<uri>" --db=<nom_base> --collection=jwks_auth_signing_keys --out=jwks_<env>.json
+db.jwks_auth_signing_keys.drop()
+db.getCollectionNames().includes("jwks_auth_signing_keys")   // attendu : false
+```
+
+#### T4.2-P — Ports purs P2 (DEVon)
+- comptes, parametrages, utilisateurs : **en parallèle**, après T4.0-c. Les ports n'étendent plus Panache ; les adaptateurs `implements IXxxRepository, ReactivePanacheMongoRepository<X>` ; les services n'appellent que des méthodes déclarées par le port.
+- operations : **séquentiel**, puis T4.2-V. Record `LibelleBrutOperations` à la place de `org.bson.Document` ; injection circulaire `OperationsService` → `IBudgetAppProvider` retirée.
+- Contrôle : grep `io.quarkus.mongodb.panache|org.bson` dans `business/ports` vide.
+
+#### T4.2-V — Intégrité des écritures `budgets` V3 (DEVon, séquentiel : `communs`, puis `operations`)
+1. `communs` : `ModificationConcurrenteException extends ConflictException` (409, message distinct du 409 du virement). Mapping dans `APIExceptionsHandler`.
+2. `operations` :
+   - champ `long version` (`@JsonIgnore`) dans `BudgetMensuel` ;
+   - `replaceOne({_id, version: v}, …version: v+1)` ; `insertOne` pour un nouveau budget (E11000 → conflit) ; `$inc version` sur les mises à jour ciblées (compensation ADR-007, admin `overrideLibelles`) ;
+   - filtre tolérant `$or:[{version:0},{version:{$exists:false}}]` si `v == 0` ;
+   - relance bornée (**2**) du cas d'usage complet sur conflit, puis 409 ;
+   - GET (F5) : n'écrit plus que pour un nouveau budget ou un report de solde M-1 changé ; sur conflit, relit et sert, sans erreur.
+3. Migration **V003 `InitVersionBudgets`** (ADR-006) : `updateMany({version:{$exists:false}}, {$set:{version:0}})`, idempotente. DEVon vérifie d'abord l'absence de `@Version` natif en Mongo Panache réactif pour Quarkus 4.0.1.
+
+#### T4.3 — Tests Phases 3 + 4 (QALvin)
+- T3.3 (ci-dessus).
+- Non-régression auth : T0.5 complet.
+- Contexte J1 : plus de `isUserInRole` toujours vrai.
+- Adaptateurs P2 (Dev Services / Testcontainers ; profil `ci-sans-mongo` respecté).
+- V3 :
+  - concurrence réelle (2 écritures parallèles) ;
+  - relance puis 409 ;
+  - E11000 à la création ;
+  - GET sans écriture ;
+  - V003 rejouée sans effet ;
+  - `version` hors JSON ;
+  - diff OpenAPI vide.
+- Couverture ≥ 80 % en branches sur les classes touchées.
+
+#### T4.4 — Revue de sécurité ciblée (MAINa, avant Gate #2)
+- Aucune voie d'authentification hors `quarkus-oidc`.
+- En-tête de trace non réfléchi tel quel.
+- Message du 409 sans fuite d'information.
+
+#### T4.5 — Documentation (DOCly, après Gate #3)
+- ADR-011 passe en `Acceptée` (au GO du Gate #1).
+- Notes dans ADR-005 (nettoyage fait) et ADR-007 (R2 / R2 bis fermés par V3).
+- `ARCHITECTURE.md` : collections, version, 409, observabilité.
+- Fichier `PHASE_4_SUPPRESSIONS_A_FAIRE.md` marqué comme réalisé.
+- Traçabilité du nouveau 409 dans le plan IHM 011, via la session IHM.
+- Wiki backend : commit par le 👤.
+
+### Séquencement dans la PR unique
+| # | Étape | Mode | Qui |
+|---|---|---|---|
+| 1 | T3.2a + T3.2b (communs, pom) | séquentiel | DEVon |
+| 2 | T4.0-a (4 modules) | **parallèle** par module | DEVon |
+| 3 | T4.0-b (communs : J1, `RequestJWTHeaderFactory`, `JwtTestSupport`) | séquentiel, après 1 | DEVon |
+| 4 | **T4.0-c : suppressions** | point d'arrêt | **👤** |
+| 5 | T4.2-P comptes / parametrages / utilisateurs | **parallèle** | DEVon |
+| 6 | T4.2-P operations, puis T4.2-V communs, puis operations (+ V003) | séquentiel | DEVon |
+| 7 | T4.4 revue, puis **Gate #2** | — | MAINa / 👤 |
+| 8 | T4.3 (dont T3.3), puis **Gate #3** | parallélisable par module | QALvin / 👤 |
+| 9 | T4.5 (dont T3.5), puis **Gate #4** | — | DOCly / 👤 |
+| 10 | Push / PR / QUA (V003 exécutée) / contrôle corrélation / **drop QUA** / merge / tag / PROD / **drop PROD** | — | **👤** |
+
+Parallélisation limitée aux modules feuilles (`comptes`, `parametrages`, `utilisateurs`) : toute modification de `communs` est séquentielle et suivie d'un `mvn clean install` depuis la racine.
+
+### Risques Phases 3 + 4
+| # | Risque | Mitigation |
+|---|---|---|
+| R11 | Perte de corrélation si API Gateway n'envoie pas `X-Amzn-Trace-Id` | Contrôle QUA ; MDC vide sans erreur |
+| R12 | Fuite MDC entre invocations Lambda | Nettoyage dans le filtre de réponse + test |
+| R13 | Régression auth au retrait de J0 | T0.5 complet en non-régression |
+| R14 | Nouveau 409 visible par l'IHM | Relance bornée ; message distinct ; plan IHM 011 |
+| R15 | V003 non jouée avant le trafic | Filtre tolérant `version` absente |
+| R16 | Drop de la collection avant déploiement | Ordre imposé (étape 10), drop par le 👤 seul |
+| R17 | Conflit SNAPSHOT avec une autre PR `communs` | Aucune autre PR `communs` ouverte en parallèle |
 
 ---
 
@@ -446,15 +588,15 @@ T2.0 → [push, QUA, mesure avant 👤] → (T2.1 ∥ T2.2) → T2.3 → (T2.4 �
 |---|---|---|
 | 🔵 DEVon | 0, 1, 2, 3, 4 | Code + preuves `mvn clean install` |
 | 🟢 QALvin | 0, 1, 2, 4 | Tests attaque JWT, non-régression, Dev Services, couverture ≥ 80 % |
-| 🟠 ARCos | 3, 4 | Comparatif observabilité, spike auth |
+| 🟠 ARCos | 3, 4 | Comparatif observabilité (fait), cadrage Phase 4 J/P/V (fait) |
 | 🟣 DOCly | 5 (+ ADR-005) | ARCHITECTURE.md, ADR, wikis |
 
 ## Dépendances
 
 ```
-Phase 0 (hotfix) ──► Phase 1 ──► Phase 2 ──► Phase 4 ──► Phase 5
-                                    └──► Phase 3 (évaluation, parallélisable avec Phase 4 après Gate)
+Phase 0 (hotfix) ──► Phase 1 ──► Phase 2 ──► [Phase 3 + Phase 4 : PR unique] ──► Phase 5
 ```
+Phases 3 et 4 dans une même PR, avec des gates communs (séquencement dans la section Phases 3 + 4).
 Chaque phase : Gate #2 (code) → Gate #3 (tests) ; Gate #4 global en fin de plan. Republier `communs` avant les modules.
 
 ## Critères de succès globaux
@@ -510,6 +652,9 @@ Chaque phase : Gate #2 (code) → Gate #3 (tests) ; Gate #4 global en fin de pla
 | #3 (Phase 2) | 2026-11-27 | Validation tests T2.8 | ✅ GO | 74 tests ajoutés, 871 tests verts, couverture des classes de la Phase 2 ≥ 81 % branches, régression prouvée (mapper, retry). PR #241 mergée, CI verte sur Quarkus 4.0.1 (OIDC, Mongo, natif) |
 | T2.10 / T2.11 | 2026-11-27 | Documentation Phase 2 | ℹ️ Réalisées, **Gate #4 en attente** | `ARCHITECTURE.md`, ADR-008 / ADR-009, `.claude/CLAUDE.md`, README, index, wiki backend `Conception-globale.md` (commit par le 👤). Traçabilité IHM : texte à ajouter au plan IHM 011 fourni en T2.10 |
 | #4 (Phase 2) | 2026-11-27 | Documentation + clôture Phase 2 | ✅ GO | **Phase 2 clôturée.** Décision actée : exclusion `*MongoTest` (et tests de migration Mongo) maintenue en CI via le profil Maven `ci-sans-mongo` (commit 4de9e84 du 2026-11-23, compte 👤), donc le retrait tenté en T2.3 n'est pas appliqué, sans tâche DEVon. Le 409 du virement reste un cas rare (rejeu ou doublon) : l'IHM génère l'id d'opération côté client (uuid v7, `OperationDetailPage.extservices.ts:27`). PR docs et wiki backend poussés / commités par le 👤. Le texte T2.10 doit être injecté dans le plan IHM 011 via la session IHM |
+| #0 (Phase 3) | 2026-11-28 | Cadrage observabilité (ARCos T3.1) | ✅ GO | O1 (retrait OTel) + corrélation `X-Amzn-Trace-Id` (MDC `awsTraceId`, regex stricte, propagation par operations) ; O4 reportée ; #55278 `false` explicite (P2) ; pas de T3.0 ; pas de X-Ray. **PR unique Phases 3 + 4** (`feat/ap004-phase3-4` depuis `docs/ap004-phase3`). ADR-010 `Proposée` |
+| — | 2026-11-28 | Cadrage Phase 4 (ARCos) | ℹ️ | Reco J1 / P2 / V3 + V003 ; Hibernate Validator reporté ; `@ConfigMapping` abandonné ; virement transactionnel retiré. Inventaire des suppressions refait (ancien fichier périmé). ADR-011 `Proposée` |
+| #1 (Phases 3 + 4) | 2026-11-28 | Validation du plan + ADR-010 / ADR-011 | ⏳ En attente | Questions Q1-Q10 posées au 👤 |
 
 ### ⚠️ Dette et limites connues (Phase 2)
 
