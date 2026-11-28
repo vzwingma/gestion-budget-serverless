@@ -3,7 +3,7 @@
 ---
 
 **Date :** 2026-11-28
-**Statut :** Proposée
+**Statut :** Acceptée (Gate #1 plan 004 Phases 3+4, 2026-11-28)
 **Décideurs :** 🟠 ARCos + 👤 Développeur humain
 
 ---

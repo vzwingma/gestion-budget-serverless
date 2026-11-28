@@ -864,8 +864,8 @@ mvn clean package -Pnative -Dquarkus.native.container-build=true
 | [007](./adr/007-coherence-virement-ecriture-sequentielle-compensee.md) | Cohérence du virement interne : écriture séquentielle compensée, sans transaction MongoDB | Acceptée |
 | [008](./adr/008-endpoint-info-public-tenant-oidc-desactive.md) | Endpoint `/_info` public : tenant OIDC `info-public` désactivé par chemin + `InfoPublicTenantResolver` (complète l'ADR-005) | Acceptée (amendée le 2026-11-02) |
 | [009](./adr/009-mutualisation-communs-et-resilience-appels-inter-services.md) | Mutualisation partielle dans `communs`, configuration commune et résilience des appels REST inter-services (timeouts, retry ciblé, erreurs typées 503, cache catégories) | Acceptée (mise en œuvre : PR #233, #234, #235, #241) |
-| [010](./adr/010-observabilite-par-logs-retrait-opentelemetry.md) | Observabilité par les logs CloudWatch, retrait d'OpenTelemetry, corrélation par `X-Amzn-Trace-Id` | Proposée |
-| [011](./adr/011-integrite-ecritures-budgets-verrou-optimiste.md) | Intégrité des écritures de budgets : verrou optimiste par champ `version`, 409 « modification concurrente », migration V003 | Proposée |
+| [010](./adr/010-observabilite-par-logs-retrait-opentelemetry.md) | Observabilité par les logs CloudWatch, retrait d'OpenTelemetry, corrélation par `X-Amzn-Trace-Id` | Acceptée |
+| [011](./adr/011-integrite-ecritures-budgets-verrou-optimiste.md) | Intégrité des écritures de budgets : verrou optimiste par champ `version`, 409 « modification concurrente », migration V003 | Acceptée |
 
 > 💡 Toute nouvelle décision architecturale majeure (nouveau framework, changement de pattern, décision de sécurité) doit faire l'objet d'un ADR délégué à l'agent 🟣 DOCly.
 

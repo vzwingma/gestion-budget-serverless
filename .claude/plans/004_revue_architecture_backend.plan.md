@@ -1,7 +1,7 @@
 # Plan d'Action 004 — Revue architecture backend : sécurisation, fiabilisation, modernisation Quarkus/Mongo
 
 **Date création :** 2026-10-25
-**Statut :** 🔵 En cours — Phases 0 et 1 ✅ clôturées (PR #220, #224, #225, #226 mergées ; QUA déployé, contrôle QUA par le 👤) ; Phase 2 ✅ clôturée (Gate #4 GO 2026-11-27 ; #233-#235, #241 mergées) ; Phases 3 + 4 (PR unique) : Gate #0 GO 2026-11-28, **Gate #1 en attente** ; Phase 5 à venir
+**Statut :** 🔵 En cours — Phases 0 et 1 ✅ clôturées (PR #220, #224, #225, #226 mergées ; QUA déployé, contrôle QUA par le 👤) ; Phase 2 ✅ clôturée (Gate #4 GO 2026-11-27 ; #233-#235, #241 mergées) ; Phases 3 + 4 (PR unique) : Gate #0 et Gate #1 GO 2026-11-28, implémentation en cours (`feat/ap004-phase3-4`) ; Phase 5 à venir
 **Porteur :** ⚫ MAINa
 **ADR liés :** [ADR-005 — Authentification JWT via extension Quarkus](../../docs/adr/005-authentification-jwt-extension-quarkus.md) (`Acceptée` pour le principe ; choix final oidc / smallrye-jwt par essai Phase 0) · ADR-002 (migrations maison, maintenu) · ADR-004 (`Clock`, maintenu)
 
@@ -483,6 +483,12 @@ L'inventaire [`004_reports/PHASE_4_SUPPRESSIONS_A_FAIRE.md`](./004_reports/PHASE
 
 **T4.0-b — Retouches `communs` (DEVon, séquentiel, après T3.2b)** : si J1, contexte de sécurité mince (`IJwtSecurityContext` sans `extends SecurityContext`, alimenté par `SecurityIdentity`) ; `JwtSecurityFilter` / `RequestJWTHeaderFactory` adaptés ; aucun usage restant des classes à supprimer.
 
+**T4.0-e — JWKS Google injoignable → 503 (DEVon, `communs`, séquentiel avec T4.0-b ; décision Gate #1 Q8)**
+- Un échec de récupération des clés OIDC (discovery ou JWKS indisponible, timeout) renvoie **503**, et non plus 500.
+- Jeton invalide, forgé ou expiré : toujours **401**.
+- Aucun détail technique dans le corps de la réponse.
+- Le défaut 2 de la Phase 0 est levé ; les tests T0.5 correspondants sont adaptés en T4.3.
+
 **T4.0-c — Suppressions de fichiers (👤 uniquement)** : point d'arrêt n° 1, après T4.0-a/b, **avant** T4.2. DEVon fournit la liste et le grep de contrôle ; le 👤 supprime ; DEVon relance `mvn clean install`.
 | Catégorie | Fichiers |
 |---|---|
@@ -496,7 +502,7 @@ L'inventaire [`004_reports/PHASE_4_SUPPRESSIONS_A_FAIRE.md`](./004_reports/PHASE
 use <nom_base>
 db.jwks_auth_signing_keys.countDocuments()
 db.jwks_auth_signing_keys.getIndexes()
-// sauvegarde facultative : mongoexport --uri="<uri>" --db=<nom_base> --collection=jwks_auth_signing_keys --out=jwks_<env>.json
+// sauvegarde OBLIGATOIRE avant drop (Gate #1 Q6) : mongoexport --uri="<uri>" --db=<nom_base> --collection=jwks_auth_signing_keys --out=jwks_<env>.json
 db.jwks_auth_signing_keys.drop()
 db.getCollectionNames().includes("jwks_auth_signing_keys")   // attendu : false
 ```
@@ -549,7 +555,7 @@ db.getCollectionNames().includes("jwks_auth_signing_keys")   // attendu : false
 |---|---|---|---|
 | 1 | T3.2a + T3.2b (communs, pom) | séquentiel | DEVon |
 | 2 | T4.0-a (4 modules) | **parallèle** par module | DEVon |
-| 3 | T4.0-b (communs : J1, `RequestJWTHeaderFactory`, `JwtTestSupport`) | séquentiel, après 1 | DEVon |
+| 3 | T4.0-b + T4.0-e (communs : J1, `RequestJWTHeaderFactory`, `JwtTestSupport`, JWKS → 503) | séquentiel, après 1 | DEVon |
 | 4 | **T4.0-c : suppressions** | point d'arrêt | **👤** |
 | 5 | T4.2-P comptes / parametrages / utilisateurs | **parallèle** | DEVon |
 | 6 | T4.2-P operations, puis T4.2-V communs, puis operations (+ V003) | séquentiel | DEVon |
@@ -654,7 +660,7 @@ Chaque phase : Gate #2 (code) → Gate #3 (tests) ; Gate #4 global en fin de pla
 | #4 (Phase 2) | 2026-11-27 | Documentation + clôture Phase 2 | ✅ GO | **Phase 2 clôturée.** Décision actée : exclusion `*MongoTest` (et tests de migration Mongo) maintenue en CI via le profil Maven `ci-sans-mongo` (commit 4de9e84 du 2026-11-23, compte 👤), donc le retrait tenté en T2.3 n'est pas appliqué, sans tâche DEVon. Le 409 du virement reste un cas rare (rejeu ou doublon) : l'IHM génère l'id d'opération côté client (uuid v7, `OperationDetailPage.extservices.ts:27`). PR docs et wiki backend poussés / commités par le 👤. Le texte T2.10 doit être injecté dans le plan IHM 011 via la session IHM |
 | #0 (Phase 3) | 2026-11-28 | Cadrage observabilité (ARCos T3.1) | ✅ GO | O1 (retrait OTel) + corrélation `X-Amzn-Trace-Id` (MDC `awsTraceId`, regex stricte, propagation par operations) ; O4 reportée ; #55278 `false` explicite (P2) ; pas de T3.0 ; pas de X-Ray. **PR unique Phases 3 + 4** (`feat/ap004-phase3-4` depuis `docs/ap004-phase3`). ADR-010 `Proposée` |
 | — | 2026-11-28 | Cadrage Phase 4 (ARCos) | ℹ️ | Reco J1 / P2 / V3 + V003 ; Hibernate Validator reporté ; `@ConfigMapping` abandonné ; virement transactionnel retiré. Inventaire des suppressions refait (ancien fichier périmé). ADR-011 `Proposée` |
-| #1 (Phases 3 + 4) | 2026-11-28 | Validation du plan + ADR-010 / ADR-011 | ⏳ En attente | Questions Q1-Q10 posées au 👤 |
+| #1 (Phases 3 + 4) | 2026-11-28 | Validation du plan + ADR-010 / ADR-011 | ✅ GO | « ok pour tout » : Q1 J1 ; Q2 P2 ; Q3 V3, 2 relances, 409 « modification concurrente » accepté (trace IHM 011 à prévoir) ; Q4 V003 + filtre tolérant ; Q5 Hibernate Validator reporté, `@ConfigMapping` et virement transactionnel abandonnés ; Q6 drop `jwks_auth_signing_keys` QUA puis PROD après déploiement, par le 👤, **`mongoexport` avant : oui** ; Q7 suppressions en milieu de PR (après T4.0-a/b, avant T4.2) ; **Q8 JWKS Google injoignable → 503 dans ce lot** (T4.0-e, lève le défaut 2 de la Phase 0) ; Q9 GET sans écriture (cas courant) OK ; Q10 `overrideLibelles` : 409 après relance. ADR-010 / ADR-011 → `Acceptée`. Branche `feat/ap004-phase3-4` depuis `docs/ap004-phase3`. DEVon : étapes 1 à 3, puis arrêt au point n° 1 |
 
 ### ⚠️ Dette et limites connues (Phase 2)
 

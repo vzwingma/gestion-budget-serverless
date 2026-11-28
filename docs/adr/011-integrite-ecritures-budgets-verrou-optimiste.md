@@ -3,7 +3,7 @@
 ---
 
 **Date :** 2026-11-28
-**Statut :** Proposée
+**Statut :** Acceptée (Gate #1 plan 004 Phases 3+4, 2026-11-28 : V3, 2 relances, 409 « modification concurrente », V003 filtre tolérant, `overrideLibelles` 409 après relance)
 **Décideurs :** 🟠 ARCos + 👤 Développeur humain
 
 ---
