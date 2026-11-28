@@ -5,7 +5,6 @@ import com.mongodb.MongoException;
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.BudgetService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.OperationsService;
-import io.github.vzwingma.finances.budget.serverless.services.operations.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
@@ -63,7 +62,6 @@ class CommunsProvidersRestTest {
         serviceMock = mock(BudgetService.class);
         QuarkusMock.installMockForType(serviceMock, BudgetService.class);
         QuarkusMock.installMockForType(mock(OperationsService.class), OperationsService.class);
-        QuarkusMock.installMockForType(mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
     @BeforeEach

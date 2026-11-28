@@ -3,10 +3,6 @@ package io.github.vzwingma.finances.budget.serverless.services.parametrages.busi
 
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametragesRepository;
-import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.IJwtAuthSigningKeyServiceProvider;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyWriteRepository;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
@@ -14,7 +10,6 @@ import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.Data
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author vzwingma
  */
 @ApplicationScoped
-public class ParametragesService implements IParametrageAppProvider, IJwtSigningKeyService {
+public class ParametragesService implements IParametrageAppProvider {
 
 
     /**
@@ -40,37 +35,15 @@ public class ParametragesService implements IParametrageAppProvider, IJwtSigning
 
     private final IParametragesRepository dataParams;
 
-    private final IJwtSigningKeyWriteRepository signingKeyRepository;
-
-    private final IJwtSigningKeyReadRepository signingKeyReadRepository;
-    @Inject
-    @RestClient
-    IJwtAuthSigningKeyServiceProvider jwtAuthSigningKeyServiceProvider; // Service fournissant les clés de signature JWT.
-
 
     /**
      * Constructeur
      *
      * @param parametrageRepository le repository des paramètres
-     * @param signingKeyRepository le repository des clés de signature
      */
     @Inject
-    public ParametragesService(IParametragesRepository parametrageRepository, IJwtSigningKeyWriteRepository signingKeyRepository, IJwtSigningKeyReadRepository signingKeyReadRepository){
+    public ParametragesService(IParametragesRepository parametrageRepository){
         this.dataParams = parametrageRepository;
-        this.signingKeyRepository = signingKeyRepository;
-        this.signingKeyReadRepository = signingKeyReadRepository;
-    }
-
-    /**
-     * Initialisation des clés de signature JWT de Google
-     */
-    @Override
-    @Deprecated // AP004 T0.6 : plus appelé (validation JWT déléguée à quarkus-oidc) ; à supprimer en Phase 4
-    public Uni<Void> refreshJwksSigningKeys() {
-        LOGGER.info("Initialisation des clés de signature JWT");
-        return jwtAuthSigningKeyServiceProvider.getJwksAuthKeys()
-                .map(jwksAuthKeys -> Arrays.stream(jwksAuthKeys.getKeys()).toList())
-                .flatMap(signingKeyRepository::saveJwksAuthKeys);
     }
 
 
@@ -169,14 +142,5 @@ public class ParametragesService implements IParametrageAppProvider, IJwtSigning
             return clone;
         }
         return null;
-    }
-
-
-    /**
-     * @return le repository des clés de signature
-     */
-    @Override
-    public IJwtSigningKeyReadRepository getSigningKeyReadRepository() {
-       return signingKeyReadRepository;
     }
 }

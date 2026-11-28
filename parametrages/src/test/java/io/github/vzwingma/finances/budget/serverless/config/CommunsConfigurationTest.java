@@ -85,8 +85,9 @@ class CommunsConfigurationTest {
     }
 
     @Test
-    void clientRest_jwtSigningKey() {
-        assertEquals("https://www.googleapis.com", valeur("quarkus.rest-client.jwt-signing-key-service.url", String.class));
+    void clientRest_jwtSigningKeyRetire() {
+        // AP004 T4.0 : plus de client REST vers les certificats Google (validation déléguée à quarkus-oidc)
+        assertTrue(config().getOptionalValue("quarkus.rest-client.jwt-signing-key-service.url", String.class).isEmpty());
     }
 
     @Test

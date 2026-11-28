@@ -15,8 +15,6 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.busines
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IComptesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.spi.IParametragesServiceProvider;
 import io.github.vzwingma.finances.budget.serverless.services.operations.utils.BudgetDataUtils;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperationTypeEnum;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
@@ -56,7 +54,7 @@ import java.util.stream.IntStream;
 @ApplicationScoped
 @NoArgsConstructor
 @Setter
-public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService {
+public class BudgetService implements IBudgetAppProvider {
 
 
     /**
@@ -79,9 +77,6 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     @RestClient
     @ApplicationScoped
     IParametragesServiceProvider parametragesService;
-
-    @Inject
-    IJwtSigningKeyReadRepository iJwtSigningKeyReadRepository;
 
     /**
      * Nombre maximal de mois intermédiaires sans budget créés pour un compte actif (F4)
@@ -1008,14 +1003,6 @@ public class BudgetService implements IBudgetAppProvider, IJwtSigningKeyService 
     @Override
     public Uni<Instant[]> getiIntervalleBudgets(String idCompte){
         return this.operationsAppProvider.getIntervalleBudgets(idCompte);
-    }
-
-    /**
-     * @return le dépôt des clés de signature
-     */
-    @Override
-    public IJwtSigningKeyReadRepository getSigningKeyReadRepository() {
-        return iJwtSigningKeyReadRepository;
     }
 
 }

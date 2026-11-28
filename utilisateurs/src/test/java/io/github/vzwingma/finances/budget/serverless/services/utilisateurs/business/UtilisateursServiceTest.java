@@ -96,12 +96,6 @@ class UtilisateursServiceTest {
         verify(serviceDataProvider, never()).majDernierAcces(anyString(), any());
     }
 
-    @Test
-    void testGetSigningKeyReadRepositoryNull() {
-        // Sans injection CDI (constructeur de test) → null
-        assertNull(utilisateursService.getSigningKeyReadRepository());
-    }
-
     // ---- tests modèles ----
 
     @Test

@@ -4,11 +4,7 @@ import io.github.vzwingma.finances.budget.serverless.services.operations.api.enu
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.BudgetAdminService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.BudgetService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.OperationsService;
-import io.github.vzwingma.finances.budget.serverless.services.operations.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -38,7 +34,6 @@ class AdminBudgetResourceTest {
         QuarkusMock.installMockForType(mock(BudgetAdminService.class), BudgetAdminService.class);
         QuarkusMock.installMockForType(mock(BudgetService.class), BudgetService.class);
         QuarkusMock.installMockForType(mock(OperationsService.class), OperationsService.class);
-        QuarkusMock.installMockForType(mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
 
@@ -79,16 +74,6 @@ class AdminBudgetResourceTest {
     }
 
     private String getTestJWTAuthHeader() {
-        JwtAuthHeader h = new JwtAuthHeader();
-        JWTAuthPayload p = new JWTAuthPayload();
-        p.setName("Test");
-        p.setEmail("toto.toto@world.com");
-        p.setFamily_name("Test");
-        p.setGiven_name("Test");
-        p.setIat(JwtTestSupport.epochSecondsIn(java.time.Duration.ZERO));
-        p.setExp(JwtTestSupport.epochSecondsIn(java.time.Duration.ofHours(1)));
-        p.setIss("https://accounts.google.com");
-        p.setAud("test.apps.googleusercontent.com");
-        return JwtTestSupport.signedBearer(new JWTAuthToken(h, p));
+        return JwtTestSupport.signedBearer("toto.toto@world.com");
     }
 }

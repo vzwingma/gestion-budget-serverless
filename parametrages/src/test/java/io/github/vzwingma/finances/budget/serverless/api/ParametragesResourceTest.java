@@ -3,9 +3,6 @@ package io.github.vzwingma.finances.budget.serverless.api;
 import io.github.vzwingma.finances.budget.serverless.data.MockDataCategoriesOperations;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.api.enums.ParametragesAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -48,7 +45,6 @@ class ParametragesResourceTest {
                 .then()
                 .statusCode(200)
                 .body(containsStringIgnoringCase("param"));
-        verify(parametragesServiceMock, never()).refreshJwksSigningKeys();
     }
 
     @Test
@@ -92,26 +88,8 @@ class ParametragesResourceTest {
                 .statusCode(404);
     }
 
-    @Test
-    void testRefreshJwksSigningKeys() {
-        given()
-                .when().get(ParametragesAPIEnum.PARAMS_BASE + "/_info")
-                .then()
-                .statusCode(200);
-    }
-
 
     private String getTestJWTAuthHeader() {
-        JwtAuthHeader h = new JwtAuthHeader();
-        JWTAuthPayload p = new JWTAuthPayload();
-        p.setName("Test");
-        p.setEmail("Test.test@world.com");
-        p.setFamily_name("Test");
-        p.setGiven_name("Test");
-        p.setIat(JwtTestSupport.epochSecondsIn(java.time.Duration.ZERO));
-        p.setExp(JwtTestSupport.epochSecondsIn(java.time.Duration.ofHours(1)));
-        p.setIss("https://accounts.google.com");
-        p.setAud("test.apps.googleusercontent.com");
-        return JwtTestSupport.signedBearer(new JWTAuthToken(h, p));
+        return JwtTestSupport.signedBearer("Test.test@world.com");
     }
 }

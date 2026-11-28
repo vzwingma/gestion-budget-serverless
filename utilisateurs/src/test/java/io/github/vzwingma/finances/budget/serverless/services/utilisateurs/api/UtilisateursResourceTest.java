@@ -4,12 +4,6 @@ import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.api.e
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.UtilisateursService;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.model.Utilisateur;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.data.MockDataUtilisateur;
-import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.spi.JwsSigningKeysDatabaseAdaptor;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
@@ -33,19 +27,14 @@ class UtilisateursResourceTest {
     @Inject
     UtilisateursService utilisateurService;
 
-    @Inject
-    IJwtSigningKeyReadRepository jwtSigningKeyReadRepository;
-
     @BeforeAll
     static void init() {
         QuarkusMock.installMockForType(mock(UtilisateursService.class), UtilisateursService.class);
-        QuarkusMock.installMockForType(mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
 
     }
 
     @Test
     void testInfoEndpoint() {
-        when(utilisateurService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
         given()
                 .when().get(UtilisateursAPIEnum.USERS_BASE + "/_info")
                 .then()
@@ -129,28 +118,8 @@ class UtilisateursResourceTest {
 
 
     private String getTestJWTAuthHeader() {
-        JwtAuthHeader h = new JwtAuthHeader();
-        JWTAuthPayload p = new JWTAuthPayload();
-        p.setName("Test");
-        p.setEmail("test.test@world.com");
-        p.setFamily_name("Test");
-        p.setGiven_name("Test");
-        p.setIat(JwtTestSupport.epochSecondsIn(java.time.Duration.ZERO));
-        p.setExp(JwtTestSupport.epochSecondsIn(java.time.Duration.ofHours(1)));
-        p.setIss("https://accounts.google.com");
-        p.setAud("test.apps.googleusercontent.com");
-        return JwtTestSupport.signedBearer(new JWTAuthToken(h, p));
+        return JwtTestSupport.signedBearer("test.test@world.com");
     }
 
 
-    public static JwksAuthKey jwksAuthKey() {
-        JwksAuthKey jwksAuthKey = new JwksAuthKey();
-        jwksAuthKey.setKid("test");
-        jwksAuthKey.setKty("RSA");
-        jwksAuthKey.setAlg("RS256");
-        jwksAuthKey.setUse("sig");
-        jwksAuthKey.setN("test");
-        jwksAuthKey.setE("test");
-        return jwksAuthKey;
-    }
 }

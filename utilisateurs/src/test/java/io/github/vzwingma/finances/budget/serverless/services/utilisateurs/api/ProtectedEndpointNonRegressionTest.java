@@ -2,7 +2,6 @@ package io.github.vzwingma.finances.budget.serverless.services.utilisateurs.api;
 
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.api.enums.UtilisateursAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.UtilisateursService;
-import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.spi.JwsSigningKeysDatabaseAdaptor;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
@@ -39,7 +38,6 @@ class ProtectedEndpointNonRegressionTest {
     static void init() {
         serviceMock = mock(UtilisateursService.class);
         QuarkusMock.installMockForType(serviceMock, UtilisateursService.class);
-        QuarkusMock.installMockForType(mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
     @BeforeEach

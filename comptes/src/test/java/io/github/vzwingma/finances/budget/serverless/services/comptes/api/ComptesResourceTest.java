@@ -2,13 +2,8 @@ package io.github.vzwingma.finances.budget.serverless.services.comptes.api;
 
 import io.github.vzwingma.finances.budget.serverless.services.comptes.api.enums.ComptesAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.comptes.business.ComptesService;
-import io.github.vzwingma.finances.budget.serverless.services.comptes.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.serverless.services.comptes.test.data.MockDataComptes;
 import io.github.vzwingma.finances.budget.services.communs.api.security.AbstractAPISecurityFilter;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthPayload;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwtAuthHeader;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -35,19 +30,14 @@ class ComptesResourceTest {
     @Inject
     ComptesService comptesService;
 
-    @Inject
-    IJwtSigningKeyReadRepository jwtSigningKeyReadRepository;
-
     @BeforeAll
     static void init() {
         QuarkusMock.installMockForType(mock(ComptesService.class), ComptesService.class);
-        QuarkusMock.installMockForType(mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
     
     @Test
     void testInfoEndpoint() {
-        when(comptesService.loadJwksSigningKeys()).thenReturn(Uni.createFrom().item(new HashMap<>()));
         given()
                 .when().get(ComptesAPIEnum.COMPTES_BASE + "/_info")
                 .then()
@@ -110,16 +100,6 @@ class ComptesResourceTest {
     // ---- helpers ----
 
     private String getTestJWTAuthHeader() {
-        JwtAuthHeader h = new JwtAuthHeader();
-        JWTAuthPayload p = new JWTAuthPayload();
-        p.setName("Test");
-        p.setEmail("toto.toto@world.com");
-        p.setFamily_name("Test");
-        p.setGiven_name("Test");
-        p.setIat(JwtTestSupport.epochSecondsIn(java.time.Duration.ZERO));
-        p.setExp(JwtTestSupport.epochSecondsIn(java.time.Duration.ofHours(1)));
-        p.setIss("https://accounts.google.com");
-        p.setAud("test.apps.googleusercontent.com");
-        return JwtTestSupport.signedBearer(new JWTAuthToken(h, p));
+        return JwtTestSupport.signedBearer("toto.toto@world.com");
     }
 }

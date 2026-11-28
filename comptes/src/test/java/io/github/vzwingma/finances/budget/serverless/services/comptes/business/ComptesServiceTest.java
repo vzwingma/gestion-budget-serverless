@@ -3,9 +3,7 @@ package io.github.vzwingma.finances.budget.serverless.services.comptes.business;
 import io.github.vzwingma.finances.budget.serverless.services.comptes.business.ports.IComptesAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.comptes.business.ports.IComptesRepository;
 import io.github.vzwingma.finances.budget.serverless.services.comptes.test.data.MockDataComptes;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CompteBancaire;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
@@ -28,13 +26,11 @@ class ComptesServiceTest {
 
     private IComptesAppProvider comptesAppProvider;
     private IComptesRepository comptesRepository;
-    private IJwtSigningKeyReadRepository signingKeyReadRepository;
 
     @BeforeEach
     void setup() {
         comptesRepository = mock(IComptesRepository.class);
-        signingKeyReadRepository = mock(IJwtSigningKeyReadRepository.class);
-        comptesAppProvider = spy(new ComptesService(comptesRepository, signingKeyReadRepository));
+        comptesAppProvider = spy(new ComptesService(comptesRepository));
     }
 
     @Test
@@ -120,32 +116,4 @@ class ComptesServiceTest {
                 () -> comptesAppProvider.isCompteActif("ERREUR").await().indefinitely());
     }
 
-    @Test
-    void testLoadJwksSigningKeys() {
-        when(signingKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().empty());
-
-        ComptesService service = (ComptesService) comptesAppProvider;
-        var keys = service.loadJwksSigningKeys().await().indefinitely();
-        assertNotNull(keys);
-        assertTrue(keys.isEmpty());
-    }
-
-    @Test
-    void testLoadJwksSigningKeysAvecCles() {
-        JwksAuthKey key = new JwksAuthKey();
-        key.setKid("kid-test");
-        key.setAlg("RS256");
-        when(signingKeyReadRepository.getJwksSigningAuthKeys()).thenReturn(Multi.createFrom().item(key));
-
-        ComptesService service = (ComptesService) comptesAppProvider;
-        var keys = service.loadJwksSigningKeys().await().indefinitely();
-        assertNotNull(keys);
-        assertEquals(1, keys.size());
-        assertTrue(keys.containsKey("kid-test"));
-    }
-
-    @Test
-    void testGetSigningKeyReadRepository() {
-        assertNotNull(((ComptesService) comptesAppProvider).getSigningKeyReadRepository());
-    }
 }

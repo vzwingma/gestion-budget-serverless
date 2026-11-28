@@ -1,8 +1,6 @@
 package io.github.vzwingma.finances.budget.serverless.api;
 
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JWTAuthToken;
-import io.github.vzwingma.finances.budget.services.communs.utils.security.JWTUtils;
-
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
@@ -46,17 +44,23 @@ final class JwtTestSupport {
         return Clock.systemUTC().instant().plus(offset).getEpochSecond();
     }
 
-    /** @return l'en-tête Authorization "Bearer ..." avec jeton signé RS256 par la clé de test */
-    static String signedBearer(JWTAuthToken token) {
+    /**
+     * @param email email du jeton (claim {@code email}, principal de l'identité)
+     * @return l'en-tête Authorization "Bearer ..." avec un jeton valide (iss/aud/exp corrects, email vérifié), signé RS256 par la clé de test
+     */
+    static String signedBearer(String email) {
+        String header = "{\"alg\":\"RS256\",\"typ\":\"JWT\"}";
+        String payload = "{\"iss\":\"https://accounts.google.com\",\"aud\":\"test.apps.googleusercontent.com\""
+                + ",\"email\":\"" + email + "\",\"email_verified\":true,\"name\":\"Test\",\"given_name\":\"Test\",\"family_name\":\"Test\""
+                + ",\"iat\":" + epochSecondsIn(Duration.ZERO) + ",\"exp\":" + epochSecondsIn(Duration.ofHours(1)) + "}";
+        Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
+        String unsigned = encoder.encodeToString(header.getBytes(StandardCharsets.UTF_8)) + "."
+                + encoder.encodeToString(payload.getBytes(StandardCharsets.UTF_8));
         try {
-            token.getHeader().setAlg("RS256");
-            token.getHeader().setTyp("JWT");
-            token.getPayload().setEmail_verified(true);
-            String unsigned = JWTUtils.encodeJWT(token);
-            Signature signature = Signature.getInstance(JWTUtils.SHA_256_WITH_RSA);
+            Signature signature = Signature.getInstance("SHA256withRSA");
             signature.initSign(PRIVATE_KEY);
-            signature.update(unsigned.getBytes());
-            return "Bearer " + unsigned + "." + Base64.getUrlEncoder().withoutPadding().encodeToString(signature.sign());
+            signature.update(unsigned.getBytes(StandardCharsets.US_ASCII));
+            return "Bearer " + unsigned + "." + encoder.encodeToString(signature.sign());
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException(e);
         }

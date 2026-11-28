@@ -4,7 +4,6 @@ import io.github.vzwingma.finances.budget.services.communs.api.metrics.MetricsLo
 import com.mongodb.MongoException;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.api.enums.UtilisateursAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.UtilisateursService;
-import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.CompteClosedException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DonneeCorrompueException;
@@ -60,7 +59,6 @@ class CommunsProvidersRestTest {
     static void init() {
         serviceMock = mock(UtilisateursService.class);
         QuarkusMock.installMockForType(serviceMock, UtilisateursService.class);
-        QuarkusMock.installMockForType(mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
     @BeforeEach

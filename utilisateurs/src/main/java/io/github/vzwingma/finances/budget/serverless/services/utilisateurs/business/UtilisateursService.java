@@ -3,8 +3,6 @@ package io.github.vzwingma.finances.budget.serverless.services.utilisateurs.busi
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.model.Utilisateur;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.ports.IUtilisateursAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.utilisateurs.business.ports.IUtilisateursRepository;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyService;
 import io.github.vzwingma.finances.budget.services.communs.utils.exceptions.DataNotFoundException;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,7 +21,7 @@ import java.time.LocalDateTime;
  */
 @ApplicationScoped
 @NoArgsConstructor
-public class UtilisateursService implements IUtilisateursAppProvider, IJwtSigningKeyService {
+public class UtilisateursService implements IUtilisateursAppProvider {
 
     /**
      * Logger
@@ -34,8 +32,6 @@ public class UtilisateursService implements IUtilisateursAppProvider, IJwtSignin
      */
     @Inject
     IUtilisateursRepository dataDBUsers;
-    @Inject
-    IJwtSigningKeyReadRepository iJwtSigningKeyReadRepository;
 
     /**
      * Horloge applicative UTC (ADR-004). Valeur par défaut {@link Clock#systemUTC()}, écrasée par
@@ -94,14 +90,6 @@ public class UtilisateursService implements IUtilisateursAppProvider, IJwtSignin
                             })
                             .replaceWith(dernierAcces);
                 });
-    }
-
-    /**
-     * @return le dépôt des clés de signature
-     */
-    @Override
-    public IJwtSigningKeyReadRepository getSigningKeyReadRepository() {
-        return iJwtSigningKeyReadRepository;
     }
 
 }

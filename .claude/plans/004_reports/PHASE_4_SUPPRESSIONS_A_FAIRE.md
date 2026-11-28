@@ -1,83 +1,123 @@
-# Plan 004 — Phase 4 : suppressions à faire (par le 👤)
+# Plan 004 — Phase 4 : suppressions à faire (par le 👤) — point d'arrêt n° 1 (T4.0-c)
 
-> Inventaire établi par ⚫ MAINa le 2026-10-25, après la bascule `quarkus-oidc` (T0.6, ADR-005).
-> **Aucun agent ne supprime rien** (règle absolue). Le 👤 exécute lui-même les suppressions et le drop Mongo, en Phase 4.
-> Ordre conseillé : (1) DEVon fait les retouches de code préalables (section A) → (2) le 👤 supprime les fichiers (B, C)
-> → (3) build `mvn clean install` vert → (4) déploiement QUA → (5) drop de la collection (D) en QUA, puis en PROD.
-> Chemins relatifs à la racine du dépôt `gestion-budget-serverless`. Préfixes abrégés :
-> `communs/…` = `communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/`,
-> `<module>/…` = `<module>/src/main/java/io/github/vzwingma/finances/budget/serverless/services/<module>/`.
+> Inventaire **vérifié sur disque** par 🔵 DEVon le 2026-11-28, après T4.0-a (retouches des modules) et T4.0-b/e (contexte
+> de sécurité mince J1, JWKS injoignable → 503). Remplace l'inventaire de MAINa du 2026-10-25 (périmé).
+> **Aucun agent ne supprime rien** (règle absolue). Le 👤 supprime les fichiers ci-dessous et exécute lui-même les drops Mongo.
+> Tous les chemins sont **complets depuis la racine du dépôt `gestion-budget-serverless`**.
+> Les classes de cette liste ne sont plus référencées que par d'autres classes de cette même liste (ou par leurs tests,
+> eux aussi listés) : après suppression, le build doit rester vert (vérifié avant remise : voir « Preuves » du handoff).
+
+Ordre : (1) le 👤 supprime les fichiers (section A) → (2) grep de contrôle (section B) → (3) `mvn clean install` depuis la
+racine (DEVon le relance) → (4) T4.2 → … → déploiement QUA → (5) drop de la collection (section C) en QUA, puis en PROD.
 
 ---
 
-## A. Retouches de code préalables (DEVon, Phase 4, sans suppression)
+## A. Fichiers à supprimer (👤) — 23 fichiers
 
-Ces fichiers restent, mais ils référencent du code à supprimer :
+### A.1 Production `communs` (11)
 
-| Fichier | Retouche |
-|---|---|
-| `comptes/…/business/ComptesService.java` | Retirer `implements IJwtSigningKeyService` et l'injection de `IJwtSigningKeyReadRepository` |
-| `operations/…/business/BudgetService.java` | Idem |
-| `utilisateurs/…/business/UtilisateursService.java` | Idem |
-| `parametrages/…/business/ParametragesService.java` | Idem, plus `IJwtSigningKeyWriteRepository`, `IJwtAuthSigningKeyServiceProvider` et la méthode `refreshJwksSigningKeys` |
-| `parametrages/…/business/ports/IParametrageAppProvider.java` | Retirer `refreshJwksSigningKeys()` (`@Deprecated` en T0.6) |
-| `communs/…/api/security/AbstractAPISecurityFilter.java`, `JwtSecurityContext.java`, `IJwtSecurityContext.java` | Lire l'identité via `SecurityIdentity` / `JsonWebToken` au lieu de reconstruire un `JWTAuthToken` (revue Gate #2). À décider : supprimer le contexte maison, ou le garder comme simple adaptateur. |
-| `operations/…/spi/RequestJWTHeaderFactory.java` | Lire le jeton brut via `AccessTokenCredential` / `JsonWebToken` |
-| `*/config/JwtReflectionConfig.java` (×4) | Retirer les classes JWKS de la réflexion native. Le fichier est supprimé s'il devient vide (voir B). |
-| Tests qui mockent les dépôts de clés : `ComptesResourceTest`, `ComptesServiceTest`, `BudgetsResourceTest`, `AdminBudgetResourceTest`, `ParametragesResourceTest`, `ParametragesServiceTest`, `UtilisateursResourceTest` | Retirer les mocks `IJwtSigningKeyReadRepository` / `JwsSigningKeysDatabaseAdaptor` / `refreshJwksSigningKeys` (QALvin) |
-| `JwtTestSupport.java` (×4, tests) | Ne plus dépendre de `JWTUtils.encodeJWT`. Mutualiser (test-jar `communs`) ou générer la paire de clés au démarrage des tests. |
+Racine : `communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/`
 
-## B. Fichiers de production à supprimer (👤)
-
-| Fichier | Raison |
-|---|---|
-| `communs/…/utils/security/JWTUtils.java` | Validation maison remplacée par `quarkus-oidc` (à supprimer après la retouche de `JwtTestSupport`) |
-| `communs/…/utils/security/JwksKeyCache.java` | Cache JWKS ajouté au Lot 0, inutilisé depuis T0.6 |
-| `communs/…/business/ports/IJwtSigningKeyService.java` | Port de chargement des clés, devenu inutile |
-| `communs/…/business/ports/IJwtSigningKeyReadRepository.java` | Lecture de la collection JWKS |
-| `communs/…/business/ports/IJwtSigningKeyWriteRepository.java` | Écriture de la collection JWKS |
-| `communs/…/data/model/jwt/JwksAuthKey.java` | Entité `@MongoEntity(collection = "jwks_auth_signing_keys")` |
-| `communs/…/data/model/jwt/JwksAuthKeys.java` | DTO de la réponse Google certs |
-| `communs/…/data/model/jwt/JwtValidationParams.java` | À confirmer par grep : paramètres de la validation maison |
-| `comptes/…/spi/JwsSigningKeysDatabaseAdaptor.java` | Adaptateur Mongo des clés |
-| `operations/…/spi/JwsSigningKeysDatabaseAdaptor.java` | Idem |
-| `parametrages/…/spi/JwsSigningKeysDatabaseAdaptor.java` | Idem (variante avec écriture) |
-| `utilisateurs/…/spi/JwsSigningKeysDatabaseAdaptor.java` | Idem |
-| `parametrages/…/spi/IJwtAuthSigningKeyServiceProvider.java` | Client REST vers `https://www.googleapis.com/oauth2/v3/certs` |
-| `*/config/JwtReflectionConfig.java` (×4) | Seulement s'il ne référence plus que des classes supprimées |
-| `communs/…/data/model/jwt/JWTAuthToken.java`, `JWTAuthPayload.java`, `JwtAuthHeader.java` | **Seulement si** la section A retire le contexte maison. Sinon, à conserver. |
-
-## C. Tests à supprimer (👤)
-
-| Fichier | Raison |
-|---|---|
-| `communs/src/test/java/…/communs/utils/TestJWTUtils.java` | Teste `JWTUtils` |
-| `communs/src/test/java/…/communs/utils/security/TestJWTUtils.java` | Idem |
-| Tests marqués `@Disabled("Obsolète AP004 T0.6 — à supprimer Phase 4")` par QALvin en T0.5 | **Aucun** : les tests des classes maison (`TestJWTUtils` ×2, `TestJwtSecurityContext`, `TestJwtModels`, tests `JwksKeyCache`/`JwtSecurityContext`) restent verts (QALvin T0.5, 2026-10-25). Seuls les 2 `TestJWTUtils` seront à supprimer avec `JWTUtils` (section B). |
-| `*/…/api/JwtTestSupport.java` (×4, tests) | Dépendent encore de `JWTUtils.encodeJWT` / `JWTUtils.SHA_256_WITH_RSA` (section A). Les nouveaux tests T0.5 (`OidcTokenForge` ×2, comptes + parametrages) dépendent de `JwtTestSupport.privateKey()` et `epochSecondsIn` : à reprendre lors de la mutualisation. |
-| Tests T0.5 `@Disabled("BUG AP004 T0.5 …")` (3 dans `TestJwtRolesAugmentorJsonValue`, 1 dans `OidcSecurityTest`) | **Pas des suppressions** : bugs documentés à traiter par DEVon (voir `PHASE_0_TESTS_REPORT.md`), `@Disabled` à retirer une fois corrigés. |
-
-## D. Configuration et données
-
-| Élément | Action |
-|---|---|
-| `parametrages/src/main/resources/{dev,prod}/application.properties` : `quarkus.rest-client.jwt-signing-key-service.url` et `.scope` | Retirer les 2 lignes (DEVon, Phase 4) |
-| Propriétés `oidc.jwt.*` qui ne servent plus qu'à l'ancienne validation | Vérifier par grep. **Garder** `oidc.jwt.id.appusercontent` (utilisée par `quarkus.oidc.client-id` / `audience`). |
-| Collection Mongo `jwks_auth_signing_keys` | **Drop par le 👤**, après le déploiement du code sans JWKS, en QUA puis en PROD |
-
-Commande de drop (mongosh), à lancer par le 👤 sur la base configurée par `QUARKUS_MONGODB_DATABASE` :
-
-```javascript
-// 1. Vérifier la base et le contenu
-use <nom_de_la_base>
-db.jwks_auth_signing_keys.countDocuments()
-// 2. (optionnel) Sauvegarde
-//    mongoexport --uri="<uri>" --db=<nom_de_la_base> --collection=jwks_auth_signing_keys --out=jwks_backup.json
-// 3. Drop
-db.jwks_auth_signing_keys.drop()
+```
+communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/utils/security/JWTUtils.java
+communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/utils/security/JwksKeyCache.java
+communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/business/ports/IJwtSigningKeyService.java
+communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/business/ports/IJwtSigningKeyReadRepository.java
+communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/business/ports/IJwtSigningKeyWriteRepository.java
+communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/data/model/jwt/JwksAuthKey.java
+communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/data/model/jwt/JwksAuthKeys.java
+communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/data/model/jwt/JwtValidationParams.java
+communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/data/model/jwt/JWTAuthToken.java
+communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/data/model/jwt/JWTAuthPayload.java
+communs/src/main/java/io/github/vzwingma/finances/budget/services/communs/data/model/jwt/JwtAuthHeader.java
 ```
 
-## E. Vérification après suppression
+Après suppression, le répertoire `communs/…/data/model/jwt/` est vide (le retirer aussi).
+`JWTAuthToken`, `JWTAuthPayload`, `JwtAuthHeader` sont supprimés parce que la décision J1 est retenue (Gate #1).
 
-- `grep -rn "JwksAuthKey\|IJwtSigningKey\|JWTUtils\|JwksKeyCache\|jwt-signing-key-service" --include=*.java --include=*.properties .` → aucun résultat (hors `.claude/`)
-- `mvn clean install` racine vert, build natif CI vert, connexion réelle validée en QUA après un démarrage à froid.
+### A.2 Production des modules (9)
+
+```
+comptes/src/main/java/io/github/vzwingma/finances/budget/serverless/services/comptes/spi/JwsSigningKeysDatabaseAdaptor.java
+operations/src/main/java/io/github/vzwingma/finances/budget/serverless/services/operations/spi/JwsSigningKeysDatabaseAdaptor.java
+parametrages/src/main/java/io/github/vzwingma/finances/budget/serverless/services/parametrages/spi/JwsSigningKeysDatabaseAdaptor.java
+utilisateurs/src/main/java/io/github/vzwingma/finances/budget/serverless/services/utilisateurs/spi/JwsSigningKeysDatabaseAdaptor.java
+parametrages/src/main/java/io/github/vzwingma/finances/budget/serverless/services/parametrages/spi/IJwtAuthSigningKeyServiceProvider.java
+comptes/src/main/java/io/github/vzwingma/finances/budget/serverless/services/comptes/config/JwtReflectionConfig.java
+operations/src/main/java/io/github/vzwingma/finances/budget/serverless/services/operations/config/JwtReflectionConfig.java
+parametrages/src/main/java/io/github/vzwingma/finances/budget/serverless/services/parametrages/config/JwtReflectionConfig.java
+utilisateurs/src/main/java/io/github/vzwingma/finances/budget/serverless/services/utilisateurs/config/JwtReflectionConfig.java
+```
+
+Les répertoires `config/` (avec `OpenAPIConfig.java`) et `spi/` (autres adaptateurs) des modules restent : ne pas les supprimer.
+
+### A.3 Tests (3)
+
+```
+communs/src/test/java/io/github/vzwingma/finances/budget/services/communs/utils/TestJWTUtils.java
+communs/src/test/java/io/github/vzwingma/finances/budget/services/communs/utils/security/TestJWTUtils.java
+communs/src/test/java/io/github/vzwingma/finances/budget/services/communs/data/model/jwt/TestJwtModels.java
+```
+
+Après suppression, le répertoire `communs/src/test/…/data/model/jwt/` est vide (le retirer aussi).
+
+### A.4 Fichiers qui restent (retouchés par DEVon, ne pas supprimer)
+
+`JwtTestSupport` ×4 (autonomes), `RequestJWTHeaderFactory` (+ test), `JwtSecurityContext`, `IJwtSecurityContext`,
+`AbstractAPISecurityFilter`, `TestJwtSecurityContext` (réécrit pour le contexte mince), `MigrationReflectionConfig`
+(commentaire), les services et tests listés dans le commit `refactor(auth): retrait des usages JWT maison dans les modules`.
+
+---
+
+## B. Grep de contrôle après suppression
+
+À lancer depuis la racine du dépôt `gestion-budget-serverless` (hors `.claude/`, `docs/` et `target/`) : **aucun résultat attendu**.
+
+```bash
+grep -rnE "JWTUtils|JwksKeyCache|IJwtSigningKey|JwksAuthKey|JwtValidationParams|JwsSigningKeysDatabaseAdaptor|JwtReflectionConfig|IJwtAuthSigningKeyServiceProvider|refreshJwksSigningKeys|jwt-signing-key-service|jwks_auth_signing_keys|JWTAuthToken|JWTAuthPayload|JwtAuthHeader" \
+  --include=*.java --include=*.properties --include=*.json --include=*.xml \
+  --exclude-dir=target --exclude-dir=.claude --exclude-dir=docs --exclude-dir=.git --exclude-dir=.idea --exclude-dir=worktrees .
+```
+
+Puis, depuis la racine : `mvn clean install` (ajouter `-Pci-sans-mongo` si Docker est absent), à relancer par 🔵 DEVon.
+
+---
+
+## C. Configuration et données (T4.0-d, 👤 uniquement)
+
+| Élément | État |
+|---|---|
+| `parametrages/src/main/resources/application.properties` : `jwt-signing-key-service.url` et `.scope` | **Retirés** (T4.0-a) |
+| `oidc.jwt.id.appusercontent` | **Conservée** (utilisée par `quarkus.oidc.client-id` et `quarkus.oidc.token.audience`) |
+| Collection Mongo `jwks_auth_signing_keys` | **Drop par le 👤**, après le déploiement du code sans JWKS persistant, en QUA puis en PROD |
+
+### Procédure de drop (mongosh), par environnement, sur la base `QUARKUS_MONGODB_DATABASE`
+
+La sauvegarde `mongoexport` est **obligatoire avant le drop** (décision Gate #1 Q6). Ne jamais dropper avant le déploiement du code
+sans JWKS persistant (risque R16 du plan).
+
+```bash
+# 1. SAUVEGARDE OBLIGATOIRE (shell, hors mongosh) : un fichier par environnement
+mongoexport --uri="<uri>" --db=<nom_base> --collection=jwks_auth_signing_keys --out=jwks_<env>.json
+# Vérifier que le fichier existe et n'est pas vide avant de continuer
+```
+
+```javascript
+// 2. Vérifier la base et le contenu (mongosh)
+use <nom_base>
+db.jwks_auth_signing_keys.countDocuments()
+db.jwks_auth_signing_keys.getIndexes()
+// 3. Drop (seulement si la sauvegarde de l'étape 1 est faite)
+db.jwks_auth_signing_keys.drop()
+// 4. Contrôle : attendu false
+db.getCollectionNames().includes("jwks_auth_signing_keys")
+```
+
+---
+
+## D. Vérification finale (après suppression et déploiement)
+
+- Grep de la section B vide.
+- `mvn clean install` racine vert, build natif CI vert.
+- Connexion réelle validée en QUA après un démarrage à froid (jeton valide → 200, forgé/expiré → 401, Google injoignable → 503).
+- Drop QUA puis PROD exécutés avec sauvegarde.

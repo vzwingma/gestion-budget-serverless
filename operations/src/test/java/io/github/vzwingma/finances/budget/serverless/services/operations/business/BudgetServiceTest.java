@@ -1115,11 +1115,6 @@ class BudgetServiceTest {
     }
 
     @Test
-    void testGetSigningKeyReadRepository() {
-        assertNull(budgetAppProvider.getSigningKeyReadRepository());
-    }
-
-    @Test
     void testVirementInterneEtatNull_refuse400AvantToutAcces() {
         LigneOperation operation = new LigneOperation();
         operation.setLibelle("Virement sans état");

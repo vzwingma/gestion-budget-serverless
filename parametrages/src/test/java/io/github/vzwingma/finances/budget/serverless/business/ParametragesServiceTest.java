@@ -4,13 +4,9 @@ import io.github.vzwingma.finances.budget.serverless.data.MockDataCategoriesOper
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ParametragesService;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametrageAppProvider;
 import io.github.vzwingma.finances.budget.serverless.services.parametrages.business.ports.IParametragesRepository;
-import io.github.vzwingma.finances.budget.serverless.services.parametrages.spi.IJwtAuthSigningKeyServiceProvider;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyReadRepository;
-import io.github.vzwingma.finances.budget.services.communs.business.ports.IJwtSigningKeyWriteRepository;
 import io.github.vzwingma.finances.budget.services.communs.data.abstrait.AbstractCategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.CategorieOperations;
 import io.github.vzwingma.finances.budget.services.communs.data.model.SsCategorieOperations;
-import io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKeys;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -35,14 +31,11 @@ class ParametragesServiceTest {
     private IParametrageAppProvider parametrageAppProvider;
     private IParametragesRepository parametrageServiceProvider;
     private ParametragesService parametragesService;
-    private IJwtSigningKeyReadRepository signingKeyRRepository;
 
     @BeforeEach
     void setup() {
         parametrageServiceProvider = mock(IParametragesRepository.class);
-        IJwtSigningKeyWriteRepository signingKeyRepository = mock(IJwtSigningKeyWriteRepository.class);
-        signingKeyRRepository = mock(IJwtSigningKeyReadRepository.class);
-        parametragesService = spy(new ParametragesService(parametrageServiceProvider, signingKeyRepository, signingKeyRRepository));
+        parametragesService = spy(new ParametragesService(parametrageServiceProvider));
         parametrageAppProvider = parametragesService;
 
         when(parametrageServiceProvider.chargeCategories()).thenReturn(Multi.createFrom().items(MockDataCategoriesOperations.getListeTestCategories().stream()));
@@ -138,29 +131,4 @@ class ParametragesServiceTest {
         assertTrue(liste.isEmpty());
     }
 
-    @Test
-    void testGetSigningKeyReadRepository() {
-        assertNotNull(parametragesService.getSigningKeyReadRepository());
-        assertEquals(signingKeyRRepository, parametragesService.getSigningKeyReadRepository());
-    }
-
-    @Test
-    void testRefreshJwksSigningKeys() throws Exception {
-        IJwtAuthSigningKeyServiceProvider jwtProvider = mock(IJwtAuthSigningKeyServiceProvider.class);
-        IJwtSigningKeyWriteRepository writeRepo = mock(IJwtSigningKeyWriteRepository.class);
-
-        JwksAuthKeys keys = new JwksAuthKeys();
-        keys.setKeys(new io.github.vzwingma.finances.budget.services.communs.data.model.jwt.JwksAuthKey[0]);
-
-        when(jwtProvider.getJwksAuthKeys()).thenReturn(Uni.createFrom().item(keys));
-        when(writeRepo.saveJwksAuthKeys(anyList())).thenReturn(Uni.createFrom().voidItem());
-
-        ParametragesService service2 = spy(new ParametragesService(parametrageServiceProvider, writeRepo, signingKeyRRepository));
-        // Injection par réflexion du champ @RestClient
-        java.lang.reflect.Field field = ParametragesService.class.getDeclaredField("jwtAuthSigningKeyServiceProvider");
-        field.setAccessible(true);
-        field.set(service2, jwtProvider);
-
-        assertDoesNotThrow(() -> service2.refreshJwksSigningKeys().await().indefinitely());
-    }
 }

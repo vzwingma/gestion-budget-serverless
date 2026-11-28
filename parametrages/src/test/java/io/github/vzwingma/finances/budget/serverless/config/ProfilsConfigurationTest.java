@@ -65,7 +65,7 @@ class ProfilsConfigurationTest {
         assertEquals("/parametres/v2/_info", brut(c, "quarkus.oidc.info-public.tenant-paths"));
         assertNull(brut(c, "quarkus.http.port"), "pas de port fixe en production");
         assertNull(brut(c, "quarkus.lambda.mock-event-server.dev-port"));
-        assertEquals("https://www.googleapis.com", brut(c, "quarkus.rest-client.jwt-signing-key-service.url"));
+        assertNull(brut(c, "quarkus.rest-client.jwt-signing-key-service.url"));
         assertEquals("true", brut(c, "quarkus.rest-client.enable-compression"));
     }
 
@@ -84,7 +84,7 @@ class ProfilsConfigurationTest {
         assertEquals("DEBUG", brut(c, "quarkus.log.category.\"io.github.vzwingma.finances.budget.serverless.services.parametrages\".level"));
         assertTrue(brut(c, "quarkus.log.console.format").contains("%L"));
         assertEquals("/parametres/v2/_info", brut(c, "quarkus.oidc.info-public.tenant-paths"));
-        assertEquals("https://www.googleapis.com", brut(c, "quarkus.rest-client.jwt-signing-key-service.url"));
+        assertNull(brut(c, "quarkus.rest-client.jwt-signing-key-service.url"));
         assertEquals("true", brut(c, "quarkus.rest-client.enable-compression"));
     }
 

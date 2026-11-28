@@ -3,7 +3,6 @@ package io.github.vzwingma.finances.budget.serverless.services.operations.api;
 import io.github.vzwingma.finances.budget.serverless.services.operations.api.enums.OperationsAPIEnum;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.BudgetService;
 import io.github.vzwingma.finances.budget.serverless.services.operations.business.OperationsService;
-import io.github.vzwingma.finances.budget.serverless.services.operations.spi.JwsSigningKeysDatabaseAdaptor;
 import io.github.vzwingma.finances.budget.serverless.services.operations.test.data.MockDataBudgets;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -39,7 +38,6 @@ class ProtectedEndpointNonRegressionTest {
         budgetServiceMock = mock(BudgetService.class);
         QuarkusMock.installMockForType(budgetServiceMock, BudgetService.class);
         QuarkusMock.installMockForType(mock(OperationsService.class), OperationsService.class);
-        QuarkusMock.installMockForType(mock(JwsSigningKeysDatabaseAdaptor.class), JwsSigningKeysDatabaseAdaptor.class);
     }
 
     @BeforeEach
