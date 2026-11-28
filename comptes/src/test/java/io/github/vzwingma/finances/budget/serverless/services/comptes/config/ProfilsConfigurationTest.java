@@ -51,7 +51,7 @@ class ProfilsConfigurationTest {
         SmallRyeConfig c = config("prod");
         assertEquals("${QUARKUS_MONGODB_CONNECTION_STRING:mongodb://localhost:27017}", brut(c, "quarkus.mongodb.connection-string"));
         assertEquals("${QUARKUS_MONGODB_DATABASE:database}", brut(c, "quarkus.mongodb.database"));
-        assertEquals("true", brut(c, "quarkus.mongodb.metrics.enabled"));
+        assertNull(brut(c, "quarkus.mongodb.metrics.enabled"), "OpenTelemetry retiré (ADR-010)");
         assertEquals("API Comptes", brut(c, "quarkus.application.name"));
         assertEquals("https://accounts.google.com", brut(c, "quarkus.oidc.auth-server-url"));
         assertEquals("${APP_CONFIG_URL_IHM:http://localhost:3000}", brut(c, "quarkus.http.cors.origins"));
